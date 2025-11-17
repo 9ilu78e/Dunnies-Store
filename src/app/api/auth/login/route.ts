@@ -1,12 +1,18 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { comparePasswords } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
 export async function POST(request: NextRequest) {
-  const prisma = new PrismaClient()
-  
   try {
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL is not configured')
+      return NextResponse.json(
+        { error: 'Database configuration error' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { email, password } = body
 
@@ -17,9 +23,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
+    // Add timeout for database query (10 seconds)
+    let user: any = null
+    try {
+      const userPromise = prisma.user.findUnique({
+        where: { email },
+      })
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database query timeout')), 10000)
+      )
+
+      user = await Promise.race([userPromise, timeoutPromise]) as any
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return NextResponse.json(
+          { error: 'Database connection timeout. Please try again.' },
+          { status: 503 }
+        )
+      }
+      throw error
+    }
 
     if (!user) {
       return NextResponse.json(
@@ -70,12 +94,19 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Login error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Login error:', errorMessage, error)
+    
+    if (errorMessage.includes('timeout')) {
+      return NextResponse.json(
+        { error: 'Database connection timeout. Please try again.' },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

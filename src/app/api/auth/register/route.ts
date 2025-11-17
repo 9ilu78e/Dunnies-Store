@@ -1,11 +1,17 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
-  const prisma = new PrismaClient()
-  
   try {
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL is not configured')
+      return NextResponse.json(
+        { error: 'Database configuration error' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { fullName, email, phone, password } = body
 
@@ -16,9 +22,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const existingUser = await prisma.user.findUnique({
+    // Add timeout for database query (10 seconds)
+    const existingUserPromise = prisma.user.findUnique({
       where: { email },
     })
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Database query timeout')), 10000)
+    )
+
+    const existingUser = await Promise.race([existingUserPromise, timeoutPromise])
 
     if (existingUser) {
       return NextResponse.json(
@@ -54,12 +67,19 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Register error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Register error:', errorMessage, error)
+
+    if (errorMessage.includes('timeout')) {
+      return NextResponse.json(
+        { error: 'Database connection timeout. Please try again.' },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

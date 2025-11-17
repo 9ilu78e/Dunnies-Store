@@ -2,35 +2,35 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Sparkles, ArrowRight } from 'lucide-react'
+import { Gift, ArrowRight } from 'lucide-react'
 
 const slides = [
   {
     title: "Special Holiday Gifts",
     subtitle: "Make every moment memorable",
     description: "Discover unique gifts for your loved ones",
-  image: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=1200&q=80",
     cta: "Shop Gifts",
     href: "/gifts",
     tag: "New Arrivals"
   },
   {
-    title: "Fresh Groceries Delivered",
-    subtitle: "Farm to your doorstep",
-    description: "Quality groceries delivered in hours",
-  image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&q=80",
-    cta: "Shop Groceries",
-    href: "/groceries",
-    tag: "Same Day Delivery"
+    title: "Thoughtful Gift Collections",
+    subtitle: "Handpicked with love",
+    description: "Perfect presents for every occasion",
+    image: "https://images.unsplash.com/photo-1607082349566-187342175e2f?w=1200&q=80",
+    cta: "Explore Gifts",
+    href: "/gifts",
+    tag: "Best Sellers"
   },
   {
-    title: "Premium Collections",
-    subtitle: "Curated with love",
-    description: "Exclusive items for special occasions",
-  image: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=1200&q=80",
-    cta: "Explore Now",
-    href: "/collections",
-    tag: "Limited Edition"
+    title: "Luxury Gift Experiences",
+    subtitle: "Celebrate in style",
+    description: "Premium selections for those who matter most",
+    image: "https://images.unsplash.com/photo-1543512214-318c7553f230?w=1200&q=80",
+    cta: "Shop Now",
+    href: "/gifts",
+    tag: "Exclusive"
   }
 ]
 
@@ -58,7 +58,7 @@ export default function HeroSlider() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full mb-4">
-                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                  <Gift className="w-5 h-5 text-yellow-300" />
                   <span className="text-white text-sm font-semibold">{slide.tag}</span>
                 </div>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
@@ -71,8 +71,8 @@ export default function HeroSlider() {
                     <span>{slide.cta}</span>
                     <ArrowRight className="w-5 h-5" />
                   </Link>
-                  <Link href="/about" className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-purple-600 transition-all">
-                    Learn More
+                  <Link href="/gifts" className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-purple-600 transition-all">
+                    View All Gifts
                   </Link>
                 </div>
               </div>
@@ -87,6 +87,7 @@ export default function HeroSlider() {
             key={i}
             onClick={() => setCurrent(i)}
             className={`h-2 rounded-full transition-all ${i === current ? 'w-8 bg-white' : 'w-2 bg-white/50'}`}
+            aria-label={`Go to slide ${i + 1}`}
           />
         ))}
       </div>

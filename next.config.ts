@@ -6,17 +6,18 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'example.com',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
       },
     ],
   },
   env: {
-    API_URL: process.env.API_URL, // Example of using environment variables
+    API_URL: process.env.API_URL, 
   },
   typescript: {
     tsconfigPath: './tsconfig.json',
   },
-  // Additional Next.js configuration options can be added here
 };
 
 export default nextConfig;
