@@ -28,7 +28,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.error || 'Login failed')
 
       localStorage.setItem('auth_token', data.token)
-      window.location.href = '/dashboard'
+      window.location.href = '/'
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {

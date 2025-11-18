@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { Heart, ShoppingCart, Star, Eye } from "lucide-react";
+import { useCart } from "@/context/CartContext";
 
 interface ProductProps {
+  id: number;
   name: string;
   description?: string;
-  price?: number;
+  price: number;
   originalPrice?: number;
   rating?: number;
   reviews?: number;
@@ -17,6 +19,7 @@ interface ProductProps {
 }
 
 export default function ProductCard({
+  id,
   name = "Unnamed Product",
   description = "Discover this amazing product with premium quality and great features.",
   price = 0,
@@ -28,15 +31,22 @@ export default function ProductCard({
   discount = 0,
   href = "#",
 }: ProductProps) {
-  const formattedPrice = price ? `₦${Number(price).toLocaleString()}` : "₦0";
+  const { addToCart } = useCart();
+
+  const formattedPrice = `₦${Number(price).toLocaleString()}`;
   const formattedOriginal = originalPrice
     ? `₦${Number(originalPrice).toLocaleString()}`
     : null;
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart({ id, name, price, image });
+  };
+
   const CardWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (!href || href === "#") {
+    if (!href || href === "#")
       return <div className="cursor-default">{children}</div>;
-    }
     return <Link href={href}>{children}</Link>;
   };
 
@@ -117,7 +127,7 @@ export default function ProductCard({
           </div>
 
           <button
-            onClick={(e) => e.preventDefault()}
+            onClick={handleAddToCart}
             className="w-full bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:scale-[1.01] transition-all duration-200 flex items-center justify-center gap-2 group/btn"
           >
             <ShoppingCart className="w-4 h-4 group-hover/btn:animate-bounce" />

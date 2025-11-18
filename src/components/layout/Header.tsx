@@ -1,7 +1,9 @@
+// src/components/layout/Header.tsx
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import { useCart } from "@/context/CartContext";
 import {
   Menu,
   X,
@@ -17,20 +19,19 @@ import {
   Phone,
   Search,
   Globe,
+  HelpCircle,
 } from "lucide-react";
 
-export default function EcommerceNavbar() {
+export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { totalItems } = useCart();
+
   const navItems = [
-    {
-      label: "Home",
-      href: "/",
-      icon: <Home className="w-4 h-4" />,
-    },
+    { label: "Home", href: "/", icon: <Home className="w-4 h-4" /> },
     {
       label: "Gifts",
       icon: <Gift className="w-4 h-4" />,
@@ -63,23 +64,18 @@ export default function EcommerceNavbar() {
         { label: "Fashion", href: "/categories/fashion" },
       ],
     },
+    { label: "About", href: "/about", icon: <Info className="w-4 h-4" /> },
     {
-      label: "About",
-      href: "/about",
-      icon: <Info className="w-4 h-4" />,
+      label: "Help Center",
+      href: "/help",
+      icon: <HelpCircle className="w-4 h-4" />,
     },
-    {
-      label: "Contact",
-      href: "/contact",
-      icon: <Phone className="w-4 h-4" />,
-    },
+    { label: "Contact", href: "/contact", icon: <Phone className="w-4 h-4" /> },
   ];
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-    if (isMobileMenuOpen) {
-      setOpenDropdown(null);
-    }
+    if (isMobileMenuOpen) setOpenDropdown(null);
     setIsUserDropdownOpen(false);
   };
 
@@ -212,9 +208,11 @@ export default function EcommerceNavbar() {
                 className="relative p-2 sm:p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 group"
               >
                 <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-purple-600 transition-colors" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
-                  5
-                </span>
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
+                    {totalItems}
+                  </span>
+                )}
               </Link>
 
               <button
@@ -240,7 +238,6 @@ export default function EcommerceNavbar() {
                       <span>{item.label}</span>
                       <ChevronDown className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
                     </button>
-
                     <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 border border-gray-100">
                       {item.children.map((child) => (
                         <Link
@@ -351,7 +348,6 @@ export default function EcommerceNavbar() {
                       }`}
                     />
                   </button>
-
                   <div
                     className={`overflow-hidden transition-all duration-300 ${
                       openDropdown === item.label ? "max-h-96" : "max-h-0"
@@ -398,10 +394,9 @@ export default function EcommerceNavbar() {
                 3
               </span>
             </Link>
-
             <Link
               href="/orders"
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-all duration-200"
+              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray- 100 transition-all duration-200"
               onClick={closeMobileMenu}
             >
               <Package className="w-5 h-5 text-gray-700" />
