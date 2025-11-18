@@ -7,6 +7,23 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { login } from "@/services/auth";
 
+const USER_INTERFACE_PATH = "/users-interface";
+const ADMIN_DASHBOARD_PATH = "/dashboard";
+
+const resolveRoleDestination = (role?: string | null) => {
+  const normalizedRole = role?.toLowerCase();
+
+  if (normalizedRole === "admin") {
+    return ADMIN_DASHBOARD_PATH;
+  }
+
+  if (normalizedRole === "users" || normalizedRole === "user") {
+    return USER_INTERFACE_PATH;
+  }
+
+  return USER_INTERFACE_PATH;
+};
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,10 +40,11 @@ export default function LoginPage() {
     try {
       const data = await login(email, password);
 
+      const destination = resolveRoleDestination(data.user?.role);
       router.refresh();
-      router.push(data.user?.role === "admin" ? "/admin" : "/dashboard");
+      router.push(destination);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +86,6 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Password
@@ -130,7 +147,6 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -170,7 +186,6 @@ export default function LoginPage() {
                   />
                 </svg>
               </button>
-
               <button
                 type="button"
                 className="flex justify-center items-center py-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group"

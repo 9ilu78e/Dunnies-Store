@@ -1,9 +1,11 @@
-// src/components/layout/Header.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { getCurrentUser } from "@/services/auth";
+import LogoutModal from "./LogoutModal";
 import {
   Menu,
   X,
@@ -22,13 +24,74 @@ import {
   HelpCircle,
 } from "lucide-react";
 
+type CurrentUser = {
+  id: string;
+  fullName: string;
+  firstName?: string;
+  email: string;
+  phone?: string | null;
+  role?: string;
+};
+
+const USER_INTERFACE_PATH = "/users-interface";
+const ADMIN_DASHBOARD_PATH = "/dashboard";
+
+const getProfileDestination = (user: CurrentUser | null) => {
+  if (!user) return "/login";
+
+  const normalizedRole = user.role?.toLowerCase();
+
+  if (normalizedRole === "admin") {
+    return ADMIN_DASHBOARD_PATH;
+  }
+
+  if (normalizedRole === "users" || normalizedRole === "user") {
+    return USER_INTERFACE_PATH;
+  }
+
+  return USER_INTERFACE_PATH;
+};
+
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const pathname = usePathname();
 
   const { totalItems } = useCart();
+
+  useEffect(() => {
+    let isSubscribed = true;
+
+    const fetchUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (isSubscribed) {
+          setUser(currentUser);
+        }
+      } catch (err) {
+        if (isSubscribed) {
+          setUser(null);
+        }
+      }
+    };
+
+    fetchUser();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [pathname]);
+
+  const userFirstName =
+    user?.firstName ||
+    user?.fullName?.split(" ")[0] ||
+    user?.email?.split("@")[0];
+  const greetingName = userFirstName || "Guest";
+  const profileHref = getProfileDestination(user);
 
   const navItems = [
     { label: "Home", href: "/", icon: <Home className="w-4 h-4" /> },
@@ -91,8 +154,7 @@ export default function Header() {
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center space-x-1">
             <Globe className="w-3 h-3" />
-            <span className="hidden sm:inline">Deliver Worldwide</span>
-            <span className="sm:hidden">Global</span>
+            <span>Deliver Worldwide</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/track" className="hover:underline hidden sm:inline">
@@ -150,9 +212,9 @@ export default function Header() {
                 >
                   <User className="w-5 h-5 text-gray-700 group-hover:text-purple-600" />
                   <div className="hidden xl:block text-left">
-                    <p className="text-xs text-gray-500">Hello, Guest</p>
+                    <p className="text-xs text-gray-500">Hello {greetingName}</p>
                     <p className="text-sm font-semibold text-gray-700 group-hover:text-purple-600">
-                      Account
+                      Profile
                     </p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-500" />
@@ -165,31 +227,60 @@ export default function Header() {
                       : "opacity-0 invisible -translate-y-2 pointer-events-none"
                   }`}
                 >
-                  <Link
-                    href="/login"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors font-medium"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors font-medium"
-                  >
-                    Sign Up
-                  </Link>
-                  <hr className="my-2 border-gray-100" />
-                  <Link
-                    href="/orders"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                  >
-                    My Orders
-                  </Link>
-                  <Link
-                    href="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                  >
-                    Profile
-                  </Link>
+                  {user ? (
+                    <>
+                      <Link
+                        href="/orders"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                      >
+                        My Orders
+                      </Link>
+                      <Link
+                        href={profileHref}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                      >
+                        Profile
+                      </Link>
+                      <hr className="my-2 border-gray-100" />
+                      <button
+                        onClick={() => {
+                          setIsUserDropdownOpen(false);
+                          setShowLogoutModal(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors font-medium"
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        href="/signup"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors font-medium"
+                      >
+                        Sign Up
+                      </Link>
+                      <hr className="my-2 border-gray-100" />
+                      <Link
+                        href="/orders"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                      >
+                        My Orders
+                      </Link>
+                      <Link
+                        href={profileHref}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                      >
+                        Profile
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -227,7 +318,6 @@ export default function Header() {
               </button>
             </div>
           </div>
-
           <nav className="hidden lg:flex items-center space-x-1 pb-3 border-t border-gray-100 pt-3">
             {navItems.map((item, index) => (
               <div key={`${item.label}-${index}`} className="relative group">
@@ -263,7 +353,6 @@ export default function Header() {
             ))}
           </nav>
         </div>
-
         <div className="md:hidden px-4 pb-3 border-t border-gray-100 pt-3">
           <div className="relative">
             <input
@@ -277,7 +366,6 @@ export default function Header() {
           </div>
         </div>
       </header>
-
       <div
         className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-300 ${
           isMobileMenuOpen
@@ -306,27 +394,38 @@ export default function Header() {
               <User className="w-6 h-6" />
             </div>
             <div>
-              <p className="font-semibold">Hello, Guest</p>
-              <div className="flex flex-row gap-3 text-sm">
-                <Link
-                  href="/login"
-                  onClick={closeMobileMenu}
-                  className="text-purple-100 hover:underline"
+              <p className="font-semibold">Hello {greetingName}</p>
+              {user ? (
+                <button
+                  onClick={() => {
+                    closeMobileMenu();
+                    setShowLogoutModal(true);
+                  }}
+                  className="text-purple-100 hover:underline text-sm mt-1"
                 >
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  onClick={closeMobileMenu}
-                  className="text-purple-100 hover:underline"
-                >
-                  Sign Up
-                </Link>
-              </div>
+                  Logout
+                </button>
+              ) : (
+                <div className="flex flex-row gap-3 text-sm">
+                  <Link
+                    href="/login"
+                    onClick={closeMobileMenu}
+                    className="text-purple-100 hover:underline"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={closeMobileMenu}
+                    className="text-purple-100 hover:underline"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
-
         <div className="p-4 space-y-2">
           {navItems.map((item, index) => (
             <div key={`mobile-${item.label}-${index}`}>
@@ -396,7 +495,7 @@ export default function Header() {
             </Link>
             <Link
               href="/orders"
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray- 100 transition-all duration-200"
+              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-all duration-200"
               onClick={closeMobileMenu}
             >
               <Package className="w-5 h-5 text-gray-700" />
@@ -405,6 +504,10 @@ export default function Header() {
           </div>
         </div>
       </nav>
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+      />
     </>
   );
 }

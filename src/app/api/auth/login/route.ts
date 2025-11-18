@@ -78,8 +78,10 @@ export async function POST(request: NextRequest) {
         user: {
           id: user.id,
           fullName: user.fullName,
+          firstName: user.fullName?.split(' ')[0] || user.fullName,
           email: user.email,
           phone: user.phone,
+          role: user.role,
         },
       },
       { status: 200 }
