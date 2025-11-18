@@ -16,7 +16,9 @@ export default function WishlistPage() {
       id: product.id,
       name: product.name,
       price: product.price,
-      image: product.image,
+      image:
+        product.image ||
+        "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=400&q=80",
     });
   };
 
