@@ -1,39 +1,51 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import ProductList from "@/components/product/ProductList";
 
-const products = [
-  {
-    id: 1,
-    name: "Organic Fruit Box",
-    price: 34900,
-    originalPrice: 44900,
-    rating: 4.9,
-    reviews: 89,
-    image:
-      "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&q=80",
-    tag: "Fresh",
-    discount: 22,
-    href: "/product/organic-fruit-box",
-  },
-  {
-    id: 2,
-    name: "Luxury Jewelry Set",
-    price: 199900,
-    originalPrice: 299900,
-    rating: 4.7,
-    reviews: 56,
-    image:
-      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80",
-    tag: "Premium",
-    discount: 33,
-    href: "/product/luxury-jewelry-set",
-  },
-];
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  imageUrl: string;
+  description: string;
+}
 
 export default function FeaturedProducts() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/products");
+        if (response.ok) {
+          const data = await response.json();
+          setProducts((data.products || []).slice(0, 4));
+        }
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const formattedProducts = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    image: p.imageUrl || "https://via.placeholder.com/400x400",
+    description: p.description,
+    rating: 4.5,
+    reviews: 0,
+    href: `/product/${p.id}`,
+  }));
+
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,7 +59,7 @@ export default function FeaturedProducts() {
             </p>
           </div>
           <Link
-            href="/products"
+            href="/product"
             className="hidden sm:flex items-center space-x-2 text-purple-600 font-semibold hover:text-purple-700 group"
           >
             <span>View All</span>
@@ -55,7 +67,17 @@ export default function FeaturedProducts() {
           </Link>
         </div>
 
-        <ProductList products={products} cols={4} gap={8} />
+        {loading ? (
+          <div className="flex items-center justify-center p-12">
+            <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center p-12">
+            <p className="text-gray-600">No products available yet.</p>
+          </div>
+        ) : (
+          <ProductList products={formattedProducts} cols={4} gap={8} />
+        )}
       </div>
     </section>
   );

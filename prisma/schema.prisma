@@ -23,16 +23,30 @@ model User {
   orders    Order[]
 }
 
+model Category {
+  id          String   @id @default(cuid()) @map("_id")
+  name        String   @unique
+  description String?
+  imageUrl    String?
+  priority    String   @default("normal") // "popular", "trending", "new", "normal"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  products    Product[]
+}
+
 model Product {
   id          String   @id @default(cuid()) @map("_id")
   name        String
   description String
   price       Float
   imageUrl    String
-  category    String   @default("general")
+  categoryId  String?
+  priority    String   @default("normal") // "bestseller", "featured", "trending", "new", "normal"
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  category    Category? @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
 }
 
