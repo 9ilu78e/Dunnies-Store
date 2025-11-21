@@ -258,7 +258,13 @@ export default function AddGroceryModal({
               disabled={loading || !formData.name || !formData.price}
               className="flex-1 px-4 py-3 rounded-lg bg-linear-to-r from-purple-600 to-pink-600 text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? (groceryId ? "Updating..." : "Adding...") : (groceryId ? "Update Grocery" : "Add Grocery")}
+              {loading
+                ? groceryId
+                  ? "Updating..."
+                  : "Adding..."
+                : groceryId
+                ? "Update Grocery"
+                : "Add Grocery"}
             </button>
           </div>
         </form>

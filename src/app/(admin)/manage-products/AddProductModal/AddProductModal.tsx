@@ -143,7 +143,9 @@ export default function AddProductModal({
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || `Failed to ${productId ? "update" : "create"} product`);
+        throw new Error(
+          data.error || `Failed to ${productId ? "update" : "create"} product`
+        );
       }
 
       setFormData({
@@ -355,7 +357,13 @@ export default function AddProductModal({
               className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? (productId ? "Updating..." : "Creating...") : (productId ? "Update Product" : "Add Product")}
+              {loading
+                ? productId
+                  ? "Updating..."
+                  : "Creating..."
+                : productId
+                ? "Update Product"
+                : "Add Product"}
             </button>
           </div>
         </form>
