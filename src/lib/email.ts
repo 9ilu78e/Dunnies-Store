@@ -178,7 +178,7 @@ export function generateAdminOrderNotificationEmail(
         </div>
         
         <p style="margin-top: 30px; text-align: center;">
-          <a href="${process.env.NEXTAUTH_URL || "http:
+          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/manage-orders" style="background: #a855f7; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">View in Admin Panel</a>
         </p>
       </div>
     </body>
