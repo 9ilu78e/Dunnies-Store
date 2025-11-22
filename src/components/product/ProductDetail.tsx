@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Check,
@@ -34,6 +35,7 @@ type Comment = {
 };
 
 export default function ProductDetail({ product }: ProductDetailProps) {
+  const router = useRouter();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
@@ -100,7 +102,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   const handleToggleLike = async () => {
     if (!userId) {
-      alert("Please log in to like products");
+      router.push("/login");
       return;
     }
 
@@ -170,8 +172,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim() || !userId) {
-      if (!userId) alert("Please log in to post a comment");
+    if (!userId) {
+      router.push("/login");
+      return;
+    }
+
+    if (!comment.trim()) {
       return;
     }
 
@@ -213,7 +219,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       }
     } catch (error) {
       console.error("Error posting comment:", error);
-      alert("Failed to post comment. Please try again.");
     } finally {
       setSubmittingComment(false);
     }
@@ -231,7 +236,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <div className="relative aspect-square rounded-3xl bg-white border border-gray-200 overflow-hidden">
+          <div className="relative aspect-square rounded-3xl bg-white border border-gray-200 overflow-hidden" style={{ maxHeight: "500px" }}>
             <Image
               src={selectedImage}
               alt={product.name}

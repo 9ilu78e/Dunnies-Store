@@ -194,7 +194,7 @@ export default function Header() {
         icon: <Gift className="w-4 h-4 text-purple-700" />,
         children: giftCategories.map((cat) => ({
           label: cat.name,
-          href: `/categories/${cat.id}`,
+          href: `/product?category=${cat.id}`,
         })),
       },
       {
@@ -203,15 +203,16 @@ export default function Header() {
         icon: <ShoppingCart className="w-4 h-4 text-purple-700" />,
         children: groceryCategories.map((cat) => ({
           label: cat.name,
-          href: `/categories/${cat.id}`,
+          href: `/product?category=${cat.id}`,
         })),
       },
       {
         label: "Categories",
+        href: "/categories",
         icon: <Package className="w-4 h-4 text-purple-700" />,
         children: categories.map((cat) => ({
           label: cat.name,
-          href: `/categories/${cat.id}`,
+          href: `/product?category=${cat.id}`,
         })),
       },
       {

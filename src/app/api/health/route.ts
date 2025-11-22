@@ -3,9 +3,6 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Testing Prisma connection...')
-    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set')
-    
     const result = await Promise.race([
       prisma.user.findFirst(),
       new Promise((_, reject) =>
@@ -20,7 +17,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error('Connection test failed:', errorMessage)
     
     return NextResponse.json(
       {

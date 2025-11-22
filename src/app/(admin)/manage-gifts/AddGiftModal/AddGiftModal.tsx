@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { X, Upload, Trash2 } from "lucide-react";
+import { showToast } from "@/components/ui/Toast";
 
 interface AddGiftModalProps {
   onClose: () => void;
@@ -29,7 +30,7 @@ export default function AddGiftModal({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/categories");
+        const response = await fetch("/api/categories?type=gift");
         if (response.ok) {
           const data = await response.json();
           setCategories(data.categories || []);

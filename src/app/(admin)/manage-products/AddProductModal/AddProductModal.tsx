@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { X, Loader2, Upload, ImageIcon } from "lucide-react";
+import { showToast } from "@/components/ui/Toast";
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -35,7 +36,7 @@ export default function AddProductModal({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/categories");
+        const response = await fetch("/api/categories?type=product");
         if (response.ok) {
           const data = await response.json();
           setCategories(data.categories || []);
@@ -154,10 +155,20 @@ export default function AddProductModal({
       });
       setImages([]);
       setImagePreviews([]);
+      
+      showToast(
+        productId 
+          ? `Product "${formData.name}" updated successfully!` 
+          : `Product "${formData.name}" added successfully!`,
+        "success"
+      );
+      
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }

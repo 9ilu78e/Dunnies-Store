@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { X, Loader2, Upload } from "lucide-react";
+import { showToast } from "@/components/ui/Toast";
 
 interface AddCategoryModalProps {
   isOpen: boolean;
@@ -132,10 +133,20 @@ export default function AddCategoryModal({
       });
       setImage(null);
       setImagePreview("");
+      
+      showToast(
+        editingCategory 
+          ? `Category "${formData.name}" updated successfully!` 
+          : `Category "${formData.name}" added successfully!`,
+        "success"
+      );
+      
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }

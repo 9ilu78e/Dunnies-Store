@@ -28,7 +28,15 @@ export default function GiftCategoriesGrid() {
       try {
         setLoading(true);
         const response = await fetch(
-          `/api/categories?type=gift&t=${Date.now()}`
+          `/api/categories?type=gift&t=${Date.now()}`,
+          {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          }
         );
         if (response.ok) {
           const data = await response.json();
@@ -43,7 +51,7 @@ export default function GiftCategoriesGrid() {
 
     fetchCategories();
 
-    const interval = setInterval(fetchCategories, 30000);
+    const interval = setInterval(fetchCategories, 15000); // Fetch every 15 seconds
 
     return () => clearInterval(interval);
   }, []);

@@ -1,5 +1,6 @@
 "use client";
 import CookieConsent from "@/components/layout/CookieConsent";
+import { ToastContainer } from "@/components/ui/Toast";
 
 export default function ClientLayout({
   children,
@@ -10,6 +11,7 @@ export default function ClientLayout({
     <>
       <main>{children}</main>
       <CookieConsent />
+      <ToastContainer />
     </>
   );
 }

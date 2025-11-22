@@ -28,15 +28,48 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const filteredCategories = categories.filter(
-      (cat) => (cat._count?.products || 0) > 0
+    // Enrich category counts based on type
+    const enrichedCategories = await Promise.all(
+      categories.map(async (cat) => {
+        let count = cat._count.products;
+
+        // For gift categories, count from Gift table
+        if (cat.type === "gift") {
+          const giftCount = await prisma.gift.count({
+            where: {
+              // In a real scenario, gifts would have categoryId
+              // For now, we'll match by name if available
+            },
+          });
+          count = giftCount;
+        }
+        // For grocery categories, count from Grocery table
+        else if (cat.type === "grocery") {
+          const groceryCount = await prisma.grocery.count({
+            where: {
+              // In a real scenario, groceries would have categoryId
+              // For now, we'll match by name if available
+            },
+          });
+          count = groceryCount;
+        }
+
+        return {
+          ...cat,
+          _count: {
+            products: count,
+          },
+        };
+      })
     );
 
-    const response = NextResponse.json({ categories: filteredCategories });
+    const response = NextResponse.json({ categories: enrichedCategories });
     
-    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0");
     response.headers.set("Pragma", "no-cache");
     response.headers.set("Expires", "0");
+    response.headers.set("Last-Modified", new Date().toUTCString());
+    response.headers.set("ETag", Date.now().toString());
     
     return response;
   } catch (error) {

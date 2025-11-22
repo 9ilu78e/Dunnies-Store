@@ -29,7 +29,7 @@ export default function AddGroceryModal({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/categories");
+        const response = await fetch("/api/categories?type=grocery");
         if (response.ok) {
           const data = await response.json();
           setCategories(data.categories || []);

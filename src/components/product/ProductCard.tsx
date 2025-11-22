@@ -35,6 +35,8 @@ export default function ProductCard({
   href = "#",
   className = "",
 }: ProductProps) {
+  // Use fallback image if image is empty or undefined
+  const displayImage = image && image.trim() !== "" ? image : "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&h=600&fit=crop&auto=format";
   const [isNavigating, setIsNavigating] = useState(false);
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -108,9 +110,9 @@ export default function ProductCard({
             </div>
           </div>
         )}
-        <div className="relative overflow-hidden bg-linear-to-br from-purple-50 via-white to-purple-100/40 aspect-square">
+        <div className="relative overflow-hidden bg-linear-to-br from-purple-50 via-white to-purple-100/40 h-48">
           <img
-            src={image}
+            src={displayImage}
             alt={name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />

@@ -33,7 +33,15 @@ export default function GroceryCategoriesGrid() {
       try {
         setLoading(true);
         const response = await fetch(
-          `/api/categories?type=grocery&t=${Date.now()}`
+          `/api/categories?type=grocery&t=${Date.now()}`,
+          {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          }
         );
         if (response.ok) {
           const data = await response.json();
@@ -48,7 +56,7 @@ export default function GroceryCategoriesGrid() {
 
     fetchCategories();
 
-    const interval = setInterval(fetchCategories, 30000);
+    const interval = setInterval(fetchCategories, 15000); // Fetch every 15 seconds
 
     return () => clearInterval(interval);
   }, []);

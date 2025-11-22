@@ -55,12 +55,19 @@ export async function POST(
       );
     }
 
-    const product = await prisma.product.findUnique({ where: { id } });
+    // Check if product exists in any table (Product, Gift, or Grocery)
+    let product = await prisma.product.findUnique({ where: { id } });
     if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
-      );
+      const gift = await prisma.gift.findUnique({ where: { id } });
+      if (!gift) {
+        const grocery = await prisma.grocery.findUnique({ where: { id } });
+        if (!grocery) {
+          return NextResponse.json(
+            { error: "Product not found" },
+            { status: 404 }
+          );
+        }
+      }
     }
 
     const existingLike = await prisma.productLike.findUnique({

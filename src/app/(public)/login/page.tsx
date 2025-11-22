@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { login } from "@/services/auth";
+import { showToast } from "@/components/ui/Toast";
 
 const USER_INTERFACE_PATH = "/users-interface";
 const ADMIN_DASHBOARD_PATH = "/dashboard";
@@ -43,6 +44,8 @@ export default function LoginPage() {
       if (data.user?.id) {
         localStorage.setItem("userId", data.user.id);
       }
+
+      showToast(`Welcome back, ${data.user?.fullName || "User"}!`, "success", "right");
 
       const destination = resolveRoleDestination(data.user?.role);
       router.refresh();
