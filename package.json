@@ -13,6 +13,10 @@
   "dependencies": {
     "@prisma/client": "^6.19.0",
     "@tailwindcss/postcss": "^4.1.17",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.10.1",
+    "@types/react": "^17.0.90",
+    "@types/react-dom": "^17.0.0",
     "autoprefixer": "^10.4.22",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
@@ -23,17 +27,13 @@
     "prisma": "^6.19.0",
     "react": "latest",
     "react-dom": "latest",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.1.0"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.10.1",
-    "@types/react": "^17.0.90",
-    "@types/react-dom": "^17.0.0",
     "eslint": "^7.0.0",
     "eslint-config-prettier": "^8.0.0",
     "eslint-plugin-prettier": "^4.0.0",
-    "prettier": "^2.0.0",
-    "typescript": "^5.1.0"
+    "prettier": "^2.0.0"
   }
 }
