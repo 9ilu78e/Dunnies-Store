@@ -139,22 +139,22 @@ export default function ProductCard({
           )}
 
           {}
-          <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-10">
+          <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 flex gap-1.5 sm:gap-2 z-10">
             <button
               onClick={handleOrderWhatsApp}
-              className="bg-green-500 hover:bg-green-600 text-white p-3 rounded-full shadow-lg hover:scale-110 transition-all duration-200 flex items-center justify-center backdrop-blur-sm bg-opacity-90"
+              className="bg-green-500 hover:bg-green-600 text-white p-2 sm:p-2.5 md:p-3 rounded-full shadow-lg hover:scale-110 transition-all duration-200 flex items-center justify-center backdrop-blur-sm bg-opacity-90"
               aria-label="Order on WhatsApp"
               title="Order on WhatsApp"
             >
-              <MessageCircle className="w-5 h-5" />
+              <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5" />
             </button>
             <button
               onClick={handleAddToCart}
-              className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg hover:scale-110 transition-all duration-200 flex items-center justify-center backdrop-blur-sm bg-opacity-90"
+              className="bg-purple-600 hover:bg-purple-700 text-white p-2 sm:p-2.5 md:p-3 rounded-full shadow-lg hover:scale-110 transition-all duration-200 flex items-center justify-center backdrop-blur-sm bg-opacity-90"
               aria-label="Add to cart"
               title="Add to Cart"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <ShoppingCart className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5" />
             </button>
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function ProductCard({
           </h3>
 
           {}
-          <p className="text-gray-600 text-xs mb-3 line-clamp-1 leading-relaxed hidden sm:block">
+          <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-1 sm:line-clamp-2 leading-relaxed">
             {description}
           </p>
 

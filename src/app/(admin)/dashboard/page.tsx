@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TrendingUp, Package, ShoppingCart, Users } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 
@@ -17,8 +18,37 @@ export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/current");
+        if (!res.ok) {
+          router.push("/login");
+          return;
+        }
+
+        const data = await res.json();
+        if (data.user?.role !== "admin") {
+          router.push("/");
+          return;
+        }
+
+        setIsAuthorized(true);
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        router.push("/login");
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  useEffect(() => {
+    if (!isAuthorized) return;
+
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
@@ -85,7 +115,7 @@ export default function AdminDashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [isAuthorized]);
 
   const stats = [
     {

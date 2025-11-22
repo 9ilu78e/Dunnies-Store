@@ -40,6 +40,8 @@ export default function LoginPage() {
 
     try {
       const data = await login(email, password);
+      console.log("Login response:", data);
+      console.log("User role:", data.user?.role);
 
       if (data.user?.id) {
         localStorage.setItem("userId", data.user.id);
@@ -52,6 +54,9 @@ export default function LoginPage() {
       );
 
       const destination = resolveRoleDestination(data.user?.role);
+      console.log("Redirecting to:", destination);
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
       router.refresh();
       router.push(destination);
     } catch (err: any) {

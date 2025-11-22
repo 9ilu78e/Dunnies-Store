@@ -18,8 +18,15 @@ export default function AdminLayout({
   const [user, setUser] = useState<{ fullName: string; email: string } | null>(
     null
   );
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    
     const fetchAdmin = async () => {
       try {
         const currentUser = await getCurrentUser();
@@ -29,7 +36,7 @@ export default function AdminLayout({
       }
     };
     fetchAdmin();
-  }, []);
+  }, [isClient]);
 
   const avatarUrl = useMemo(() => {
     if (!user) return "";
