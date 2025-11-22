@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "@/styles/loader.css";
 import ClientLayout from "./ClientLayout";
+import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 
 export const metadata: Metadata = {
   title: "Dunnies Store",
@@ -16,7 +18,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClientLayout>{children}</ClientLayout>
+        <CartProvider>
+          <WishlistProvider>
+            <ClientLayout>{children}</ClientLayout>
+          </WishlistProvider>
+        </CartProvider>
       </body>
     </html>
   );

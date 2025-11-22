@@ -166,7 +166,7 @@ export default function ProductCard({
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <Star
-                  key={i}
+                  key={`star-${id}-${i}`}
                   className={`w-4 h-4 ${
                     i < Math.floor(rating)
                       ? "text-yellow-400 fill-yellow-400"
