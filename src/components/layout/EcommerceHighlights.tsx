@@ -47,11 +47,10 @@ export default function EcommerceHighlights() {
             Why shop Dunnis
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-            Everything you expect from a modern marketplace
+            Premium shopping made simple and convenient
           </h2>
           <p className="text-gray-600">
-            From flexible payments to concierge-level support, we bundle the essentials
-            that make each purchase effortless.
+            Experience seamless transactions, lightning-fast delivery, and dedicated support designed to make every moment special.
           </p>
         </div>
 

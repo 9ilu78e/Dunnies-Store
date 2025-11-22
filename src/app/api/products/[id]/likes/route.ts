@@ -55,7 +55,6 @@ export async function POST(
       );
     }
 
-    // Check if product exists in any table (Product, Gift, or Grocery)
     let product = await prisma.product.findUnique({ where: { id } });
     if (!product) {
       const gift = await prisma.gift.findUnique({ where: { id } });

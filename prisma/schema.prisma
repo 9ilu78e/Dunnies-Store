@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -32,6 +29,7 @@ model Category {
   imageUrl    String?
   type        String   @default("product") // "product", "gift", "grocery"
   priority    String   @default("normal") // "popular", "trending", "new", "normal"
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   

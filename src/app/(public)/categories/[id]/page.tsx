@@ -8,6 +8,6 @@ export default async function CategoryDetailPage({
   params,
 }: CategoryDetailPageProps) {
   const { id } = await params;
-  
+
   redirect(`/product?category=${id}`);
 }

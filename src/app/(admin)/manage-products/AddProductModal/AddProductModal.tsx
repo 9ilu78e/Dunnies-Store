@@ -155,18 +155,19 @@ export default function AddProductModal({
       });
       setImages([]);
       setImagePreviews([]);
-      
+
       showToast(
-        productId 
-          ? `Product "${formData.name}" updated successfully!` 
+        productId
+          ? `Product "${formData.name}" updated successfully!`
           : `Product "${formData.name}" added successfully!`,
         "success"
       );
-      
+
       onSuccess();
       onClose();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
       showToast(errorMessage, "error");
     } finally {

@@ -34,15 +34,18 @@ interface ProductAnalytics {
 export default function ProductAnalytics() {
   const [products, setProducts] = useState<ProductAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<ProductAnalytics | null>(null);
-  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] =
+    useState<ProductAnalytics | null>(null);
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(
+    null
+  );
 
   const fetchProductAnalytics = async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/products");
       if (!response.ok) throw new Error("Failed to fetch products");
-      
+
       const data = await response.json();
       const productsWithAnalytics = data.products || [];
 
@@ -55,8 +58,12 @@ export default function ProductAnalytics() {
               fetch(`/api/products/${product.id}/likes`),
             ]);
 
-            const commentsData = commentsRes.ok ? await commentsRes.json() : { comments: [], averageRating: 0 };
-            const likesData = likesRes.ok ? await likesRes.json() : { likeCount: 0 };
+            const commentsData = commentsRes.ok
+              ? await commentsRes.json()
+              : { comments: [], averageRating: 0 };
+            const likesData = likesRes.ok
+              ? await likesRes.json()
+              : { likeCount: 0 };
 
             return {
               productId: product.id,
@@ -81,7 +88,9 @@ export default function ProductAnalytics() {
         })
       );
 
-      setProducts(analyticsData.filter((p) => p.totalComments > 0 || p.totalLikes > 0));
+      setProducts(
+        analyticsData.filter((p) => p.totalComments > 0 || p.totalLikes > 0)
+      );
     } catch (error) {
     } finally {
       setLoading(false);
@@ -118,7 +127,8 @@ export default function ProductAnalytics() {
             No product comments or likes yet
           </p>
           <p className="text-gray-500 text-sm">
-            User engagement will appear here once customers interact with your products
+            User engagement will appear here once customers interact with your
+            products
           </p>
         </div>
       ) : (
@@ -131,7 +141,9 @@ export default function ProductAnalytics() {
               <button
                 onClick={() =>
                   setExpandedProductId(
-                    expandedProductId === product.productId ? null : product.productId
+                    expandedProductId === product.productId
+                      ? null
+                      : product.productId
                   )
                 }
                 className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"
@@ -208,10 +220,14 @@ export default function ProductAnalytics() {
                                 </div>
                               </div>
                               <span className="text-xs text-gray-500">
-                                {new Date(comment.createdAt).toLocaleDateString()}
+                                {new Date(
+                                  comment.createdAt
+                                ).toLocaleDateString()}
                               </span>
                             </div>
-                            <p className="text-gray-700 text-sm">{comment.text}</p>
+                            <p className="text-gray-700 text-sm">
+                              {comment.text}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -225,7 +241,8 @@ export default function ProductAnalytics() {
                         Total Likes: {product.totalLikes}
                       </h4>
                       <p className="text-sm text-gray-600">
-                        This product has been liked by {product.totalLikes} user{product.totalLikes !== 1 ? "s" : ""}
+                        This product has been liked by {product.totalLikes} user
+                        {product.totalLikes !== 1 ? "s" : ""}
                       </p>
                     </div>
                   )}

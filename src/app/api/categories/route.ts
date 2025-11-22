@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const priority = searchParams.get("priority");
     const type = searchParams.get("type");
 
-    const where: any = {};
+    const where: any = { isActive: true };
     
     if (type) {
       where.type = type;
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const categories = await prisma.category.findMany({
-      where: Object.keys(where).length > 0 ? where : {},
+      where,
       include: {
         _count: {
           select: { products: true },
@@ -28,28 +28,18 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Enrich category counts based on type
     const enrichedCategories = await Promise.all(
       categories.map(async (cat) => {
         let count = cat._count.products;
 
-        // For gift categories, count from Gift table
         if (cat.type === "gift") {
           const giftCount = await prisma.gift.count({
-            where: {
-              // In a real scenario, gifts would have categoryId
-              // For now, we'll match by name if available
-            },
+            where: {},
           });
           count = giftCount;
-        }
-        // For grocery categories, count from Grocery table
-        else if (cat.type === "grocery") {
+        } else if (cat.type === "grocery") {
           const groceryCount = await prisma.grocery.count({
-            where: {
-              // In a real scenario, groceries would have categoryId
-              // For now, we'll match by name if available
-            },
+            where: {},
           });
           count = groceryCount;
         }

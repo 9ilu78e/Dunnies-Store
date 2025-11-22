@@ -74,8 +74,9 @@ export async function DELETE(_: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
 
-    await prisma.category.delete({
+    await prisma.category.update({
       where: { id },
+      data: { isActive: false },
     });
 
     return NextResponse.json({ message: "Category deleted" });

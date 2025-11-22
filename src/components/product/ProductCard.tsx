@@ -35,8 +35,10 @@ export default function ProductCard({
   href = "#",
   className = "",
 }: ProductProps) {
-  // Use fallback image if image is empty or undefined
-  const displayImage = image && image.trim() !== "" ? image : "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&h=600&fit=crop&auto=format";
+  const displayImage =
+    image && image.trim() !== ""
+      ? image
+      : "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&h=600&fit=crop&auto=format";
   const [isNavigating, setIsNavigating] = useState(false);
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();

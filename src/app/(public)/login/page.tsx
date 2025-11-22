@@ -45,7 +45,11 @@ export default function LoginPage() {
         localStorage.setItem("userId", data.user.id);
       }
 
-      showToast(`Welcome back, ${data.user?.fullName || "User"}!`, "success", "right");
+      showToast(
+        `Welcome back, ${data.user?.fullName || "User"}!`,
+        "success",
+        "right"
+      );
 
       const destination = resolveRoleDestination(data.user?.role);
       router.refresh();

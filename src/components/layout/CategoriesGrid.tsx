@@ -35,12 +35,12 @@ export default function CategoriesGrid() {
         const response = await fetch(
           `/api/categories?type=product&t=${Date.now()}`,
           {
-            cache: 'no-store',
+            cache: "no-store",
             headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            }
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
           }
         );
         if (response.ok) {

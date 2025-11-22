@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProductList from "@/components/product/ProductList";
+import Loader from "@/components/ui/Loader";
 import { ProductRecord } from "@/Data/products";
 import { Search, SlidersHorizontal, Grid, List } from "lucide-react";
 
@@ -21,10 +22,13 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        setCategoriesLoading(true);
         const response = await fetch("/api/categories");
         if (response.ok) {
           const data = await response.json();
@@ -32,6 +36,8 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
         }
       } catch (error) {
         console.error("Failed to fetch categories:", error);
+      } finally {
+        setCategoriesLoading(false);
       }
     };
 
@@ -39,24 +45,34 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
   }, []);
 
   useEffect(() => {
-    let filtered = products;
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      let filtered = products;
 
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+      if (searchQuery) {
+        filtered = filtered.filter(
+          (product) =>
+            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
 
-    if (selectedCategory) {
-      filtered = filtered.filter(
-        (product) => product.category === selectedCategory
-      );
-    }
+      if (selectedCategory) {
+        filtered = filtered.filter(
+          (product) => product.category === selectedCategory
+        );
+      }
 
-    setFilteredProducts(filtered);
+      setFilteredProducts(filtered);
+      setIsLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [searchQuery, selectedCategory, products]);
+
+  if (categoriesLoading) {
+    return <Loader text="Loading products..." />;
+  }
 
   return (
     <>
@@ -150,7 +166,11 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
         {filteredProducts.length !== 1 ? "s" : ""}
       </p>
 
-      {filteredProducts.length > 0 ? (
+      {isLoading ? (
+        <div className="py-12">
+          <Loader text="Loading products..." />
+        </div>
+      ) : filteredProducts.length > 0 ? (
         layout === "grid" ? (
           <ProductList
             products={filteredProducts.map((product) => ({

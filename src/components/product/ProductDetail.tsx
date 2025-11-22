@@ -236,7 +236,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <div className="relative aspect-square rounded-3xl bg-white border border-gray-200 overflow-hidden" style={{ maxHeight: "500px" }}>
+          <div
+            className="relative aspect-square rounded-3xl bg-white border border-gray-200 overflow-hidden"
+            style={{ maxHeight: "500px" }}
+          >
             <Image
               src={selectedImage}
               alt={product.name}

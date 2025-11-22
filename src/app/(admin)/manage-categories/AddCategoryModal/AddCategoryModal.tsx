@@ -133,18 +133,19 @@ export default function AddCategoryModal({
       });
       setImage(null);
       setImagePreview("");
-      
+
       showToast(
-        editingCategory 
-          ? `Category "${formData.name}" updated successfully!` 
+        editingCategory
+          ? `Category "${formData.name}" updated successfully!`
           : `Category "${formData.name}" added successfully!`,
         "success"
       );
-      
+
       onSuccess();
       onClose();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
       showToast(errorMessage, "error");
     } finally {

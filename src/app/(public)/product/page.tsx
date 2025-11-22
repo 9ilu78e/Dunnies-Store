@@ -17,7 +17,10 @@ type ApiProduct = {
   category?: string | null;
 };
 
-const adaptProductRecord = (product: ApiProduct, tag?: string): ProductRecord => ({
+const adaptProductRecord = (
+  product: ApiProduct,
+  tag?: string
+): ProductRecord => ({
   id: product.id,
   name: product.name,
   description: product.description,
@@ -26,8 +29,13 @@ const adaptProductRecord = (product: ApiProduct, tag?: string): ProductRecord =>
   originalPrice: undefined,
   rating: 0,
   reviewsCount: 0,
-  image: product.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
-  images: [product.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80"],
+  image:
+    product.imageUrl ||
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
+  images: [
+    product.imageUrl ||
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
+  ],
   tag: tag ?? product.category ?? "New",
   category: product.category ?? "General",
   href: `/product/${product.id}`,
@@ -41,9 +49,10 @@ type ProductPageProps = {
   searchParams: Promise<{ category?: string }>;
 };
 
-async function fetchProductsByCategory(categoryId?: string): Promise<ProductRecord[]> {
+async function fetchProductsByCategory(
+  categoryId?: string
+): Promise<ProductRecord[]> {
   try {
-    // If category is specified, get category details to determine type
     if (categoryId) {
       const category = await prisma.category.findUnique({
         where: { id: categoryId },
@@ -53,7 +62,6 @@ async function fetchProductsByCategory(categoryId?: string): Promise<ProductReco
         return [];
       }
 
-      // Fetch products based on category type
       if (category.type === "gift") {
         const gifts = await prisma.gift.findMany({
           where: {},
@@ -66,7 +74,9 @@ async function fetchProductsByCategory(categoryId?: string): Promise<ProductReco
               name: gift.name,
               description: gift.description || "",
               price: gift.price,
-              imageUrl: gift.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
+              imageUrl:
+                gift.imageUrl ||
+                "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
               category: category.name,
             },
             category.name
@@ -84,7 +94,9 @@ async function fetchProductsByCategory(categoryId?: string): Promise<ProductReco
               name: grocery.name,
               description: grocery.description || "",
               price: grocery.price,
-              imageUrl: grocery.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
+              imageUrl:
+                grocery.imageUrl ||
+                "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
               category: category.name,
             },
             category.name
@@ -149,7 +161,9 @@ async function fetchProductsByCategory(categoryId?: string): Promise<ProductReco
             name: gift.name,
             description: gift.description || "",
             price: gift.price,
-            imageUrl: gift.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
+            imageUrl:
+              gift.imageUrl ||
+              "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
             category: "Gifts",
           },
           "Gifts"
@@ -166,7 +180,9 @@ async function fetchProductsByCategory(categoryId?: string): Promise<ProductReco
             name: grocery.name,
             description: grocery.description || "",
             price: grocery.price,
-            imageUrl: grocery.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
+            imageUrl:
+              grocery.imageUrl ||
+              "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
             category: "Groceries",
           },
           "Groceries"
@@ -188,8 +204,8 @@ export default async function ProductListingPage({
   const catalog = await fetchProductsByCategory(category);
 
   const pageTitle = category ? "Products by Category" : "All Products";
-  const pageDescription = category 
-    ? "View all products in this category" 
+  const pageDescription = category
+    ? "View all products in this category"
     : "Discover our full range of products curated for quality and value.";
 
   return (
@@ -204,9 +220,7 @@ export default async function ProductListingPage({
               ? `Browse Collection`
               : "Browse Our Complete Collection"}
           </h1>
-          <p className="text-slate-600 mt-2">
-            {pageDescription}
-          </p>
+          <p className="text-slate-600 mt-2">{pageDescription}</p>
         </div>
         {catalog.length > 0 ? (
           <ProductsCatalog products={catalog} />
