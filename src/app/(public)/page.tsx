@@ -14,9 +14,6 @@ import {
 import HeroSlider from "@/components/layout/HomeSlider";
 import FeaturesBar from "@/components/layout/FeaturesBar";
 import CategoriesGrid from "@/components/layout/CategoriesGrid";
-import ProductCategoriesGrid from "@/components/layout/ProductCategoriesGrid";
-import GiftCategoriesGrid from "@/components/layout/GiftCategoriesGrid";
-import GroceryCategoriesGrid from "@/components/layout/GroceryCategoriesGrid";
 import CategoryShowcase from "@/components/layout/CategoryShowcase";
 import FeaturedProducts from "@/components/layout/FeaturedProducts";
 import FeaturedGifts from "@/components/layout/FeaturedGifts";
@@ -33,9 +30,6 @@ export default function HomePage() {
       <HeroSlider />
       <FeaturesBar />
       <CategoriesGrid />
-      <ProductCategoriesGrid />
-      <GiftCategoriesGrid />
-      <GroceryCategoriesGrid />
       <CategoryShowcase />
       <FeaturedProducts />
       <FeaturedGifts />

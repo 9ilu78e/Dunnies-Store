@@ -12,6 +12,7 @@ import {
   Tags,
   Settings,
   User,
+  BarChart3,
 } from "lucide-react";
 
 const navItems = [
@@ -24,6 +25,11 @@ const navItems = [
     label: "Products",
     href: "/manage-products",
     icon: Package,
+  },
+  {
+    label: "Product Analytics",
+    href: "/product-analytics",
+    icon: BarChart3,
   },
   {
     label: "Gifts",

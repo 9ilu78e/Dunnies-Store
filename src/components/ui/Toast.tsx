@@ -22,35 +22,35 @@ interface ToastProps {
 function ToastItem({ toast, onClose }: ToastProps) {
   useEffect(() => {
     if (toast.duration !== 0) {
-      const timer = setTimeout(
-        () => onClose(toast.id),
-        toast.duration || 4000
-      );
+      const timer = setTimeout(() => onClose(toast.id), toast.duration || 4000);
       return () => clearTimeout(timer);
     }
   }, [toast, onClose]);
 
-  const bgColor = toast.type === "success"
-    ? "bg-green-50 border-green-200"
-    : toast.type === "error"
+  const bgColor =
+    toast.type === "success"
+      ? "bg-green-50 border-green-200"
+      : toast.type === "error"
       ? "bg-red-50 border-red-200"
       : toast.type === "warning"
-        ? "bg-yellow-50 border-yellow-200"
-        : "bg-blue-50 border-blue-200";
+      ? "bg-yellow-50 border-yellow-200"
+      : "bg-blue-50 border-blue-200";
 
-  const icon = toast.type === "success" ? (
-    <CheckCircle className="w-5 h-5 text-green-600" />
-  ) : toast.type === "error" ? (
-    <X className="w-5 h-5 text-red-600" />
-  ) : null;
+  const icon =
+    toast.type === "success" ? (
+      <CheckCircle className="w-5 h-5 text-green-600" />
+    ) : toast.type === "error" ? (
+      <X className="w-5 h-5 text-red-600" />
+    ) : null;
 
-  const textColor = toast.type === "success"
-    ? "text-green-800"
-    : toast.type === "error"
+  const textColor =
+    toast.type === "success"
+      ? "text-green-800"
+      : toast.type === "error"
       ? "text-red-800"
       : toast.type === "warning"
-        ? "text-yellow-800"
-        : "text-blue-800";
+      ? "text-yellow-800"
+      : "text-blue-800";
 
   return (
     <div
@@ -116,7 +116,12 @@ export function ToastContainer() {
   );
 }
 
-export function showToast(message: string, type: ToastType = "success", position: ToastPosition = "left", duration?: number) {
+export function showToast(
+  message: string,
+  type: ToastType = "success",
+  position: ToastPosition = "left",
+  duration?: number
+) {
   const event = new CustomEvent("showToast", {
     detail: { message, type, position, duration },
   });
