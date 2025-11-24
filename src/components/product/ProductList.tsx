@@ -28,17 +28,17 @@ export default function ProductList({
   const gapClass = gap === 4 ? "gap-4" : gap === 8 ? "gap-8" : "gap-6";
 
   const gridCols = {
-    2: "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4",
-    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-    5: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5",
-    6: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6",
+    2: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+    3: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+    4: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+    5: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+    6: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6",
   }[cols];
 
   return (
-    <div className={`grid ${gridCols} ${gapClass} w-full`}>
+    <div className={`grid ${gridCols} ${gapClass} w-full auto-rows-max`}>
       {products.map((product) => (
-        <ProductCard key={product.id} {...product} className="w-full" />
+        <ProductCard key={product.id} {...product} className="w-full h-full" />
       ))}
     </div>
   );
