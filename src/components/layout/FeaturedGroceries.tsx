@@ -24,7 +24,7 @@ export default function FeaturedGroceries() {
         const response = await fetch("/api/groceries");
         if (response.ok) {
           const data = await response.json();
-          setGroceries((data.groceries || []).slice(0, 4));
+          setGroceries((data.groceries || []).slice(0, 2));
         }
       } catch (error) {
         console.error("Failed to fetch groceries:", error);
@@ -75,7 +75,7 @@ export default function FeaturedGroceries() {
             <p className="text-gray-600">No groceries available yet.</p>
           </div>
         ) : (
-          <ProductList products={formattedGroceries} cols={4} gap={8} />
+          <ProductList products={formattedGroceries} cols={2} gap={8} />
         )}
       </div>
     </section>

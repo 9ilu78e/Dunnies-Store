@@ -24,7 +24,7 @@ export default function FeaturedGifts() {
         const response = await fetch("/api/gifts");
         if (response.ok) {
           const data = await response.json();
-          setGifts((data.gifts || []).slice(0, 4));
+          setGifts((data.gifts || []).slice(0, 2));
         }
       } catch (error) {
         console.error("Failed to fetch gifts:", error);
@@ -75,7 +75,7 @@ export default function FeaturedGifts() {
             <p className="text-gray-600">No gifts available yet.</p>
           </div>
         ) : (
-          <ProductList products={formattedGifts} cols={4} gap={8} />
+          <ProductList products={formattedGifts} cols={2} gap={8} />
         )}
       </div>
     </section>

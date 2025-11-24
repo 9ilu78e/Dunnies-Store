@@ -24,7 +24,7 @@ export default function FeaturedProducts() {
         const response = await fetch("/api/products");
         if (response.ok) {
           const data = await response.json();
-          setProducts((data.products || []).slice(0, 4));
+          setProducts((data.products || []).slice(0, 2));
         }
       } catch (error) {
         console.error("Failed to fetch products:", error);
@@ -75,7 +75,7 @@ export default function FeaturedProducts() {
             <p className="text-gray-600">No products available yet.</p>
           </div>
         ) : (
-          <ProductList products={formattedProducts} cols={4} gap={8} />
+          <ProductList products={formattedProducts} cols={2} gap={8} />
         )}
       </div>
     </section>

@@ -36,6 +36,8 @@ model Category {
   updatedAt   DateTime @updatedAt
   
   products    Product[]
+  gifts       Gift[]    @relation("GiftCategory")
+  groceries   Grocery[] @relation("GroceryCategory")
   
   @@unique([name, type])
 }
@@ -65,8 +67,11 @@ model Gift {
   price       Float
   imageUrl    String?
   imageUrls   String[]  @default([])
+  categoryId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  category    Category? @relation("GiftCategory", fields: [categoryId], references: [id])
 }
 
 model Grocery {
@@ -76,8 +81,11 @@ model Grocery {
   price       Float
   imageUrl    String?
   imageUrls   String[]  @default([])
+  categoryId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  category    Category? @relation("GroceryCategory", fields: [categoryId], references: [id])
 }
 
 model Order {
