@@ -61,10 +61,10 @@ export default function SpotlightCollections() {
             <Flame className="w-4 h-4 text-amber-500" />
             Spotlight
           </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             What&apos;s hot right now
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm text-gray-600 max-w-2xl mx-auto">
             Crowd favorites meet our signature concierge picks. Hand off your
             gifting decisions with confidence.
           </p>
@@ -82,7 +82,7 @@ export default function SpotlightCollections() {
                   <Flame className="w-4 h-4" />
                   Best sellers
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">
+                <h3 className="text-lg font-bold text-gray-900">
                   Loved by thousands
                 </h3>
                 <p className="text-gray-600">
@@ -117,7 +117,7 @@ export default function SpotlightCollections() {
                 Signature experiences
               </div>
               <div>
-                <h3 className="text-2xl font-bold">Concierge curated</h3>
+                <h3 className="text-lg font-bold">Concierge curated</h3>
                 <p className="text-purple-100 mt-2">
                   For when you need the gift to feel personal, immersive, and
                   far from basic. Each pick pairs premium packaging with a story
@@ -133,7 +133,7 @@ export default function SpotlightCollections() {
                         key={product.id}
                         className="bg-white/5 border border-white/10 rounded-2xl p-4"
                       >
-                        <p className="text-lg font-semibold">{product.name}</p>
+                        <p className="text-base font-semibold">{product.name}</p>
                       </li>
                     ))}
                   </ul>

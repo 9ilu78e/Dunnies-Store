@@ -112,7 +112,7 @@ export default function ProductAnalytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-4xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
           Product Analytics
         </h1>
         <p className="text-gray-600 text-lg mt-2">

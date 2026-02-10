@@ -31,7 +31,7 @@ export default function DeleteModal({
             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
-            <h2 className="text-lg font-bold text-red-900">{title}</h2>
+            <h2 className="text-base font-bold text-red-900">{title}</h2>
           </div>
           <button
             onClick={onCancel}

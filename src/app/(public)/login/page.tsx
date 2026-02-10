@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
-import Button from "@/components/ui/Button";
-import { login } from "@/services/auth";
+import { AlertCircle, Loader2, Mail } from "lucide-react";
+import { signInWithGoogle } from "@/lib/firebase";
 import { showToast } from "@/components/ui/Toast";
 
 const USER_INTERFACE_PATH = "/users-interface";
@@ -26,55 +24,99 @@ const resolveRoleDestination = (role?: string | null) => {
 };
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [email, setEmail] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async () => {
     setError("");
-    setIsLoading(true);
+    setSuccess("");
+    setIsEmailLoading(true);
 
     try {
-      const data = await login(email, password);
-      console.log("Login response:", data);
-      console.log("User role:", data.user?.role);
-
-      if (data.user?.id) {
-        localStorage.setItem("userId", data.user.id);
+      if (!email) {
+        setError("Email is required");
+        setIsEmailLoading(false);
+        return;
       }
 
-      const destination = resolveRoleDestination(data.user?.role);
-      console.log("Redirecting to:", destination);
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError("Invalid email format");
+        setIsEmailLoading(false);
+        return;
+      }
 
-      // Show toast but don't wait - redirect immediately
-      showToast(
-        `Welcome back, ${data.user?.fullName || "User"}!`,
-        "success",
-        "right"
-      );
+      // Send verification email
+      const response = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
 
-      // Redirect without delay to avoid page load delays
-      router.refresh();
-      router.push(destination);
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification email');
+      }
+
+      setSuccess(`Verification link sent to ${email}. Please check your email and click the link to login.`);
+      showToast("Verification link sent! Check your email.", "success");
+
+    } catch (error: any) {
+      console.error('Login Error:', error);
+      setError(error.message || 'Failed to send verification email');
+      showToast(error.message || 'Failed to send verification email', 'error');
     } finally {
-      setIsLoading(false);
+      setIsEmailLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setIsGoogleLoading(true);
+
+    try {
+      const data = await signInWithGoogle();
+      console.log("Google Sign-In response:", data);
+
+      if (data.user?.uid) {
+        localStorage.setItem("userId", data.user.uid);
+      }
+
+      // Show success popup
+      showToast("Login successful! Redirecting...", "success");
+
+      // For Firebase users, default to user interface
+      const destination = USER_INTERFACE_PATH;
+      
+      // Redirect after a short delay to show the toast
+      setTimeout(() => {
+        router.push(destination);
+      }, 1500);
+
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      showToast(error.message || "Google Sign-In failed", "error");
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
             Welcome Back
           </h1>
-          <p className="text-gray-600 text-2xl">Sign in to continue shopping</p>
+          <p className="text-gray-600 text-xl">Sign in to continue</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-8 backdrop-blur-sm">
@@ -85,102 +127,69 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <p className="text-green-700 text-sm font-medium">{success}</p>
+              <p className="text-green-600 text-xs mt-2">Check your inbox and spam folder.</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Email Input Field */}
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400 group-focus-within:text-purple-600 transition-colors" />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="email"
+                  id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  autoComplete="email"
-                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all text-sm bg-gray-50 focus:bg-white"
+                  placeholder="Enter your email address"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  disabled={isEmailLoading}
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Password
-              </label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400 group-focus-within:text-purple-600 transition-colors" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                  className="w-full pl-12 pr-12 py-3.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all text-sm bg-gray-50 focus:bg-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600 transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center space-x-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                />
-                <span className="text-gray-700">Remember me</span>
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-purple-600 hover:text-purple-800 font-semibold transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              disabled={isLoading}
+            {/* Email Login Button */}
+            <button
+              type="button"
+              onClick={handleLogin}
+              disabled={isEmailLoading || !email}
+              className="w-full flex justify-center items-center py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing in...
-                </span>
+              {isEmailLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Sending Verification...
+                </>
               ) : (
-                "Sign In"
+                'Login'
               )}
-            </Button>
-          </form>
-          <div className="mt-8">
+            </button>
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <span className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium">
-                  Or continue with
-                </span>
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <button
-                type="button"
-                className="flex justify-center items-center py-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group"
-              >
+            {/* Google Login Button */}
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading}
+              className="w-full flex justify-center items-center py-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGoogleLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
                 <svg
                   className="w-6 h-6 group-hover:scale-110 transition-transform"
                   viewBox="0 0 24 24"
@@ -202,32 +211,19 @@ export default function LoginPage() {
                     fill="#EA4335"
                   />
                 </svg>
-              </button>
-              <button
-                type="button"
-                className="flex justify-center items-center py-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group"
-              >
-                <svg
-                  className="w-6 h-6 group-hover:scale-110 transition-transform"
-                  viewBox="0 0 24 24"
-                  fill="#1877F2"
-                >
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                </svg>
-              </button>
-            </div>
+              )}
+              <span className="ml-2 text-base font-medium text-gray-700 group-hover:text-gray-900">
+                Continue with Google
+              </span>
+            </button>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              By signing in, you agree to our Terms of Service and Privacy Policy
+            </p>
           </div>
         </div>
-
-        <p className="text-center text-sm text-gray-600 mt-10">
-          Don't have an account?{" "}
-          <Link
-            href="/signup"
-            className="text-purple-600 hover:text-purple-800 hover:underline font-bold transition-colors"
-          >
-            Create one now
-          </Link>
-        </p>
       </div>
     </div>
   );

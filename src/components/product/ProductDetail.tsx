@@ -484,7 +484,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               </span>
               <span className="text-xs text-gray-500">{product.category}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+            <h1 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
               {product.name}
             </h1>
             <p className="text-xs sm:text-sm text-gray-600 mt-3">
@@ -493,7 +493,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </div>
 
           <div className="flex flex-wrap items-end gap-3">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+            <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
               ₦{Number(product.price).toLocaleString()}
             </p>
             {product.originalPrice && (
@@ -602,7 +602,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </div>
 
           <div className="rounded-3xl bg-white border border-gray-200 p-6 space-y-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900">
               Product details
             </h3>
             <p className="text-xs sm:text-sm text-gray-600">
@@ -642,7 +642,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <p className="text-xs sm:text-sm font-semibold text-purple-600 uppercase tracking-widest">
               Community
             </p>
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+            <h2 className="text-sm sm:text-lg font-bold text-gray-900">
               Reviews & comments
             </h2>
           </div>
@@ -787,7 +787,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       {showCustomerNameInput && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
               Your Name
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 mb-6">

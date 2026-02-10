@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Gift, ArrowRight } from "lucide-react";
 
 interface Slide {
@@ -116,10 +117,13 @@ export default function HeroSlider() {
           }`}
         >
           <div className="absolute inset-0 bg-black/40 z-10" />
-          <img
+          <Image
             src={slide.image}
             alt={slide.title}
-            className="w-full h-full object-cover"
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority={i === 0}
           />
 
           <div className="absolute inset-0 z-20 flex items-center">
@@ -131,7 +135,7 @@ export default function HeroSlider() {
                     {slide.tag}
                   </span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
                   {slide.title}
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-purple-100 mb-2">

@@ -45,8 +45,8 @@ export default function CheckoutPage() {
           <div className="w-24 h-24 bg-linear-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-14 h-14 text-white" />
           </div>
-          <h2 className="text-4xl font-black mb-4">Order Confirmed!</h2>
-          <p className="text-2xl font-bold text-violet-600 mb-6">
+          <h2 className="text-3xl font-black mb-4">Order Confirmed!</h2>
+          <p className="text-xl font-bold text-violet-600 mb-6">
             #DUN-{Math.floor(Math.random() * 9999)}
           </p>
           <p className="text-gray-600 mb-8">
@@ -68,12 +68,12 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-linear-to-br from-violet-50 to-fuchsia-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-4xl font-black text-gray-900 mb-8">Checkout</h1>
+        <h1 className="text-3xl font-black text-gray-900 mb-8">Checkout</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="bg-white rounded-3xl p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-3">
                 <Package className="w-7 h-7 text-violet-600" /> Delivery
                 Information
               </h2>
@@ -112,7 +112,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-3">
                 <CreditCard className="w-7 h-7 text-violet-600" /> Payment
                 Method
               </h2>
@@ -179,7 +179,7 @@ export default function CheckoutPage() {
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-3xl p-8 shadow-lg sticky top-8">
-              <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
+              <h2 className="text-xl font-bold mb-6">Order Summary</h2>
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
                   <span>Delivery</span>
                   <strong>{formatPrice(deliveryFee)}</strong>
                 </div>
-                <div className="border-t-2 pt-4 flex justify-between text-xl font-black">
+                <div className="border-t-2 pt-4 flex justify-between text-lg font-black">
                   <span>Total</span>
                   <span className="text-violet-600">{formatPrice(total)}</span>
                 </div>

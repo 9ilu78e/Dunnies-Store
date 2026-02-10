@@ -111,13 +111,15 @@ export default function ProductCard({
   return (
     <CardWrapper>
       <div
-        className={`group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-purple-300 relative flex flex-col h-full ${className}`}
+        className={`group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-purple-300 relative flex flex-col h-full min-w-[280px] max-w-[320px] ${className}`}
       >
-        <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 aspect-[4/3] w-full">
+        <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 aspect-[4/3] w-full h-48">
           {displayImage ? (
-            <img
+            <Image
               src={displayImage}
               alt={name}
+              width={400}
+              height={300}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               onError={(e) => {
                 // Image failed to load - fallback to placeholder
@@ -184,7 +186,7 @@ export default function ProductCard({
           </div>
         </div>
 
-        <div className="p-4 flex flex-col grow">
+        <div className="p-3 flex flex-col grow">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
@@ -203,12 +205,12 @@ export default function ProductCard({
             </span>
           </div>
 
-          <h3 className="font-bold text-sm text-gray-900 mb-1.5 group-hover:text-purple-600 transition-colors line-clamp-2 leading-tight">
+          <h3 className="font-semibold text-xs text-gray-900 mb-1 group-hover:text-purple-600 transition-colors line-clamp-2 leading-tight">
             {name}
           </h3>
 
           {description && (
-            <p className="text-gray-500 text-xs mb-3 line-clamp-2 leading-relaxed">
+            <p className="text-gray-400 text-[10px] mb-2 line-clamp-1 leading-relaxed">
               {description}
             </p>
           )}
@@ -218,7 +220,7 @@ export default function ProductCard({
           <div className="pt-3 border-t border-gray-100 mt-auto">
             <div className="flex items-center justify-between gap-2">
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-purple-600">
+                <span className="text-sm font-bold text-purple-600">
                   {formattedPrice}
                 </span>
                 {formattedOriginal && (

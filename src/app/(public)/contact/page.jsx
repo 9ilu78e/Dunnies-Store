@@ -86,7 +86,7 @@ export default function ContactPage() {
             <div className="inline-block bg-violet-100 text-violet-700 px-3 py-1 rounded-full text-sm font-bold mb-3">
               GET IN TOUCH
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4">
               We'd Love to Hear From You
             </h1>
             <p className="text-base text-gray-600 max-w-3xl mx-auto">

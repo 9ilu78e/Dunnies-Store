@@ -10,7 +10,7 @@ export default function NotFoundPage() {
         <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-linear-to-br from-purple-600 to-pink-500 text-white text-4xl font-bold shadow-lg mb-8">
           404
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           Oops! Page not found
         </h1>
         <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">

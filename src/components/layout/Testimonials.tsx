@@ -38,10 +38,10 @@ export default function Testimonials() {
           <div className="inline-block bg-violet-100 text-violet-700 px-4 py-2 rounded-full text-sm font-bold mb-4">
             CUSTOMER REVIEWS
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-4">
+          <h2 className="text-lg sm:text-xl font-black text-gray-900 mb-4">
             What Our Customers Say
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm text-gray-600 max-w-2xl mx-auto">
             Trusted by thousands of families across Nigeria
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function Testimonials() {
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-linear-to-br from-green-400 to-emerald-500 rounded-full border-2 border-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-lg">{t.name}</h4>
+                  <h4 className="font-bold text-gray-900 text-base">{t.name}</h4>
                   <p className="text-sm text-violet-600 font-semibold">
                     {t.role}
                   </p>
@@ -92,21 +92,21 @@ export default function Testimonials() {
         <div className="mt-12 text-center px-4 sm:px-6 lg:px-8">
           <div className="inline-flex flex-wrap justify-center items-center gap-6 sm:gap-8 bg-white rounded-2xl px-6 sm:px-8 py-6 shadow-lg border border-gray-100 max-w-full">
             <div className="text-center min-w-[120px]">
-              <div className="text-3xl font-black text-violet-600">5,000+</div>
+              <div className="text-lg font-black text-violet-600">5,000+</div>
               <div className="text-sm text-gray-600 font-medium">
                 Happy Customers
               </div>
             </div>
             <div className="w-px h-12 bg-gray-200 hidden sm:block" />
             <div className="text-center min-w-[120px]">
-              <div className="text-3xl font-black text-violet-600">4.9★</div>
+              <div className="text-lg font-black text-violet-600">4.9★</div>
               <div className="text-sm text-gray-600 font-medium">
                 Average Rating
               </div>
             </div>
             <div className="w-px h-12 bg-gray-200 hidden sm:block" />
             <div className="text-center min-w-[120px]">
-              <div className="text-3xl font-black text-violet-600">10,000+</div>
+              <div className="text-lg font-black text-violet-600">10,000+</div>
               <div className="text-sm text-gray-600 font-medium">
                 Orders Delivered
               </div>

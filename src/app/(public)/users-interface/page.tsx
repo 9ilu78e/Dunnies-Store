@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/ui/Loader";
 import ProductCategoriesGrid from "@/components/layout/ProductCategoriesGrid";
-import { getCurrentUser } from "@/services/auth";
+import { getCurrentFirebaseUser } from "@/services/firebaseAuth";
 import {
   ShoppingBag,
   Heart,
@@ -23,21 +23,26 @@ import {
 } from "lucide-react";
 
 type CurrentUser = {
-  id: string;
-  fullName: string;
-  firstName?: string;
-  email: string;
-  role?: string;
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
 };
 
-const getAvatarUrl = (fullName?: string, email?: string) => {
+const getAvatarUrl = (photoURL?: string | null, displayName?: string | null, email?: string | null) => {
+  // Use Firebase photoURL if available
+  if (photoURL) {
+    return photoURL;
+  }
+  
+  // Fallback to other services
   if (email) {
     return `https://unavatar.io/${encodeURIComponent(email)}`;
   }
 
-  if (fullName) {
+  if (displayName) {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      fullName
+      displayName
     )}&background=8b5cf6&color=fff`;
   }
 
@@ -138,19 +143,12 @@ export default function UsersInterfacePage() {
     const verifyUser = async () => {
       setLoading(true);
       try {
-        const currentUser = await getCurrentUser();
+        const currentUser = await getCurrentFirebaseUser();
 
         if (!isMounted) return;
 
         if (!currentUser) {
           router.replace("/login?from=users-interface");
-          return;
-        }
-
-        const role = currentUser.role?.toLowerCase();
-
-        if (role === "admin") {
-          router.replace("/dashboard");
           return;
         }
 
@@ -175,18 +173,12 @@ export default function UsersInterfacePage() {
 
   const greetingName = useMemo(() => {
     if (!user) return "Guest";
-    return (
-      user.firstName ||
-      user.fullName?.split(" ")[0] ||
-      user.email?.split("@")[0] ||
-      "Guest"
-    );
+    return user.displayName || user.email || "User";
   }, [user]);
 
-  const avatarUrl = useMemo(
-    () => getAvatarUrl(user?.fullName, user?.email),
-    [user?.fullName, user?.email]
-  );
+  const avatarUrl = useMemo(() => {
+    return getAvatarUrl(user?.photoURL, user?.displayName, user?.email);
+  }, [user?.photoURL, user?.displayName, user?.email]);
 
   if (loading) {
     return (
@@ -226,7 +218,7 @@ export default function UsersInterfacePage() {
                 </Link>
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1">
                   Hello {greetingName}!
                 </h1>
                 <p className="text-xs sm:text-sm text-purple-100 max-w-2xl line-clamp-3">
@@ -311,7 +303,7 @@ export default function UsersInterfacePage() {
               <p className="text-xs uppercase tracking-wider text-purple-600 font-semibold mb-1">
                 Continue Shopping
               </p>
-              <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+              <h2 className="text-base sm:text-xl font-bold text-gray-900">
                 Ideas for you
               </h2>
               <p className="text-xs sm:text-sm text-gray-600 mt-1">

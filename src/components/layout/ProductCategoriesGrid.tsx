@@ -99,7 +99,7 @@ export default function ProductCategoriesGrid() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
               Shop by Product Category
             </h2>
             <p className="text-gray-600 text-sm">

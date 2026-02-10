@@ -30,7 +30,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           <div className="lg:col-span-2 space-y-6">
             <div>
-              <h3 className="text-3xl font-black mb-2 bg-linear-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+              <h3 className="text-2xl font-black mb-2 bg-linear-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
                 Dunni Stores
               </h3>
               <p className="text-sm leading-relaxed text-gray-400">

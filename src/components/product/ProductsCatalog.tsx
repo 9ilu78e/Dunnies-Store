@@ -90,7 +90,7 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
           <p className="text-sm font-semibold text-purple-600 uppercase tracking-widest">
             Catalog
           </p>
-          <h1 className="text-4xl font-bold text-gray-900 mt-1">
+          <h1 className="text-xl font-bold text-gray-900 mt-1">
             Shop products
           </h1>
           <p className="text-slate-600 mt-2">
@@ -250,12 +250,12 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
                       </span>
                     )}
                   </div>
-                  <h2 className="text-2xl font-semibold text-gray-900">
+                  <h2 className="text-base font-semibold text-gray-900">
                     {product.name}
                   </h2>
                   <p className="text-gray-600">{product.description}</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-gray-900">
+                    <span className="text-base font-bold text-gray-900">
                       ₦{Number(product.price).toLocaleString()}
                     </span>
                     {product.originalPrice && (
@@ -271,7 +271,7 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
         )
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">
+          <p className="text-gray-500 text-base">
             No products found matching your search.
           </p>
         </div>

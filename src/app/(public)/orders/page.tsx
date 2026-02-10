@@ -221,7 +221,7 @@ export default function OrdersPage() {
           {filteredOrders.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
               <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No orders found
               </h3>
               <p className="text-gray-600 mb-6">
@@ -246,7 +246,7 @@ export default function OrdersPage() {
                   <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex flex-wrap items-center gap-4">
-                        <h3 className="text-lg font-bold text-gray-900">
+                        <h3 className="text-base font-bold text-gray-900">
                           {order.id}
                         </h3>
                         <span
@@ -316,7 +316,7 @@ export default function OrdersPage() {
                       </div>
                       <div className="flex items-center justify-between sm:justify-end space-x-4">
                         <p className="text-gray-600">Total:</p>
-                        <p className="text-2xl font-bold text-gray-900">
+                        <p className="text-xl font-bold text-gray-900">
                           ${order.total.toFixed(2)}
                         </p>
                       </div>

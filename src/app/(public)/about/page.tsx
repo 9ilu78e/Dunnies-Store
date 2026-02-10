@@ -42,10 +42,10 @@ export default function AboutPage() {
           <div className="inline-block bg-violet-100 text-violet-700 px-4 py-2 rounded-full text-sm font-bold mb-4">
             ABOUT DUNNI STORES
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-6">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 mb-6">
             Your Trusted Shopping Partner in Nigeria
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Founded in 2020, Dunni Stores has grown to become one of Nigeria's
             most trusted online marketplaces. We are committed to providing
             quality products, exceptional service, and a seamless shopping
@@ -60,7 +60,7 @@ export default function AboutPage() {
               className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1"
             >
               <stat.icon className="w-12 h-12 text-violet-600 mx-auto mb-4" />
-              <div className="text-3xl font-black text-gray-900 mb-2">
+              <div className="text-2xl font-black text-gray-900 mb-2">
                 {stat.value}
               </div>
               <div className="text-sm text-gray-600 font-semibold">
@@ -71,7 +71,7 @@ export default function AboutPage() {
         </div>
 
         <div className="bg-white rounded-2xl p-8 sm:p-12 shadow-xl mb-16">
-          <h2 className="text-3xl font-black text-gray-900 mb-6">Our Story</h2>
+          <h2 className="text-2xl font-black text-gray-900 mb-6">Our Story</h2>
           <div className="space-y-4 text-gray-700 leading-relaxed">
             <p>
               Dunni Stores was born from a simple vision: to make quality
@@ -91,7 +91,7 @@ export default function AboutPage() {
         </div>
 
         <div className="mb-16">
-          <h2 className="text-3xl font-black text-gray-900 text-center mb-12">
+          <h2 className="text-2xl font-black text-gray-900 text-center mb-12">
             Our Core Values
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -103,7 +103,7 @@ export default function AboutPage() {
                 <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center mb-4">
                   <value.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
                   {value.title}
                 </h3>
                 <p className="text-gray-600 text-sm leading-relaxed">

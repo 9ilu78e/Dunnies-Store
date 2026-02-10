@@ -29,7 +29,7 @@ export default function WishlistPage() {
           <div className="w-20 h-20 mx-auto rounded-full bg-pink-100 text-pink-600 flex items-center justify-center">
             <Heart className="w-10 h-10" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900">
             Your wishlist is waiting
           </h1>
           <p className="text-gray-600">
@@ -99,10 +99,10 @@ export default function WishlistPage() {
               <div className="flex-1 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900">
                       {item.name}
                     </h3>
-                    <p className="text-lg font-bold text-purple-600">
+                    <p className="text-base font-bold text-purple-600">
                       ₦{Number(item.price).toLocaleString()}
                     </p>
                   </div>

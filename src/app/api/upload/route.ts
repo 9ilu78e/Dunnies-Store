@@ -1,29 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveUploadedFile } from "@/lib/uploadHandler";
-import { mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
-
-// Ensure uploads directories exist on startup
-async function ensureDirectories() {
-  if (process.env.NODE_ENV === 'production') {
-    const baseDir = join(process.cwd(), '.uploads');
-    if (!existsSync(baseDir)) {
-      try {
-        await mkdir(baseDir, { recursive: true });
-        console.log('[UPLOAD] Created .uploads directory');
-      } catch (error) {
-        console.error('[UPLOAD] Failed to create .uploads directory:', error);
-      }
-    }
-  }
-}
+import { uploadImage } from "@/lib/cloudinary";
 
 export async function POST(request: NextRequest) {
   try {
-    // Ensure directories exist
-    await ensureDirectories();
-
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const folder = (formData.get("folder") as string) || "products";
@@ -43,22 +22,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 10MB for Cloudinary)
+    if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "File size must be less than 5MB" },
+        { error: "File size must be less than 10MB" },
         { status: 400 }
       );
     }
 
-    const url = await saveUploadedFile(file, folder);
-    console.log(`[UPLOAD] File uploaded: ${url}`);
+    // Upload to Cloudinary
+    const url = await uploadImage(file, folder);
+    console.log(`[UPLOAD] File uploaded to Cloudinary: ${url}`);
 
     return NextResponse.json({ url }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[UPLOAD]", error);
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: error.message || "Failed to upload file" },
       { status: 500 }
     );
   }

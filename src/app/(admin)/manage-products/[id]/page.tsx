@@ -11,7 +11,7 @@ export default async function EditProduct({
         <p className="text-sm text-gray-500 uppercase tracking-widest">
           Editing product
         </p>
-        <h1 className="text-3xl font-bold text-gray-900 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900 mt-1">
           {id.replace(/-/g, " ")}
         </h1>
       </div>

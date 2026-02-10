@@ -91,8 +91,8 @@ export default function HelpCenterPage() {
               <p className="text-sm uppercase tracking-widest text-white/70 mb-2">
                 Help center
               </p>
-              <h1 className="text-4xl font-bold mb-3">How can we help?</h1>
-              <p className="text-lg text-white/90">
+              <h1 className="text-3xl font-bold mb-3">How can we help?</h1>
+              <p className="text-base text-white/90">
                 Search quick answers, browse step-by-steps, or reach our concierge team
                 any time—whatever suits you best.
               </p>
@@ -121,7 +121,7 @@ export default function HelpCenterPage() {
                   <topic.icon className="w-6 h-6" />
                 </span>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900">
                     {topic.title}
                   </h3>
                   <p className="text-gray-600 mt-2">{topic.description}</p>
@@ -137,7 +137,7 @@ export default function HelpCenterPage() {
               <p className="text-sm font-semibold text-purple-600 uppercase tracking-widest">
                 FAQs
               </p>
-              <h2 className="text-3xl font-bold text-gray-900 mt-1">
+              <h2 className="text-2xl font-bold text-gray-900 mt-1">
                 Popular questions
               </h2>
             </div>
@@ -157,7 +157,7 @@ export default function HelpCenterPage() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-lg font-semibold text-gray-900">
+                    <p className="text-base font-semibold text-gray-900">
                       {faq.title}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">{faq.body}</p>
@@ -184,7 +184,7 @@ export default function HelpCenterPage() {
               <span className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 mb-4">
                 <option.icon className="w-5 h-5" />
               </span>
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900">
                 {option.title}
               </h3>
               <p className="text-gray-600 mt-2 flex-1">{option.description}</p>

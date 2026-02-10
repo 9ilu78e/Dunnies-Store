@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { getCurrentUser } from "@/services/auth";
+import { getCurrentFirebaseUser } from "@/services/firebaseAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import LogoutModal from "./LogoutModal";
 import {
@@ -25,15 +25,17 @@ import {
   Globe,
   HelpCircle,
   Flame,
+  Sparkles,
+  LogOut,
+  Settings,
+  CreditCard,
 } from "lucide-react";
 
 type CurrentUser = {
-  id: string;
-  fullName: string;
-  firstName?: string;
-  email: string;
-  phone?: string | null;
-  role?: string;
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
 };
 
 type Category = {
@@ -47,16 +49,7 @@ const ADMIN_DASHBOARD_PATH = "/dashboard";
 const getProfileDestination = (user: CurrentUser | null) => {
   if (!user) return "/login";
 
-  const normalizedRole = user.role?.toLowerCase();
-
-  if (normalizedRole === "admin") {
-    return ADMIN_DASHBOARD_PATH;
-  }
-
-  if (normalizedRole === "users" || normalizedRole === "user") {
-    return USER_INTERFACE_PATH;
-  }
-
+  // For Firebase users, default to user interface
   return USER_INTERFACE_PATH;
 };
 
@@ -80,7 +73,7 @@ export default function Header() {
 
     const fetchUser = async () => {
       try {
-        const currentUser = await getCurrentUser();
+        const currentUser = await getCurrentFirebaseUser();
         if (isSubscribed) {
           setUser(currentUser);
         }
@@ -150,24 +143,26 @@ export default function Header() {
     };
   }, []);
 
-  const userFirstName =
-    user?.firstName ||
-    user?.fullName?.split(" ")[0] ||
-    user?.email?.split("@")[0];
-  const greetingName = userFirstName || "Guest";
+  const greetingName = useMemo(() => {
+    if (!user) return "Guest";
+    return user.displayName || user.email?.split("@")[0] || "User";
+  }, [user]);
   const profileHref = getProfileDestination(user);
   const avatarUrl = useMemo(() => {
     if (!user) return "";
+    if (user.photoURL) {
+      return user.photoURL;
+    }
     if (user.email) {
       return `https://unavatar.io/${encodeURIComponent(user.email)}`;
     }
-    if (user.fullName) {
+    if (user.displayName) {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        user.fullName
+        user.displayName
       )}&background=8b5cf6&color=fff`;
     }
     return "";
-  }, [user?.fullName, user?.email]);
+  }, [user?.displayName, user?.email, user?.photoURL]);
 
   const wishlistCount = wishlistItems.length;
 
@@ -176,22 +171,22 @@ export default function Header() {
       {
         label: "Home",
         href: "/",
-        icon: <Home className="w-4 h-4 text-purple-500" />,
+        icon: <Home className="w-4 h-4" />,
       },
       {
         label: "Products",
         href: "/product",
-        icon: <Package className="w-4 h-4 text-purple-500" />,
+        icon: <Package className="w-4 h-4" />,
       },
       {
         label: "Best Sellers",
         href: "/best-sellers",
-        icon: <Flame className="w-4 h-4 text-purple-500" />,
+        icon: <Flame className="w-4 h-4" />,
       },
       {
         label: "Gifts",
         href: "/gift",
-        icon: <Gift className="w-4 h-4 text-purple-700" />,
+        icon: <Gift className="w-4 h-4" />,
         children: giftCategories.map((cat) => ({
           label: cat.name,
           href: `/product?category=${cat.id}`,
@@ -200,7 +195,7 @@ export default function Header() {
       {
         label: "Groceries",
         href: "/groceries",
-        icon: <ShoppingCart className="w-4 h-4 text-purple-700" />,
+        icon: <ShoppingCart className="w-4 h-4" />,
         children: groceryCategories.map((cat) => ({
           label: cat.name,
           href: `/product?category=${cat.id}`,
@@ -209,7 +204,7 @@ export default function Header() {
       {
         label: "Categories",
         href: "/categories",
-        icon: <Package className="w-4 h-4 text-purple-700" />,
+        icon: <Package className="w-4 h-4" />,
         children: categories.map((cat) => ({
           label: cat.name,
           href: `/product?category=${cat.id}`,
@@ -218,17 +213,17 @@ export default function Header() {
       {
         label: "About",
         href: "/about",
-        icon: <Info className="w-4 h-4 text-purple-700" />,
+        icon: <Info className="w-4 h-4" />,
       },
       {
         label: "Help Center",
         href: "/help",
-        icon: <HelpCircle className="w-4 h-4 text-purple-700" />,
+        icon: <HelpCircle className="w-4 h-4" />,
       },
       {
         label: "Contact",
         href: "/contact",
-        icon: <Phone className="w-4 h-4 text-purple-700" />,
+        icon: <Phone className="w-4 h-4" />,
       },
     ],
     [categories, giftCategories, groceryCategories]
@@ -251,184 +246,240 @@ export default function Header() {
 
   return (
     <>
-      <div className="bg-linear-to-r from-purple-600 to-pink-600 text-white py-2 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between text-xs sm:text-sm">
-          <div className="flex items-center space-x-1">
-            <Globe className="w-3 h-3" />
-            <span>Deliver Worldwide</span>
+      {/* Top Banner */}
+      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white py-2 px-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between text-xs">
+          <div className="flex items-center space-x-2">
+            <Globe className="w-3.5 h-3.5" />
+            <span className="font-medium">Free Worldwide Delivery</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/track" className="hover:underline hidden sm:inline">
+            <Link href="/track" className="hover:underline hidden sm:inline font-medium">
               Track Order
             </Link>
-            <Link href="/help" className="hover:underline">
-              Help
+            <Link href="/help" className="hover:underline font-medium">
+              Help Center
             </Link>
           </div>
         </div>
       </div>
 
+      {/* Backdrop for dropdown */}
       {isUserDropdownOpen && (
         <div
-          className="hidden lg:block fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+          className="hidden lg:block fixed inset-0 z-40 bg-black/20"
           onClick={() => setIsUserDropdownOpen(false)}
         />
       )}
 
-      <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
+      {/* Main Header */}
+      <header className="sticky top-0 z-50 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* Enhanced Logo */}
             <Link
               href="/"
-              className="flex items-center space-x-3 group shrink-0"
+              className="flex items-center space-x-2 group shrink-0"
             >
               <div className="relative">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-linear-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-purple-600 via-pink-500 to-purple-700 rounded-xl flex items-center justify-center shadow-md shadow-purple-500/20 transform group-hover:scale-105 transition-all duration-300">
                   <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <Sparkles className="w-2.5 h-2.5 text-yellow-300 absolute -top-0.5 -right-0.5 animate-pulse" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white"></div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full border-2 border-white"></div>
               </div>
               <div className="hidden sm:block">
-                <span className="font-bold text-lg sm:text-xl md:text-2xl text-gray-800 group-hover:text-purple-600 transition-colors">
+                <span className="font-bold text-base md:text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent group-hover:from-pink-600 group-hover:to-purple-600 transition-all duration-300">
                   Dunnis Stores
                 </span>
-                <p className="text-xs sm:text-sm text-gray-500">
-                  Your one-stop shop
+                <p className="text-[10px] text-gray-500 font-medium -mt-0.5">
+                  Premium Shopping
                 </p>
               </div>
             </Link>
 
+            {/* Enhanced Search Box */}
             <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  placeholder="Search for gifts, groceries, and more..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-12 pr-4 rounded-full border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-all duration-200 text-sm"
-                />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-1.5 rounded-full hover:shadow-lg transition-all duration-200 text-sm font-medium">
-                  Search
-                </button>
+              <div className="relative w-full group">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search for gifts, groceries, and more..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 pl-10 pr-28 rounded-full border-2 border-gray-200 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100 transition-all duration-200 text-sm"
+                  />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                  <button className="absolute right-1 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-1.5 rounded-full hover:shadow-md hover:scale-105 transition-all duration-200 text-xs font-semibold flex items-center space-x-1">
+                    <span>Search</span>
+                  </button>
+                </div>
               </div>
             </div>
 
+            {/* Right Side Icons */}
             <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+              {/* Enhanced Profile Dropdown */}
               <div className="relative hidden lg:block">
                 <button
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200 group"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group border border-transparent hover:border-purple-200"
                 >
-                  <span className="flex items-center justify-center w-11 h-11 rounded-full border border-gray-200 bg-gray-50 group-hover:border-purple-200 overflow-hidden">
-                    {user && avatarUrl ? (
-                      <Image
-                        src={avatarUrl}
-                        alt={user.fullName}
-                        width={44}
-                        height={44}
-                        className="object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <User className="w-5 h-5 text-gray-700 group-hover:text-purple-600" />
-                    )}
-                  </span>
+                  <div className="relative">
+                    <span className="flex items-center justify-center w-9 h-9 rounded-full border-2 border-purple-200 bg-gradient-to-br from-purple-100 to-pink-100 group-hover:border-purple-400 overflow-hidden transition-all duration-200 group-hover:scale-105">
+                      {user && avatarUrl ? (
+                        <Image
+                          src={avatarUrl}
+                          alt={user.displayName || "User"}
+                          width={36}
+                          height={36}
+                          className="object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-purple-600" />
+                      )}
+                    </span>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></div>
+                  </div>
                   <div className="hidden xl:block text-left">
-                    <p className="text-xs text-gray-500">
-                      Hello {greetingName}
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      Hello, {greetingName}
                     </p>
-                    <p className="text-sm font-semibold text-gray-700 group-hover:text-purple-600">
-                      Profile
+                    <p className="text-xs font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                      My Account
                     </p>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <ChevronDown className={`w-3.5 h-3.5 text-gray-500 group-hover:text-purple-600 transition-all duration-300 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
+                {/* Enhanced Dropdown Menu */}
                 <div
-                  className={`absolute right-0 mt-2 w-52 bg-white/95 backdrop-blur rounded-2xl shadow-2xl py-3 border border-gray-100 transition-all duration-200 z-50 ${
+                  className={`absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 transition-all duration-300 z-50 overflow-hidden ${
                     isUserDropdownOpen
                       ? "opacity-100 visible translate-y-0"
                       : "opacity-0 invisible -translate-y-2 pointer-events-none"
                   }`}
                 >
-                  {user ? (
-                    <>
-                      <Link
-                        href="/orders"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                      >
-                        My Orders
-                      </Link>
-                      <Link
-                        href={profileHref}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                      >
-                        Profile
-                      </Link>
-                      {user.role?.toLowerCase() === "admin" && (
-                        <>
-                          <hr className="my-2 border-gray-100" />
-                          <Link
-                            href="/manage-users"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors font-medium"
-                          >
-                            Manage Users
-                          </Link>
-                          <Link
-                            href="/dashboard"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors font-medium"
-                          >
-                            Admin Dashboard
-                          </Link>
-                        </>
-                      )}
-                      <hr className="my-2 border-gray-100" />
-                      <button
-                        onClick={() => {
-                          setIsUserDropdownOpen(false);
-                          setShowLogoutModal(true);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
-                      >
-                        Logout
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        href="/login"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors font-medium"
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        href="/signup"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors font-medium"
-                      >
-                        Sign Up
-                      </Link>
-                      <hr className="my-2 border-gray-100" />
-                      <Link
-                        href="/orders"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                      >
-                        My Orders
-                      </Link>
-                      <Link
-                        href={profileHref}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
-                      >
-                        Profile
-                      </Link>
-                    </>
-                  )}
+                  {/* Dropdown Header */}
+                  <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-2.5 text-white">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-9 h-9 rounded-full border-2 border-white/50 bg-white/20 flex items-center justify-center overflow-hidden">
+                        {user && avatarUrl ? (
+                          <Image
+                            src={avatarUrl}
+                            alt={user.displayName || "User"}
+                            width={36}
+                            height={36}
+                            className="object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <User className="w-4 h-4 text-white" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-xs truncate">Hello, {greetingName}!</p>
+                        {user?.email && (
+                          <p className="text-[10px] text-purple-100 truncate">
+                            {user.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dropdown Content */}
+                  <div className="py-1.5">
+                    {user ? (
+                      <>
+                        <Link
+                          href={profileHref}
+                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                            <User className="w-3.5 h-3.5 text-purple-600" />
+                          </div>
+                          <p className="font-medium text-sm">My Profile</p>
+                        </Link>
+                        <Link
+                          href="/orders"
+                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                            <Package className="w-3.5 h-3.5 text-blue-600" />
+                          </div>
+                          <p className="font-medium text-sm">My Orders</p>
+                        </Link>
+                        <Link
+                          href="/wishlist"
+                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-pink-100 flex items-center justify-center group-hover:bg-pink-200 transition-colors">
+                            <Heart className="w-3.5 h-3.5 text-pink-600" />
+                          </div>
+                          <p className="font-medium text-sm">Wishlist</p>
+                        </Link>
+                        <hr className="my-1.5 border-gray-100" />
+                        <button
+                          onClick={() => {
+                            setIsUserDropdownOpen(false);
+                            setShowLogoutModal(true);
+                          }}
+                          className="w-full flex items-center space-x-2.5 px-3 py-2 text-red-600 hover:bg-red-50 transition-all group"
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                            <LogOut className="w-3.5 h-3.5 text-red-600" />
+                          </div>
+                          <p className="font-medium text-sm">Logout</p>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/login"
+                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                            <User className="w-3.5 h-3.5 text-purple-600" />
+                          </div>
+                          <p className="font-medium text-sm">Login</p>
+                        </Link>
+                        <hr className="my-1.5 border-gray-100" />
+                        <Link
+                          href="/orders"
+                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                            <Package className="w-3.5 h-3.5 text-blue-600" />
+                          </div>
+                          <p className="font-medium text-sm">My Orders</p>
+                        </Link>
+                        <Link
+                          href={profileHref}
+                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                            <User className="w-3.5 h-3.5 text-purple-600" />
+                          </div>
+                          <p className="font-medium text-sm">Profile</p>
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
+              {/* Wishlist Icon */}
               <Link
                 href="/wishlist"
-                className="relative p-2 sm:p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 group"
+                className="relative p-2.5 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200 group"
                 onClick={() => setIsUserDropdownOpen(false)}
               >
                 <Heart
@@ -436,30 +487,32 @@ export default function Header() {
                     wishlistItems.length
                       ? "text-red-500 fill-red-500"
                       : "text-gray-700"
-                  } group-hover:text-red-500 group-hover:fill-red-500 transition-all duration-200`}
+                  } group-hover:text-red-500 group-hover:fill-red-500 transition-all duration-200 group-hover:scale-110`}
                 />
                 {wishlistItems.length > 0 && (
-                  <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg animate-pulse">
                     {wishlistItems.length}
                   </span>
                 )}
               </Link>
 
+              {/* Cart Icon */}
               <Link
                 href="/cart"
-                className="relative p-2 sm:p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 group"
+                className="relative p-2.5 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group"
                 onClick={() => setIsUserDropdownOpen(false)}
               >
-                <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-purple-600 transition-colors" />
+                <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-purple-600 transition-all duration-200 group-hover:scale-110" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-linear-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
                     {totalItems}
                   </span>
                 )}
               </Link>
 
+              {/* Mobile Menu Toggle */}
               <button
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                className="lg:hidden p-2.5 rounded-xl hover:bg-gray-100 transition-all duration-200"
                 onClick={toggleMobileMenu}
               >
                 {isMobileMenuOpen ? (
@@ -470,22 +523,24 @@ export default function Header() {
               </button>
             </div>
           </div>
+
+          {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1 pb-3 border-t border-gray-100 pt-3">
             {navItems.map((item, index) => (
               <div key={`${item.label}-${index}`} className="relative group">
                 {item.children ? (
                   <>
-                    <button className="flex items-center space-x-1 px-4 py-2 rounded-lg text-gray-700 font-medium hover:bg-purple-50 hover:text-purple-600 transition-all duration-200">
+                    <button className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-gray-700 text-xs font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all duration-200">
                       {item.icon}
                       <span>{item.label}</span>
-                      <ChevronDown className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
+                      <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
                     </button>
-                    <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 border border-gray-100">
+                    <div className="absolute left-0 mt-1.5 w-52 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-1.5 border border-gray-100 z-50">
                       {item.children.map((child) => (
                         <Link
                           key={child.label}
                           href={child.href || "#"}
-                          className="block px-4 py-2.5 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors text-sm font-medium"
+                          className="block px-3 py-2 text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all text-xs font-medium"
                           onClick={() => setOpenDropdown(null)}
                         >
                           {child.label}
@@ -496,7 +551,7 @@ export default function Header() {
                 ) : (
                   <Link
                     href={item.href || "#"}
-                    className="flex items-center space-x-1 px-4 py-2 rounded-lg text-gray-700 font-medium hover:bg-purple-50 hover:text-purple-600 transition-all duration-200"
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-gray-700 text-xs font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all duration-200"
                     onClick={() => setOpenDropdown(null)}
                   >
                     {item.icon}
@@ -507,19 +562,23 @@ export default function Header() {
             ))}
           </nav>
         </div>
+
+        {/* Mobile Search */}
         <div className="md:hidden px-4 pb-3 border-t border-gray-100 pt-3">
           <div className="relative">
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 pl-10 rounded-full ring-2 ring-purple-500 border border-gray-300 focus:border-purple-500 focus:outline-none text-sm"
+              className="w-full px-4 py-2.5 pl-11 pr-4 rounded-full border-2 border-purple-200 focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 text-sm shadow-sm"
             />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
           </div>
         </div>
       </header>
+
+      {/* Mobile Menu Overlay */}
       <div
         className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-300 ${
           isMobileMenuOpen
@@ -531,75 +590,72 @@ export default function Header() {
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
       </div>
 
+      {/* Mobile Menu */}
       <nav
         className={`fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] z-50 lg:hidden bg-white shadow-2xl transform transition-transform duration-300 overflow-y-auto ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-6 bg-linear-to-r from-purple-600 to-pink-600 text-white">
+        {/* Mobile Menu Header */}
+        <div className="p-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Menu</h2>
-            <button onClick={toggleMobileMenu} className="p-1">
+            <button onClick={toggleMobileMenu} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
               <X className="w-6 h-6" />
             </button>
           </div>
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm border-2 border-white/30">
               {user && avatarUrl ? (
                 <Image
                   src={avatarUrl}
-                  alt={user.fullName}
+                  alt={user.displayName || "User"}
                   width={48}
                   height={48}
                   className="object-cover"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <User className="w-7 h-7" />
+                <User className="w-7 h-7 text-white" />
               )}
             </div>
             <div>
-              <p className="font-semibold">Hello {greetingName}</p>
+              <p className="font-semibold text-base">Hello, {greetingName}!</p>
               {user ? (
-                <div className="flex flex-col gap-2 mt-1 text-sm">
+                <div className="flex flex-col gap-2 mt-2 text-sm">
                   <Link
                     href={profileHref}
                     onClick={closeMobileMenu}
-                    className="text-white font-medium bg-white/20 hover:bg-white/30 rounded-full px-4 py-1 transition"
+                    className="text-white font-medium bg-white/20 hover:bg-white/30 rounded-full px-4 py-1.5 transition inline-block text-center backdrop-blur-sm"
                   >
-                    Go to Profile
+                    View Profile
                   </Link>
                   <button
                     onClick={() => {
                       closeMobileMenu();
                       setShowLogoutModal(true);
                     }}
-                    className="text-purple-100 hover:underline text-left"
+                    className="text-purple-100 hover:text-white transition text-left text-xs"
                   >
                     Logout
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-row gap-3 text-sm">
+                <div className="flex flex-row gap-3 mt-2 text-sm">
                   <Link
                     href="/login"
                     onClick={closeMobileMenu}
-                    className="text-purple-100 hover:underline"
+                    className="text-white font-medium bg-white/20 hover:bg-white/30 rounded-full px-4 py-1 transition backdrop-blur-sm"
                   >
                     Login
                   </Link>
-                  <Link
-                    href="/signup"
-                    onClick={closeMobileMenu}
-                    className="text-purple-100 hover:underline"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
+                  </div>
               )}
             </div>
           </div>
         </div>
+
+        {/* Mobile Menu Items */}
         <div className="p-4 space-y-2">
           {navItems.map((item, index) => (
             <div key={`mobile-${item.label}-${index}`}>
@@ -607,11 +663,13 @@ export default function Header() {
                 <>
                   <button
                     onClick={() => handleDropdownToggle(item.label)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
                   >
                     <span className="flex items-center space-x-3">
-                      {item.icon}
-                      <span className="font-medium text-gray-700">
+                      <span className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+                        {item.icon}
+                      </span>
+                      <span className="font-semibold text-gray-700">
                         {item.label}
                       </span>
                     </span>
@@ -631,7 +689,7 @@ export default function Header() {
                         <Link
                           key={child.label}
                           href={child.href || "#"}
-                          className="block px-4 py-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm"
+                          className="block px-4 py-2.5 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
                           onClick={closeMobileMenu}
                         >
                           {child.label}
@@ -643,11 +701,13 @@ export default function Header() {
               ) : (
                 <Link
                   href={item.href || "#"}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                  className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
                   onClick={closeMobileMenu}
                 >
-                  {item.icon}
-                  <span className="font-medium text-gray-700">
+                  <span className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+                    {item.icon}
+                  </span>
+                  <span className="font-semibold text-gray-700">
                     {item.label}
                   </span>
                 </Link>
@@ -655,35 +715,44 @@ export default function Header() {
             </div>
           ))}
 
+          {/* Additional Links */}
           <div className="pt-4 mt-4 border-t border-gray-200 space-y-2">
             <Link
               href="/wishlist"
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-all duration-200"
+              className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200"
               onClick={closeMobileMenu}
             >
-              <Heart
-                className={`w-5 h-5 ${
-                  wishlistCount ? "text-red-500 fill-red-500" : "text-gray-700"
-                }`}
-              />
-              <span className="font-medium text-gray-700">Wishlist</span>
+              <div className="flex items-center space-x-3">
+                <span className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                  <Heart
+                    className={`w-4 h-4 ${
+                      wishlistCount ? "text-red-500 fill-red-500" : "text-red-600"
+                    }`}
+                  />
+                </span>
+                <span className="font-semibold text-gray-700">Wishlist</span>
+              </div>
               {wishlistCount > 0 && (
-                <span className="ml-auto bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-semibold">
+                <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold">
                   {wishlistCount}
                 </span>
               )}
             </Link>
             <Link
               href="/orders"
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-all duration-200"
+              className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200"
               onClick={closeMobileMenu}
             >
-              <Package className="w-5 h-5 text-gray-700" />
-              <span className="font-medium text-gray-700">My Orders</span>
+              <span className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                <Package className="w-4 h-4" />
+              </span>
+              <span className="font-semibold text-gray-700">My Orders</span>
             </Link>
           </div>
         </div>
       </nav>
+
+      {/* Logout Modal */}
       <LogoutModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
@@ -691,3 +760,4 @@ export default function Header() {
     </>
   );
 }
+

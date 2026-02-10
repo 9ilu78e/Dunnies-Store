@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LogOut, X, Loader2 } from "lucide-react";
-import { logout } from "@/services/auth";
+import { signOutFirebase } from "@/services/firebaseAuth";
 import { useRouter } from "next/navigation";
 
 interface LogoutModalProps {
@@ -17,11 +17,11 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await logout();
-      router.push("/");
+      await signOutFirebase();
+      router.push("/login");
       router.refresh();
     } catch (err) {
-      console.error("Logout failed");
+      console.error("Logout failed:", err);
     } finally {
       setLoading(false);
       onClose();

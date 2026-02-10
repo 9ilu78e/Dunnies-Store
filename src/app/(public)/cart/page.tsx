@@ -26,7 +26,7 @@ export default function CartPage() {
       <div className="min-h-screen bg-gradient-to-br from-violet-50 to-fuchsia-50 py-16 flex items-center justify-center">
         <div className="text-center p-4">
           <ShoppingCart className="w-24 h-24 text-gray-300 mx-auto mb-6" />
-          <h2 className="text-3xl font-bold text-gray-700 mb-4">
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">
             Your cart is empty
           </h2>
           <Link
@@ -67,10 +67,10 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-lg mb-1 truncate">
+                    <h3 className="font-bold text-base mb-1 truncate">
                       {item.name}
                     </h3>
-                    <p className="text-xl sm:text-2xl font-black text-violet-600 mb-3 sm:mb-4">
+                    <p className="text-lg sm:text-xl font-black text-violet-600 mb-3 sm:mb-4">
                       {formatPrice(item.price)}
                     </p>
 
@@ -108,7 +108,7 @@ export default function CartPage() {
 
                   <div className="text-right mt-4 sm:mt-0 flex flex-col justify-center">
                     <p className="text-sm text-gray-500">Item Total</p>
-                    <p className="text-xl sm:text-2xl font-black">
+                    <p className="text-lg sm:text-xl font-black">
                       {formatPrice(item.price * item.quantity)}
                     </p>
                   </div>
@@ -119,7 +119,7 @@ export default function CartPage() {
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl lg:sticky lg:top-8">
-              <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
+              <h2 className="text-xl font-bold mb-6">Order Summary</h2>
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-700">Subtotal</span>
@@ -133,14 +133,14 @@ export default function CartPage() {
                     {formatPrice(deliveryFee)}
                   </strong>
                 </div>
-                <div className="border-t-2 pt-4 flex justify-between text-xl font-black">
+                <div className="border-t-2 pt-4 flex justify-between text-lg font-black">
                   <span>Total</span>
                   <span className="text-violet-600">{formatPrice(total)}</span>
                 </div>
               </div>
               <Link
                 href="/checkout"
-                className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-4 sm:py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:shadow-2xl hover:brightness-110 transition-all text-lg"
+                className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-4 sm:py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:shadow-2xl hover:brightness-110 transition-all text-base"
               >
                 Proceed to Checkout <ArrowRight className="w-5 h-5" />
               </Link>

@@ -187,7 +187,7 @@ export default function ProfileSettingsPage() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
             Account Settings
           </h1>
           <p className="text-xs sm:text-sm text-gray-600">
@@ -229,7 +229,7 @@ export default function ProfileSettingsPage() {
             {activeSection === "profile" && (
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
-                  <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+                  <h2 className="text-base sm:text-xl font-bold text-gray-900">
                     Profile Information
                   </h2>
                   {!isEditing ? (
@@ -278,7 +278,7 @@ export default function ProfileSettingsPage() {
                     )}
                   </div>
                   <div className="text-center sm:text-left flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                    <h3 className="text-sm sm:text-lg font-bold text-gray-900">
                       {userFullName}
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-600 truncate">
@@ -438,13 +438,13 @@ export default function ProfileSettingsPage() {
             {}
             {activeSection === "security" && (
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-6">
                   Security Settings
                 </h2>
 
                 <div className="space-y-4 sm:space-y-6">
                   <div className="border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
                       Password
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4">
@@ -456,7 +456,7 @@ export default function ProfileSettingsPage() {
                   </div>
 
                   <div className="border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
                       Two-Factor Authentication
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4">
@@ -468,7 +468,7 @@ export default function ProfileSettingsPage() {
                   </div>
 
                   <div className="border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
                       Active Sessions
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4">
@@ -485,7 +485,7 @@ export default function ProfileSettingsPage() {
             {}
             {activeSection === "notifications" && (
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-6">
                   Notification Preferences
                 </h2>
 
@@ -596,13 +596,13 @@ export default function ProfileSettingsPage() {
             {}
             {activeSection === "privacy" && (
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-6">
                   Privacy Settings
                 </h2>
 
                 <div className="space-y-4 sm:space-y-6">
                   <div className="border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
                       Data Privacy
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4">
@@ -614,7 +614,7 @@ export default function ProfileSettingsPage() {
                   </div>
 
                   <div className="border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
                       Download Your Data
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4">
@@ -643,7 +643,7 @@ export default function ProfileSettingsPage() {
             {}
             {activeSection === "preferences" && (
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-6">
                   Preferences
                 </h2>
 
