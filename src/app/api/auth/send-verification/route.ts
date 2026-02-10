@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
     verificationTokens.delete(token);
 
     // Connect to MongoDB and create/find user
-    const { connectDB } = await import("@/lib/mongodb");
+    const connectDB = (await import("@/lib/mongodb")).default;
     const FirebaseUser = (await import("@/models/User")).default;
     
     await connectDB();

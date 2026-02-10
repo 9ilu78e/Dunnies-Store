@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
 // Store verification codes temporarily (in production, use Redis or database)
-const verificationCodes = new Map<string, { code: string; expires: number; email: string }>();
+const verificationCodes = new Map<string, { code: string; expires: number; email: string; verified?: boolean }>();
 
 // Clean up expired codes every 5 minutes
 setInterval(() => {
@@ -16,7 +16,7 @@ setInterval(() => {
 
 // Create email transporter
 const createTransporter = () => {
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: 'smtp-brevo.com',
     port: 587,
     secure: false,

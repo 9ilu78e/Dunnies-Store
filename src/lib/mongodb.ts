@@ -6,6 +6,13 @@ if (!MONGODB_URI) {
   throw new Error('Please define the DATABASE_URL environment variable inside .env');
 }
 
+declare global {
+  var mongoose: {
+    conn: mongoose.Connection | null;
+    promise: Promise<mongoose.Connection> | null;
+  } | undefined;
+}
+
 let cached = global.mongoose;
 
 if (!cached) {
@@ -22,7 +29,7 @@ async function connectDB() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts);
+    cached.promise = mongoose.connect(MONGODB_URI!, opts);
   }
 
   try {
