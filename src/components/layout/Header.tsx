@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { getCurrentFirebaseUser } from "@/services/firebaseAuth";
+import { getCurrentUser } from "@/services/authService";
 import { useWishlist } from "@/hooks/useWishlist";
 import LogoutModal from "./LogoutModal";
 import {
@@ -73,7 +73,7 @@ export default function Header() {
 
     const fetchUser = async () => {
       try {
-        const currentUser = await getCurrentFirebaseUser();
+        const currentUser = await getCurrentUser();
         if (isSubscribed) {
           setUser(currentUser);
         }

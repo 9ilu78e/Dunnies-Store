@@ -52,6 +52,10 @@ export const signOutFirebase = async () => {
   
   // Clear any session data
   if (typeof window !== 'undefined') {
+    // Clear email verification cookies
+    document.cookie = "email_verified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    
     // Clear any potential session cookies or data
     document.cookie.split(";").forEach(function(c) { 
       document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 

@@ -29,24 +29,50 @@ export async function POST(request: NextRequest) {
     // Connect to MongoDB
     await connectDB();
 
-    // Upsert user in MongoDB
-    const user = await FirebaseUser.findOneAndUpdate(
-      { uid },
-      {
+    console.log('=== GOOGLE LOGIN ATTEMPT ===');
+    console.log('UID:', uid);
+    console.log('Email:', email);
+
+    // First check if user exists
+    const existingUser = await FirebaseUser.findOne({ uid });
+    console.log('Existing user found:', existingUser);
+    
+    if (existingUser) {
+      console.log('Existing user role:', existingUser.role);
+    }
+
+    // If user exists, preserve their role, otherwise create new user with "user" role
+    let user;
+    if (existingUser) {
+      // Update existing user but preserve role
+      user = await FirebaseUser.findOneAndUpdate(
+        { uid },
+        {
+          email,
+          name,
+          photo: picture,
+          provider: "firebase",
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+      console.log('Updated existing user, role preserved:', user.role);
+    } else {
+      // Create new user with default "user" role
+      user = new FirebaseUser({
         uid,
         email,
         name,
         photo: picture,
         provider: "firebase",
-        role: "user", // Ensure default role
-        updatedAt: new Date()
-      },
-      { 
-        upsert: true, 
-        new: true,
-        setDefaultsOnInsert: true 
-      }
-    );
+        role: "user"
+      });
+      await user.save();
+      console.log('Created new user with role:', user.role);
+    }
+
+    console.log('User after update:', user);
+    console.log('User role from database:', user.role);
 
     return NextResponse.json({
       success: true,
@@ -55,7 +81,8 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
         photo: user.photo,
-        provider: user.provider
+        provider: user.provider,
+        role: user.role
       }
     });
 

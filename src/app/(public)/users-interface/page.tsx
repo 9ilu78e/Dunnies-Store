@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/ui/Loader";
 import ProductCategoriesGrid from "@/components/layout/ProductCategoriesGrid";
-import { getCurrentFirebaseUser } from "@/services/firebaseAuth";
+import { getCurrentUser } from "@/services/authService";
 import {
   ShoppingBag,
   Heart,
@@ -143,7 +143,7 @@ export default function UsersInterfacePage() {
     const verifyUser = async () => {
       setLoading(true);
       try {
-        const currentUser = await getCurrentFirebaseUser();
+        const currentUser = await getCurrentUser();
 
         if (!isMounted) return;
 

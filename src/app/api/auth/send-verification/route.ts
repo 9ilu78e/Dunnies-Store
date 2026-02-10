@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
-const verificationTokens = new Map<string, { email: string; expires: number; used: boolean }>();
+// Store verification tokens temporarily (in production, use Redis or database)
+const verificationTokens = new Map<string, { email: string; expires: number }>();
 
 setInterval(() => {
   const now = Date.now();
@@ -11,7 +12,16 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000);
+
+// Create email transporter
 const createTransporter = () => {
+  console.log('=== CREATING TRANSPORTER ===');
+  console.log('Host: smtp-relay.brevo.com');
+  console.log('Port: 587');
+  console.log('Secure: false');
+  console.log('Username:', process.env.SMTP_USERNAME);
+  console.log('Password length:', process.env.SMTP_PASSWORD?.length || 0);
+  
   return nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 587,
@@ -43,6 +53,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
+    console.log('=== EMAIL VERIFICATION REQUEST ===');
+    console.log('Email to send:', email);
+    console.log('SMTP Username:', process.env.SMTP_USERNAME);
+    console.log('SMTP Password exists:', !!process.env.SMTP_PASSWORD);
+    console.log('Sender Email:', process.env.SENDER_EMAIL);
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -55,18 +71,23 @@ export async function POST(request: NextRequest) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const verificationLink = `${frontendUrl}/verify-email?token=${token}`;
 
+    console.log('Generated token:', token);
+    console.log('Verification link:', verificationLink);
+    console.log('Token expires at:', new Date(expires));
+
     // Store verification token
-    verificationTokens.set(token, { email, expires, used: false });
+    verificationTokens.set(token, { email, expires });
 
     // Send email
+    console.log('=== SENDING EMAIL ===');
     const transporter = createTransporter();
     
     // Verify connection
     try {
       await transporter.verify();
-      console.log('SMTP connection verified');
+      console.log('✅ SMTP connection verified successfully');
     } catch (verifyError: any) {
-      console.error('SMTP verification failed:', verifyError);
+      console.error('❌ SMTP verification failed:', verifyError);
       throw new Error('Email service is temporarily unavailable. Please try again later.');
     }
     
@@ -103,12 +124,30 @@ export async function POST(request: NextRequest) {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    console.log('Mail options prepared:');
+    console.log('From:', process.env.SENDER_EMAIL);
+    console.log('To:', email);
+    console.log('Subject: Login Verification - Dunnis Stores');
 
-    return NextResponse.json({ 
-      message: 'Verification link sent successfully',
-      email 
-    });
+    try {
+      const result = await transporter.sendMail(mailOptions);
+      console.log('✅ Email sent successfully!');
+      console.log('Message ID:', result.messageId);
+      console.log('Response:', result.response);
+      
+      return NextResponse.json({ 
+        message: 'Verification link sent successfully',
+        email 
+      });
+    } catch (sendError: any) {
+      console.error('❌ Failed to send email:', sendError);
+      console.error('Error code:', sendError.code);
+      console.error('Error message:', sendError.message);
+      
+      return NextResponse.json({ 
+        error: 'Failed to send verification email. Please try again.' 
+      }, { status: 500 });
+    }
 
   } catch (error: any) {
     console.error('Error sending verification email:', error);
@@ -140,20 +179,67 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Verification link has expired' }, { status: 400 });
     }
 
-    // Check if token has already been used
-    if (verificationData.used) {
-      return NextResponse.json({ error: 'Verification link has already been used' }, { status: 400 });
+    // Remove the "used" check - allow tokens to be used multiple times within expiry
+    // Delete token after successful verification
+    verificationTokens.delete(token);
+
+    // Connect to MongoDB and create/find user
+    const { connectDB } = await import("@/lib/mongodb");
+    const FirebaseUser = (await import("@/models/User")).default;
+    
+    await connectDB();
+
+    // Find or create user with email
+    let user = await FirebaseUser.findOne({ email: verificationData.email });
+    
+    if (!user) {
+      // Create new user if doesn't exist
+      user = new FirebaseUser({
+        email: verificationData.email,
+        name: verificationData.email.split('@')[0], // Use email prefix as name
+        provider: "email",
+        role: "user", // Default role
+        uid: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
+      });
+      await user.save();
     }
 
-    // Mark token as used
-    verificationData.used = true;
-    verificationTokens.set(token, verificationData);
+    console.log('Email verification successful for:', verificationData.email);
+    console.log('User role:', user.role);
+    console.log('User UID:', user.uid);
 
-    return NextResponse.json({ 
+    // Create response with user data and cookies
+    const response = NextResponse.json({ 
       message: 'Email verified successfully',
       email: verificationData.email,
-      verified: true 
+      verified: true,
+      user: {
+        uid: user.uid,
+        email: user.email,
+        name: user.name,
+        photo: user.photo,
+        provider: user.provider,
+        role: user.role
+      }
     });
+
+    // Set email verification cookie
+    response.cookies.set('email_verified', verificationData.email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 24 hours
+    });
+
+    // Set user ID cookie
+    response.cookies.set('userId', user.uid, {
+      httpOnly: false, // Allow client-side access
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 24 hours
+    });
+
+    return response;
 
   } catch (error: any) {
     console.error('Error verifying email:', error);

@@ -66,7 +66,6 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to send verification email');
       }
 
-      setSuccess(`Verification link sent to ${email}. Please check your email and click the link to login.`);
       showToast("Verification link sent! Check your email.", "success");
 
     } catch (error: any) {
@@ -93,8 +92,20 @@ export default function LoginPage() {
       // Show success popup
       showToast("Login successful! Redirecting...", "success");
 
-      // For Firebase users, default to user interface
-      const destination = USER_INTERFACE_PATH;
+      // Determine destination based on user role
+      let destination = '/users-interface'; // default for users
+      
+      console.log('Google login user data:', data.user);
+      console.log('User role:', data.user?.role);
+      
+      if (data.user?.role === 'admin') {
+        destination = '/admin'; // admin dashboard
+        console.log('Admin detected, redirecting to:', destination);
+      } else {
+        console.log('Regular user detected, redirecting to:', destination);
+      }
+
+      console.log("Redirecting to:", destination);
       
       // Redirect after a short delay to show the toast
       setTimeout(() => {
@@ -124,13 +135,6 @@ export default function LoginPage() {
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <p className="text-red-700 text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <p className="text-green-700 text-sm font-medium">{success}</p>
-              <p className="text-green-600 text-xs mt-2">Check your inbox and spam folder.</p>
             </div>
           )}
 

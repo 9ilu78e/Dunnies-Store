@@ -33,15 +33,29 @@ export default function VerifyEmailPage() {
         throw new Error(data.error || 'Verification failed');
       }
 
+      console.log("Verification successful:", data);
+
       setStatus('success');
       setEmail(data.email);
-      setMessage('Email verified successfully! Redirecting to login...');
-      showToast('Email verified! You can now login.', 'success');
+      setMessage('Email verified successfully! Redirecting to your dashboard...');
+      showToast('Email verified! Welcome to Dunnis Stores.', 'success');
 
-      // Redirect to login after 3 seconds
+      // Determine destination based on user role
+      let destination = '/users-interface'; // default for users
+      
+      if (data.user?.role === 'admin') {
+        destination = '/admin'; // admin dashboard
+      }
+
+      console.log("User data:", data.user);
+      console.log("User role:", data.user?.role);
+      console.log("Redirecting to:", destination);
+
+      // Redirect to appropriate dashboard after 2 seconds
       setTimeout(() => {
-        router.push('/login');
-      }, 3000);
+        console.log("Executing redirect to:", destination);
+        router.push(destination);
+      }, 2000);
 
     } catch (error: any) {
       setStatus('error');
@@ -78,7 +92,7 @@ export default function VerifyEmailPage() {
               )}
               <div className="flex items-center justify-center">
                 <Loader2 className="w-4 h-4 text-purple-600 animate-spin mr-2" />
-                <span className="text-sm text-purple-600">Redirecting to login...</span>
+                <span className="text-sm text-purple-600">Redirecting to your dashboard...</span>
               </div>
             </>
           )}
