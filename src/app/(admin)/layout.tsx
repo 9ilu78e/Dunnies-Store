@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Menu, Search, Bell, User } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import LogoutModal from "@/components/layout/LogoutModal";
-import { getCurrentUser } from "@/services/auth";
+import { getCurrentUser } from "@/services/authService";
 import Image from "next/image";
 
 export default function AdminLayout({
@@ -15,9 +15,11 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [user, setUser] = useState<{ fullName: string; email: string } | null>(
-    null
-  );
+  const [user, setUser] = useState<{ 
+  fullName?: string; 
+  email?: string; 
+  photoURL?: string;
+} | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -29,9 +31,21 @@ export default function AdminLayout({
 
     const fetchAdmin = async () => {
       try {
+        console.log('=== ADMIN LAYOUT: Fetching current user ===');
         const currentUser = await getCurrentUser();
-        setUser(currentUser);
+        console.log('Admin layout user data:', currentUser);
+        
+        // Transform user data to match expected format
+        const transformedUser = currentUser ? {
+          fullName: currentUser.displayName || currentUser.email?.split('@')[0] || undefined,
+          email: currentUser.email || undefined,
+          photoURL: currentUser.photoURL || undefined
+        } : null;
+        
+        console.log('Transformed user for sidebar:', transformedUser);
+        setUser(transformedUser);
       } catch (error) {
+        console.error('Admin layout fetch error:', error);
         setUser(null);
       }
     };
@@ -40,9 +54,16 @@ export default function AdminLayout({
 
   const avatarUrl = useMemo(() => {
     if (!user) return "";
+    
+    // Use photoURL first (from Google), then fallback to email-based avatar
+    if (user.photoURL) {
+      return user.photoURL;
+    }
+    
     if (user.email) {
       return `https://unavatar.io/${encodeURIComponent(user.email)}`;
     }
+    
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(
       user.fullName || "Admin"
     )}&background=0f172a&color=fff`;
@@ -116,7 +137,7 @@ export default function AdminLayout({
                 {user && avatarUrl ? (
                   <Image
                     src={avatarUrl}
-                    alt={user.fullName}
+                    alt={user.fullName || "Admin"}
                     width={32}
                     height={32}
                     className="object-cover"

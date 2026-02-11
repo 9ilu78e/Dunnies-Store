@@ -68,18 +68,23 @@ export const signInWithGoogle = async () => {
       // If it's an abort error, but we have a Firebase user, try to continue
       if (error.name === 'AbortError' && user) {
         console.warn('Backend timeout, but Firebase auth successful. Using fallback.');
-        // Create fallback user data
-        return { 
-          user: {
-            uid: user.uid,
-            email: user.email,
-            name: user.displayName,
-            photo: user.photoURL,
-            provider: "firebase",
-            role: "user" // Default to user role on timeout
-          }, 
-          token: idToken 
+        // Create fallback user data and set localStorage
+        const fallbackUser = { 
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName,
+          photo: user.photoURL,
+          provider: "firebase",
+          role: "user" // Default to user role on timeout
         };
+        
+        // Set userId in localStorage for consistency with email login
+        if (user.uid) {
+          localStorage.setItem("userId", user.uid);
+          console.log("Set userId in localStorage from fallback:", user.uid);
+        }
+        
+        return { user: fallbackUser, token: idToken };
       }
       
       throw error;

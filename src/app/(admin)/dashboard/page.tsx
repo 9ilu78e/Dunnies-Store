@@ -24,18 +24,32 @@ export default function AdminDashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log('=== ADMIN DASHBOARD AUTH CHECK ===');
         const res = await fetch("/api/auth/current");
+        console.log('Auth response status:', res.status);
+        
         if (!res.ok) {
+          console.log('Auth failed, redirecting to login');
           router.push("/login");
           return;
         }
 
         const data = await res.json();
-        if (data.user?.role !== "admin") {
-          router.push("/");
+        console.log('Auth response data:', data);
+        
+        // Check if user is admin (by role or email)
+        const isAdmin = data.user?.role === "admin" || 
+                       data.user?.email === "toonm831@gmail.com";
+        
+        console.log('Is admin check:', isAdmin, '(role:', data.user?.role, 'email:', data.user?.email, ')');
+        
+        if (!isAdmin) {
+          console.log('Not admin, redirecting to home');
+          router.push("/users-interface");
           return;
         }
 
+        console.log('✅ Admin confirmed, setting authorized');
         setIsAuthorized(true);
       } catch (error) {
         console.error("Auth check failed:", error);

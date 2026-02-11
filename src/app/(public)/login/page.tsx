@@ -87,6 +87,8 @@ export default function LoginPage() {
 
       if (data.user?.uid) {
         localStorage.setItem("userId", data.user.uid);
+        // Also set a simple auth token cookie for server-side validation
+        document.cookie = `auth_token=${data.token}; path=/; max-age=3600; SameSite=Lax`;
       }
 
       // Show success popup
