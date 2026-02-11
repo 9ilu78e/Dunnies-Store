@@ -1,66 +1,87 @@
-import { useState, useEffect } from 'react';
+"use client";
 
-const useAuth = () => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { getCurrentUser } from "@/services/authService";
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const response = await fetch('/api/auth/user');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch user');
-                }
-                const data = await response.json();
-                setUser(data);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'An error occurred');
-            } finally {
-                setLoading(false);
-            }
+interface User {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  provider: string;
+  role: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  refreshUser: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refreshUser = async () => {
+    try {
+      setLoading(true);
+      const currentUser = await getCurrentUser();
+      
+      if (currentUser) {
+        // Determine role - only admin for your specific email
+        const isAdmin = currentUser.email === 'toonm831@gmail.com';
+        const role = isAdmin ? 'admin' : 'user';
+        
+        const userData: User = {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+          photoURL: currentUser.photoURL,
+          provider: currentUser.provider,
+          role: role
         };
+        
+        setUser(userData);
+        console.log('Auth context: User loaded', userData.email, 'Role:', role);
+      } else {
+        setUser(null);
+        console.log('Auth context: No user found');
+      }
+    } catch (error) {
+      console.error('Auth context: Error loading user', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        fetchUser();
-    }, []);
+  useEffect(() => {
+    refreshUser();
+  }, []);
 
-    const login = async (credentials: any) => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(credentials),
-            });
-            if (!response.ok) {
-                throw new Error('Login failed');
-            }
-            const data = await response.json();
-            setUser(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const value: AuthContextType = {
+    user,
+    loading,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === 'admin',
+    refreshUser,
+  };
 
-    const logout = async () => {
-        setLoading(true);
-        try {
-            await fetch('/api/auth/logout', {
-                method: 'POST',
-            });
-            setUser(null);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return { user, loading, error, login, logout };
+  return React.createElement(
+    AuthContext.Provider,
+    { value },
+    children
+  );
 };
 
-export default useAuth;
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

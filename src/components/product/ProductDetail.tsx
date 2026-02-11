@@ -21,7 +21,7 @@ import { ProductRecord } from "@/Data/products";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/hooks/useWishlist";
 import { getBaseUrl } from "@/utils/url";
-import { getWhatsAppLink } from "@/lib/whatsapp";
+import { useAuth } from "@/hooks/useAuth";
 
 type ProductDetailProps = {
   product: ProductRecord;
@@ -42,47 +42,43 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const router = useRouter();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { user, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
   const [quantity, setQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [averageRating, setAverageRating] = useState(0);
-  const [totalComments, setTotalComments] = useState(0);
-  const [comment, setComment] = useState("");
-  const [rating, setRating] = useState(5);
-  const [loadingComments, setLoadingComments] = useState(true);
+  const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState(5);
+  const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
-  const [loadingLikes, setLoadingLikes] = useState(true);
+  const [loadingLikes, setLoadingLikes] = useState(false);
+  const [totalComments, setTotalComments] = useState(0);
   const [commentLikes, setCommentLikes] = useState<
     Record<string, { count: number; isLiked: boolean }>
   >({});
   const [animatingCommentId, setAnimatingCommentId] = useState<string | null>(
     null
   );
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [showCustomerNameInput, setShowCustomerNameInput] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    setUserId(localStorage.getItem("userId"));
   }, []);
 
   useEffect(() => {
     const fetchComments = async () => {
       try {
         setLoadingComments(true);
-        const currentUserId =
-          typeof window !== "undefined" ? localStorage.getItem("userId") : null;
         const url = new URL(
           `${getBaseUrl()}/api/products/${product.id}/comments`
         );
-        if (currentUserId) {
-          url.searchParams.append("userId", currentUserId);
+        if (user?.uid) {
+          url.searchParams.append("userId", user.uid);
         }
         const response = await fetch(url.toString());
         if (response.ok) {
@@ -109,76 +105,39 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       }
     };
 
-    fetchComments();
-  }, [product.id]);
+    if (isClient && user) {
+      fetchComments();
+    }
+  }, [product.id, user?.uid, isClient]);
 
   useEffect(() => {
-    setIsClient(true);
-    const storedUserId = localStorage.getItem("userId");
-    setUserId(storedUserId);
-
-    // Fetch user data to get customer name
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch(`${getBaseUrl()}/api/auth/current`);
-        if (response.ok) {
-          const data = await response.json();
-          setUserRole(data.user?.role || null);
-          // Always set customer name from fullName if available
-          if (data.user?.fullName) {
-            setCustomerName(data.user.fullName);
-          }
-        } else {
-          setUserRole(null);
-          setCustomerName("");
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setUserRole(null);
-        setCustomerName("");
-      }
-    };
-
-    // Only fetch if user is logged in
-    if (storedUserId) {
-      fetchUserData();
+    // Set customer name from auth context when user is available
+    if (user?.displayName) {
+      setCustomerName(user.displayName);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!isClient) return;
 
-    // Refetch user data when visibility changes (tab comes back to focus)
+    // Update customer name when visibility changes (tab comes back to focus)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        const fetchUserData = async () => {
-          try {
-            const response = await fetch(`${getBaseUrl()}/api/auth/current`);
-            if (response.ok) {
-              const data = await response.json();
-              if (data.user?.fullName) {
-                setCustomerName(data.user.fullName);
-              }
-            }
-          } catch (error) {
-            console.error("Error fetching user data on visibility:", error);
-          }
-        };
-        fetchUserData();
+      if (document.visibilityState === "visible" && user?.displayName) {
+        setCustomerName(user.displayName);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isClient]);
+  }, [isClient, user?.displayName]);
 
   useEffect(() => {
     const fetchLikes = async () => {
       try {
         setLoadingLikes(true);
         const url = new URL(`${getBaseUrl()}/api/products/${product.id}/likes`);
-        if (userId) url.searchParams.set("userId", userId);
+        if (user?.uid) url.searchParams.set("userId", user.uid);
         const response = await fetch(url.toString());
         if (response.ok) {
           const data = await response.json();
@@ -197,18 +156,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       }
     };
 
-    if (isClient) {
+    if (isClient && user) {
       fetchLikes();
     }
-  }, [product.id, userId, isClient]);
+  }, [product.id, user?.uid, isClient]);
 
   const handleToggleLike = async () => {
-    if (userRole === "admin") {
+    if (isAdmin) {
       alert("Admin users cannot like products");
       return;
     }
 
-    if (!userId) {
+    if (!isAuthenticated || !user) {
       router.push("/login");
       return;
     }
@@ -219,7 +178,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
+          body: JSON.stringify({ userId: user.uid }),
         }
       );
       if (response.status === 401) {
@@ -240,10 +199,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   };
 
   const handleToggleCommentLike = async (commentId: string) => {
-    const currentUserId =
-      typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-
-    if (!currentUserId) {
+    if (!isAuthenticated || !user) {
       router.push("/login");
       return;
     }
@@ -256,7 +212,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       const response = await fetch(`${getBaseUrl()}/api/comments/likes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUserId, commentId }),
+        body: JSON.stringify({ userId: user.uid, commentId }),
       });
 
       if (response.status === 401) {
@@ -274,6 +230,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             isLiked: data.liked,
           },
         }));
+      } else {
+        console.error("Failed to toggle comment like");
       }
     } catch (error) {
       console.error("Error toggling comment like:", error);
@@ -304,7 +262,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   const handleOrderWhatsApp = () => {
     // If not logged in or no customer name, show input modal
-    if (!userId || !customerName.trim()) {
+    if (!isAuthenticated || !customerName.trim()) {
       setShowCustomerNameInput(true);
       return;
     }
@@ -355,17 +313,17 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (userRole === "admin") {
+    if (isAdmin) {
       alert("Admin users cannot comment on products");
       return;
     }
 
-    if (!userId) {
+    if (!isAuthenticated || !user) {
       router.push("/login");
       return;
     }
 
-    if (!comment.trim()) {
+    if (!newComment.trim()) {
       return;
     }
 
@@ -377,9 +335,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId,
-            text: comment,
-            rating,
+            userId: user.uid,
+            text: newComment,
+            rating: newRating,
           }),
         }
       );
@@ -391,12 +349,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       }
 
       if (response.ok) {
-        const newComment = await response.json();
-        setComments([newComment, ...comments]);
-        setComment("");
-        setRating(5);
+        const newCommentData = await response.json();
+        setComments([newCommentData, ...comments]);
+        setNewComment("");
+        setNewRating(5);
 
-        const updatedComments = [newComment, ...comments];
+        const updatedComments = [newCommentData, ...comments];
         const avgRating =
           updatedComments.length > 0
             ? Math.round(
@@ -652,7 +610,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </button>
         </div>
 
-        {isClient && userRole !== "admin" ? (
+        {isClient && !isAdmin ? (
           <form
             onSubmit={handleReviewSubmit}
             className="rounded-2xl border border-gray-200 p-4 space-y-4"
@@ -664,12 +622,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setRating(value)}
-                    className="text-amber-400"
+                    onClick={() => setNewRating(value)}
+                    className="transition-colors"
                   >
                     <Star
                       className={`w-5 h-5 ${
-                        rating >= value ? "fill-current" : "fill-transparent"
+                        newRating >= value ? "fill-current" : "fill-transparent"
                       }`}
                     />
                   </button>
@@ -677,10 +635,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               </div>
             </div>
             <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
               placeholder={
-                userId
+                isAuthenticated
                   ? "Share your experience..."
                   : "Login to share your experience..."
               }

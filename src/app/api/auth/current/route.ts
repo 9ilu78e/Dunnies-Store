@@ -19,15 +19,18 @@ export async function GET(request: NextRequest) {
                    request.cookies.get('auth_token')?.value;
       
       if (token) {
-        console.log('Found token, creating admin fallback');
-        // For your known admin email, create admin user
+        console.log('Found token, creating fallback user');
+        // Determine role based on email - only admin for your specific email
+        const isAdmin = false; // Default to false for token fallback since we don't have email
+        const role = isAdmin ? 'admin' : 'user';
+        
         const fallbackUser = {
-          uid: 'firebase_admin_user',
-          email: 'toonm831@gmail.com',
-          displayName: 'Admin',
+          uid: 'firebase_user',
+          email: 'user@example.com',
+          displayName: 'User',
           photoURL: null,
           provider: 'firebase',
-          role: 'admin'
+          role: role
         };
         
         return NextResponse.json({
@@ -64,14 +67,14 @@ export async function GET(request: NextRequest) {
                  request.cookies.get('auth_token')?.value;
     
     if (token) {
-      console.log('Error but found token, creating admin fallback');
+      console.log('Error but found token, creating fallback user');
       const fallbackUser = {
-        uid: 'firebase_admin_user',
-        email: 'toonm831@gmail.com',
-        displayName: 'Admin',
+        uid: 'firebase_user',
+        email: 'user@example.com',
+        displayName: 'User',
         photoURL: null,
         provider: 'firebase',
-        role: 'admin'
+        role: 'user' // Default to user role
       };
       
       return NextResponse.json({

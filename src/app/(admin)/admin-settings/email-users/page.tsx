@@ -10,6 +10,7 @@ interface User {
 }
 
 export default function AdminEmailPage() {
+  const [mounted, setMounted] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
@@ -20,8 +21,14 @@ export default function AdminEmailPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchData();
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      fetchData();
+    }
+  }, [mounted]);
 
   const fetchData = async () => {
     try {
@@ -97,6 +104,14 @@ export default function AdminEmailPage() {
       setSelectedUsers(users.map((u) => u.id));
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
