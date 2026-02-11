@@ -26,53 +26,94 @@ export async function POST(request: NextRequest) {
 
     const { uid, email, name, picture } = decodedToken;
 
-    // Connect to MongoDB
-    await connectDB();
+    if (!email) {
+      return NextResponse.json(
+        { error: "Email is required from Google account" },
+        { status: 400 }
+      );
+    }
 
     console.log('=== GOOGLE LOGIN ATTEMPT ===');
     console.log('UID:', uid);
     console.log('Email:', email);
+    console.log('Name:', name);
 
-    // First check if user exists
-    const existingUser = await FirebaseUser.findOne({ uid });
-    console.log('Existing user found:', existingUser);
+    // Check if this is a known admin email (fallback for when DB is down)
+    const knownAdminEmails = [
+      'toonm831@gmail.com',
+      // Add other admin emails here
+    ];
     
-    if (existingUser) {
-      console.log('Existing user role:', existingUser.role);
-    }
+    const isAdminByEmail = knownAdminEmails.includes(email);
+    console.log('Is admin by email check:', isAdminByEmail);
+    console.log('Admin dashboard path: /dashboard');
 
-    // If user exists, preserve their role, otherwise create new user with "user" role
+    // Connect to MongoDB
     let user;
-    if (existingUser) {
-      // Update existing user but preserve role
-      user = await FirebaseUser.findOneAndUpdate(
-        { uid },
-        {
+    try {
+      await connectDB();
+
+      console.log('✅ MongoDB connected, checking database...');
+
+      // First check if user exists
+      const existingUser = await FirebaseUser.findOne({ uid });
+      console.log('Existing user found:', existingUser);
+      
+      if (existingUser) {
+        console.log('Existing user role from database:', existingUser.role);
+      }
+
+      // If user exists, preserve their role, otherwise create new user with "user" role
+      if (existingUser) {
+        // Update existing user but preserve role
+        user = await FirebaseUser.findOneAndUpdate(
+          { uid },
+          {
+            email,
+            name,
+            photo: picture,
+            provider: "firebase",
+            updatedAt: new Date()
+          },
+          { new: true }
+        );
+        console.log('Updated existing user, role preserved:', user.role);
+      } else {
+        // Create new user - check if admin by email
+        const newRole = isAdminByEmail ? 'admin' : 'user';
+        console.log('Creating new user with role:', newRole, '(based on email check)');
+        
+        user = new FirebaseUser({
+          uid,
           email,
           name,
           photo: picture,
           provider: "firebase",
-          updatedAt: new Date()
-        },
-        { new: true }
-      );
-      console.log('Updated existing user, role preserved:', user.role);
-    } else {
-      // Create new user with default "user" role
-      user = new FirebaseUser({
+          role: newRole
+        });
+        await user.save();
+        console.log('Created new user with role:', user.role);
+      }
+
+      console.log('✅ Database operation successful');
+      console.log('Final user role from database:', user.role);
+    } catch (dbError: any) {
+      console.error('❌ Database connection failed for Google auth, using fallback:', dbError.message);
+      
+      // Create fallback user data - use admin role if email matches known admin
+      const fallbackRole = isAdminByEmail ? 'admin' : 'user';
+      console.log('Using fallback user data with role:', fallbackRole, '(based on email check)');
+      
+      user = {
         uid,
         email,
         name,
         photo: picture,
         provider: "firebase",
-        role: "user"
-      });
-      await user.save();
-      console.log('Created new user with role:', user.role);
+        role: fallbackRole
+      };
+      console.log('Final fallback user role:', user.role);
     }
-
-    console.log('User after update:', user);
-    console.log('User role from database:', user.role);
 
     return NextResponse.json({
       success: true,

@@ -95,14 +95,24 @@ export default function LoginPage() {
       // Determine destination based on user role
       let destination = '/users-interface'; // default for users
       
+      console.log('=== GOOGLE LOGIN REDIRECT LOGIC ===');
       console.log('Google login user data:', data.user);
-      console.log('User role:', data.user?.role);
+      console.log('User role from API:', data.user?.role);
+      console.log('User email:', data.user?.email);
+      
+      // Additional admin check for debugging
+      const knownAdminEmails = ['toonm831@gmail.com'];
+      const isAdminByEmail = knownAdminEmails.includes(data.user?.email || '');
+      console.log('Is admin by email check:', isAdminByEmail);
       
       if (data.user?.role === 'admin') {
-        destination = '/admin'; // admin dashboard
-        console.log('Admin detected, redirecting to:', destination);
+        destination = '/dashboard'; // admin dashboard
+        console.log('✅ Admin detected by role, redirecting to:', destination);
+      } else if (isAdminByEmail) {
+        destination = '/dashboard'; // admin dashboard
+        console.log('⚠️ Admin detected by email fallback, redirecting to:', destination);
       } else {
-        console.log('Regular user detected, redirecting to:', destination);
+        console.log('👤 Regular user detected, redirecting to:', destination);
       }
 
       console.log("Redirecting to:", destination);

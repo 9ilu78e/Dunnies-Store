@@ -1,47 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-import { prisma } from "@/lib/prisma";
-
-interface TokenPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
-
-const AUTH_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-key";
+import { getCurrentUser } from "@/services/authService";
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get("auth_token")?.value;
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const decoded = jwt.verify(token, AUTH_SECRET) as TokenPayload;
-
-    if (!decoded?.userId) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-    });
+    const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const firstName = user.fullName?.split(" ")[0] || user.fullName;
+    console.log('Current user check:', user);
 
     return NextResponse.json({
       user: {
-        id: user.id,
-        fullName: user.fullName,
-        firstName,
+        uid: user.uid,
         email: user.email,
-        phone: user.phone,
-        role: user.role,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        provider: user.provider,
+        role: user.role || 'user'
       },
     });
   } catch (error) {

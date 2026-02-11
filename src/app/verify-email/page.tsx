@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -17,7 +17,7 @@ export default function VerifyEmailPage() {
     
     if (!token) {
       setStatus('error');
-      setMessage('No verification token provided');
+      setMessage('Invalid verification link');
       return;
     }
 
@@ -44,18 +44,22 @@ export default function VerifyEmailPage() {
       let destination = '/users-interface'; // default for users
       
       if (data.user?.role === 'admin') {
-        destination = '/admin'; // admin dashboard
+        destination = '/dashboard'; // admin dashboard
       }
 
       console.log("User data:", data.user);
       console.log("User role:", data.user?.role);
       console.log("Redirecting to:", destination);
 
-      // Redirect to appropriate dashboard after 2 seconds
-      setTimeout(() => {
-        console.log("Executing redirect to:", destination);
-        router.push(destination);
-      }, 2000);
+      // Set user data in localStorage for immediate login
+      if (data.user?.uid) {
+        localStorage.setItem("userId", data.user.uid);
+        console.log("Set userId in localStorage:", data.user.uid);
+      }
+
+      // Redirect immediately without delay
+      console.log("Executing immediate redirect to:", destination);
+      router.push(destination);
 
     } catch (error: any) {
       setStatus('error');
@@ -120,5 +124,24 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-8 backdrop-blur-sm">
+            <div className="flex justify-center mb-6">
+              <Loader2 className="w-12 h-12 text-purple-600 animate-spin" />
+            </div>
+            <p className="text-center text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

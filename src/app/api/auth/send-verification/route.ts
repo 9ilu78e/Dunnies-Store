@@ -183,44 +183,52 @@ export async function GET(request: NextRequest) {
     // Delete token after successful verification
     verificationTokens.delete(token);
 
-    // Connect to MongoDB and create/find user
-    const connectDB = (await import("@/lib/mongodb")).default;
-    const FirebaseUser = (await import("@/models/User")).default;
-    
-    await connectDB();
+    // Try to connect to MongoDB and create/find user
+    let user = null;
+    try {
+      const connectDB = (await import("@/lib/mongodb")).default;
+      const FirebaseUser = (await import("@/models/User")).default;
+      
+      await connectDB();
 
-    // Find or create user with email
-    let user = await FirebaseUser.findOne({ email: verificationData.email });
-    
-    if (!user) {
-      // Create new user if doesn't exist
-      user = new FirebaseUser({
+      // Find or create user with email
+      user = await FirebaseUser.findOne({ email: verificationData.email });
+      
+      if (!user) {
+        // Create new user if doesn't exist
+        user = new FirebaseUser({
+          email: verificationData.email,
+          name: verificationData.email.split('@')[0], // Use email prefix as name
+          provider: "email",
+          role: "user", // Default role
+          uid: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
+        });
+        await user.save();
+      }
+
+      console.log('Email verification successful for:', verificationData.email);
+      console.log('User role from database:', user.role);
+      console.log('User UID:', user.uid);
+    } catch (dbError: any) {
+      console.error('⚠️ Database connection failed, using fallback:', dbError.message);
+      
+      // Create fallback user data
+      user = {
+        uid: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email: verificationData.email,
-        name: verificationData.email.split('@')[0], // Use email prefix as name
+        name: verificationData.email.split('@')[0],
+        photo: null,
         provider: "email",
-        role: "user", // Default role
-        uid: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
-      });
-      await user.save();
+        role: "user" // Default to user role for email verification
+      };
     }
-
-    console.log('Email verification successful for:', verificationData.email);
-    console.log('User role:', user.role);
-    console.log('User UID:', user.uid);
 
     // Create response with user data and cookies
     const response = NextResponse.json({ 
       message: 'Email verified successfully',
       email: verificationData.email,
       verified: true,
-      user: {
-        uid: user.uid,
-        email: user.email,
-        name: user.name,
-        photo: user.photo,
-        provider: user.provider,
-        role: user.role
-      }
+      user: user
     });
 
     // Set email verification cookie
