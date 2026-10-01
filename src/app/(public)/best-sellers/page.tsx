@@ -69,7 +69,7 @@ export default async function BestSellersPage() {
               Shop the products everyone is talking about
             </h1>
             <p className="text-base sm:text-lg text-purple-100 max-w-3xl">
-              These cult-favorite gifts, groceries, and daily luxuries are
+              These cult-favorite gifts, souvenirs, and daily luxuries are
               moving fastest in every city we deliver to. Updated hourly with
               live reviews, verified reorders, and concierge quality scores.
             </p>

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from "@/lib/mongodb";
-import FirebaseUser from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    await connectDB();
-    
     // Find your specific user
-    const user = await FirebaseUser.findOne({ 
-      email: "toonm831@gmail.com" 
+    const user = await prisma.firebaseUser.findUnique({
+      where: { email: "toonm831@gmail.com" },
     });
     
     console.log('=== USER DEBUG ===');

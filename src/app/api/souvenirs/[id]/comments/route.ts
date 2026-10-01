@@ -78,10 +78,10 @@ export async function POST(
       );
     }
 
-    const grocery = await prisma.grocery.findUnique({ where: { id } });
-    if (!grocery) {
+    const souvenir = await prisma.souvenir.findUnique({ where: { id } });
+    if (!souvenir) {
       return NextResponse.json(
-        { error: "Grocery not found" },
+        { error: "Souvenir not found" },
         { status: 404 }
       );
     }

@@ -47,7 +47,7 @@ export default async function CategoriesPage() {
 
   const productCategories = categories.filter((c) => c.type === "product");
   const giftCategories = categories.filter((c) => c.type === "gift");
-  const groceryCategories = categories.filter((c) => c.type === "grocery");
+  const souvenirCategories = categories.filter((c) => c.type === "souvenir");
 
   const CategoryCard = ({
     cat,
@@ -123,7 +123,7 @@ export default async function CategoriesPage() {
           </h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
             Explore our complete collection of premium products, gifts, and
-            groceries
+            souvenirs
           </p>
         </div>
       </section>
@@ -191,7 +191,7 @@ export default async function CategoriesPage() {
       )}
 
       {}
-      {groceryCategories.length > 0 && (
+      {souvenirCategories.length > 0 && (
         <section className="py-20 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-green-50 to-emerald-50">
           <div className="max-w-7xl mx-auto">
             <div className="mb-12">
@@ -202,14 +202,14 @@ export default async function CategoriesPage() {
                 </span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-3">
-                Fresh Groceries
+                Souvenirs & Keepsakes
               </h2>
               <p className="text-lg text-gray-600">
-                Essential groceries delivered right to your door
+                Meaningful mementos and locally inspired finds
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {groceryCategories.map((cat) => (
+              {souvenirCategories.map((cat) => (
                 <CategoryCard
                   key={cat.id}
                   cat={cat}
@@ -230,7 +230,7 @@ export default async function CategoriesPage() {
             </p>
             <p className="text-gray-600">
               Check back soon for our premium collection of products, gifts, and
-              groceries.
+              souvenirs.
             </p>
           </div>
         </section>

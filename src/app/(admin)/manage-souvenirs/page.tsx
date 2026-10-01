@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { Trash2, Plus, Edit, Image as ImageIcon } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import AddGroceryModal from "./AddGroceryModal/AddGroceryModal";
+import AddSouvenirModal from "./AddSouvenirModal/AddSouvenirModal";
 import DeleteModal from "@/components/ui/DeleteModal";
 import { showToast } from "@/components/ui/Toast";
 
-interface Grocery {
+interface Souvenir {
   id: string;
   name: string;
   description: string;
@@ -17,64 +17,64 @@ interface Grocery {
   createdAt: string;
 }
 
-export default function ManageGroceries() {
-  const [groceries, setGroceries] = useState<Grocery[]>([]);
+export default function ManageSouvenirs() {
+  const [souvenirs, setSouvenirs] = useState<Souvenir[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingGroceryId, setEditingGroceryId] = useState<string | null>(null);
+  const [editingSouvenirId, setEditingSouvenirId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
-    groceryId: string | null;
-    groceryName: string;
+    souvenirId: string | null;
+    souvenirName: string;
   }>({
     isOpen: false,
-    groceryId: null,
-    groceryName: "",
+    souvenirId: null,
+    souvenirName: "",
   });
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchGroceries = async () => {
+  const fetchSouvenirs = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/groceries");
-      if (!response.ok) throw new Error("Failed to fetch groceries");
+      const response = await fetch("/api/souvenirs");
+      if (!response.ok) throw new Error("Failed to fetch souvenirs");
       const data = await response.json();
-      setGroceries(data.groceries || []);
+      setSouvenirs(data.souvenirs || []);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load groceries");
-      setGroceries([]);
+      setError(err instanceof Error ? err.message : "Failed to load souvenirs");
+      setSouvenirs([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchGroceries();
+    fetchSouvenirs();
   }, []);
 
-  const openDeleteModal = (grocery: Grocery) => {
+  const openDeleteModal = (souvenir: Souvenir) => {
     setDeleteModal({
       isOpen: true,
-      groceryId: grocery.id,
-      groceryName: grocery.name,
+      souvenirId: souvenir.id,
+      souvenirName: souvenir.name,
     });
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteModal.groceryId) return;
+    if (!deleteModal.souvenirId) return;
 
     try {
       setIsDeleting(true);
-      const response = await fetch(`/api/groceries/${deleteModal.groceryId}`, {
+      const response = await fetch(`/api/souvenirs/${deleteModal.souvenirId}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Failed to delete grocery");
-      setGroceries(groceries.filter((g) => g.id !== deleteModal.groceryId));
-      setDeleteModal({ isOpen: false, groceryId: null, groceryName: "" });
+      if (!response.ok) throw new Error("Failed to delete souvenir");
+      setSouvenirs(souvenirs.filter((item) => item.id !== deleteModal.souvenirId));
+      setDeleteModal({ isOpen: false, souvenirId: null, souvenirName: "" });
       showToast(
-        `Grocery "${deleteModal.groceryName}" deleted successfully!`,
+        `Souvenir "${deleteModal.souvenirName}" deleted successfully!`,
         "success"
       );
     } catch (err) {
@@ -92,10 +92,10 @@ export default function ManageGroceries() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Groceries
+            Souvenirs
           </h1>
           <p className="text-gray-600 text-lg mt-2">
-            Manage grocery items and inventory
+            Manage souvenir items and inventory
           </p>
         </div>
         <button
@@ -103,7 +103,7 @@ export default function ManageGroceries() {
           className="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-3 font-semibold hover:shadow-lg transition-all"
         >
           <Plus className="w-5 h-5" />
-          Add Grocery
+          Add Souvenir
         </button>
       </div>
 
@@ -115,34 +115,34 @@ export default function ManageGroceries() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader text="Loading groceries..." />
+          <Loader text="Loading souvenirs..." />
         </div>
-      ) : groceries.length === 0 ? (
+      ) : souvenirs.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-purple-200 bg-purple-50/50 text-center p-12">
           <ImageIcon className="w-16 h-16 text-purple-300 mx-auto mb-4" />
           <p className="text-gray-600 mb-4 text-lg font-semibold">
-            No groceries yet
+            No souvenirs yet
           </p>
           <button
             onClick={() => setShowAddModal(true)}
             className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-purple-700 transition"
           >
             <Plus className="w-5 h-5" />
-            Create your first grocery
+            Create your first souvenir
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {groceries.map((grocery) => (
+          {souvenirs.map((souvenir) => (
             <div
-              key={grocery.id}
+              key={souvenir.id}
               className="rounded-3xl bg-white border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow"
             >
               <div className="relative h-48 bg-linear-to-br from-purple-100 to-pink-100 overflow-hidden">
-                {grocery.imageUrl ? (
+                {souvenir.imageUrl ? (
                   <img
-                    src={grocery.imageUrl}
-                    alt={grocery.name}
+                    src={souvenir.imageUrl}
+                    alt={souvenir.name}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
@@ -155,10 +155,10 @@ export default function ManageGroceries() {
               <div className="p-5 space-y-4">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
-                    {grocery.name}
+                    {souvenir.name}
                   </h3>
                   <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                    {grocery.description || "No description"}
+                    {souvenir.description || "No description"}
                   </p>
                 </div>
 
@@ -168,7 +168,7 @@ export default function ManageGroceries() {
                       Price
                     </p>
                     <p className="text-2xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                      ₦{grocery.price.toLocaleString()}
+                      ₦{souvenir.price.toLocaleString()}
                     </p>
                   </div>
                   <div className="text-right">
@@ -176,21 +176,21 @@ export default function ManageGroceries() {
                       Added
                     </p>
                     <p className="text-sm font-semibold text-gray-700">
-                      {new Date(grocery.createdAt).toLocaleDateString()}
+                      {new Date(souvenir.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex gap-2 pt-2">
                   <button
-                    onClick={() => setEditingGroceryId(grocery.id)}
+                    onClick={() => setEditingSouvenirId(souvenir.id)}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-purple-200 text-purple-600 rounded-full font-semibold hover:bg-purple-50 transition"
                   >
                     <Edit className="w-4 h-4" />
                     Edit
                   </button>
                   <button
-                    onClick={() => openDeleteModal(grocery)}
+                    onClick={() => openDeleteModal(souvenir)}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-red-200 text-red-600 rounded-full font-semibold hover:bg-red-50 transition"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -204,32 +204,32 @@ export default function ManageGroceries() {
       )}
 
       {showAddModal && (
-        <AddGroceryModal
+        <AddSouvenirModal
           onClose={() => setShowAddModal(false)}
-          onSuccess={fetchGroceries}
+          onSuccess={fetchSouvenirs}
         />
       )}
 
-      {editingGroceryId && (
-        <AddGroceryModal
-          groceryId={editingGroceryId}
-          onClose={() => setEditingGroceryId(null)}
+      {editingSouvenirId && (
+        <AddSouvenirModal
+          souvenirId={editingSouvenirId}
+          onClose={() => setEditingSouvenirId(null)}
           onSuccess={() => {
-            fetchGroceries();
-            setEditingGroceryId(null);
+            fetchSouvenirs();
+            setEditingSouvenirId(null);
           }}
         />
       )}
 
       <DeleteModal
         isOpen={deleteModal.isOpen}
-        title="Delete Grocery Item"
-        message="Are you sure you want to delete this grocery item? This action cannot be undone."
-        itemName={deleteModal.groceryName}
+        title="Delete Souvenir Item"
+        message="Are you sure you want to delete this souvenir item? This action cannot be undone."
+        itemName={deleteModal.souvenirName}
         isLoading={isDeleting}
         onConfirm={handleConfirmDelete}
         onCancel={() =>
-          setDeleteModal({ isOpen: false, groceryId: null, groceryName: "" })
+          setDeleteModal({ isOpen: false, souvenirId: null, souvenirName: "" })
         }
       />
     </div>

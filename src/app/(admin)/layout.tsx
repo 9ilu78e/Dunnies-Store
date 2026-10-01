@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, Search, Bell, User } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
-import LogoutModal from "@/components/layout/LogoutModal";
+import AdminLogoutModal from "@/components/layout/AdminLogoutModal";
 import { getCurrentUser } from "@/services/authService";
-import Image from "next/image";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function AdminLayout({
   children,
@@ -51,23 +51,6 @@ export default function AdminLayout({
     };
     fetchAdmin();
   }, [isClient]);
-
-  const avatarUrl = useMemo(() => {
-    if (!user) return "";
-    
-    // Use photoURL first (from Google), then fallback to email-based avatar
-    if (user.photoURL) {
-      return user.photoURL;
-    }
-    
-    if (user.email) {
-      return `https://unavatar.io/${encodeURIComponent(user.email)}`;
-    }
-    
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      user.fullName || "Admin"
-    )}&background=0f172a&color=fff`;
-  }, [user]);
 
   return (
     <div className="flex h-screen bg-linear-to-br from-purple-50 via-white to-purple-100">
@@ -134,14 +117,13 @@ export default function AdminLayout({
               className="flex items-center gap-1 sm:gap-2 rounded-full border border-purple-100 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-white/80 hover:bg-white/90 transition shrink-0"
             >
               <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center shrink-0">
-                {user && avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt={user.fullName || "Admin"}
+                {user ? (
+                  <UserAvatar
+                    src={user.photoURL}
+                    alt={user.fullName || user.email || "Admin"}
                     width={32}
                     height={32}
                     className="object-cover"
-                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <User className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
@@ -162,7 +144,7 @@ export default function AdminLayout({
         </main>
       </div>
 
-      <LogoutModal
+      <AdminLogoutModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
       />

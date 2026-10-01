@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { getCurrentUser } from "@/services/authService";
 import { useWishlist } from "@/hooks/useWishlist";
 import LogoutModal from "./LogoutModal";
+import UserAvatar from "@/components/ui/UserAvatar";
 import {
   Menu,
   X,
@@ -62,7 +62,7 @@ export default function Header() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [giftCategories, setGiftCategories] = useState<Category[]>([]);
-  const [groceryCategories, setGroceryCategories] = useState<Category[]>([]);
+  const [souvenirCategories, setSouvenirCategories] = useState<Category[]>([]);
   const pathname = usePathname();
   const { items: wishlistItems } = useWishlist();
 
@@ -118,15 +118,15 @@ export default function Header() {
           setGiftCategories(data.categories || []);
         }
 
-        const groceryRes = await fetch(
-          `/api/categories?type=grocery&t=${Date.now()}`,
+        const souvenirRes = await fetch(
+          `/api/categories?type=souvenir&t=${Date.now()}`,
           {
             cache: "no-store",
           }
         );
-        if (groceryRes.ok && isSubscribed) {
-          const data = await groceryRes.json();
-          setGroceryCategories(data.categories || []);
+        if (souvenirRes.ok && isSubscribed) {
+          const data = await souvenirRes.json();
+          setSouvenirCategories(data.categories || []);
         }
       } catch (err) {
         console.error("Failed to fetch categories:", err);
@@ -148,22 +148,6 @@ export default function Header() {
     return user.displayName || user.email?.split("@")[0] || "User";
   }, [user]);
   const profileHref = getProfileDestination(user);
-  const avatarUrl = useMemo(() => {
-    if (!user) return "";
-    if (user.photoURL) {
-      return user.photoURL;
-    }
-    if (user.email) {
-      return `https://unavatar.io/${encodeURIComponent(user.email)}`;
-    }
-    if (user.displayName) {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        user.displayName
-      )}&background=8b5cf6&color=fff`;
-    }
-    return "";
-  }, [user?.displayName, user?.email, user?.photoURL]);
-
   const wishlistCount = wishlistItems.length;
 
   const navItems = useMemo(
@@ -193,10 +177,10 @@ export default function Header() {
         })),
       },
       {
-        label: "Groceries",
-        href: "/groceries",
-        icon: <ShoppingCart className="w-4 h-4" />,
-        children: groceryCategories.map((cat) => ({
+        label: "Souvenirs",
+        href: "/souvenirs",
+        icon: <Gift className="w-4 h-4" />,
+        children: souvenirCategories.map((cat) => ({
           label: cat.name,
           href: `/product?category=${cat.id}`,
         })),
@@ -226,7 +210,7 @@ export default function Header() {
         icon: <Phone className="w-4 h-4" />,
       },
     ],
-    [categories, giftCategories, groceryCategories]
+    [categories, giftCategories, souvenirCategories]
   );
 
   const toggleMobileMenu = () => {
@@ -304,7 +288,7 @@ export default function Header() {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search for gifts, groceries, and more..."
+                    placeholder="Search for gifts, souvenirs, and more..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full px-4 py-2 pl-10 pr-28 rounded-full border-2 border-gray-200 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100 transition-all duration-200 text-sm"
@@ -327,14 +311,13 @@ export default function Header() {
                 >
                   <div className="relative">
                     <span className="flex items-center justify-center w-9 h-9 rounded-full border-2 border-purple-200 bg-gradient-to-br from-purple-100 to-pink-100 group-hover:border-purple-400 overflow-hidden transition-all duration-200 group-hover:scale-105">
-                      {user && avatarUrl ? (
-                        <Image
-                          src={avatarUrl}
-                          alt={user.displayName || "User"}
+                      {user ? (
+                        <UserAvatar
+                          src={user.photoURL}
+                          alt={user.displayName || user.email || "User"}
                           width={36}
                           height={36}
                           className="object-cover"
-                          referrerPolicy="no-referrer"
                         />
                       ) : (
                         <User className="w-4 h-4 text-purple-600" />
@@ -365,14 +348,13 @@ export default function Header() {
                   <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-2.5 text-white">
                     <div className="flex items-center space-x-2">
                       <div className="w-9 h-9 rounded-full border-2 border-white/50 bg-white/20 flex items-center justify-center overflow-hidden">
-                        {user && avatarUrl ? (
-                          <Image
-                            src={avatarUrl}
-                            alt={user.displayName || "User"}
+                        {user ? (
+                          <UserAvatar
+                            src={user.photoURL}
+                            alt={user.displayName || user.email || "User"}
                             width={36}
                             height={36}
                             className="object-cover"
-                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           <User className="w-4 h-4 text-white" />
@@ -606,14 +588,13 @@ export default function Header() {
           </div>
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm border-2 border-white/30">
-              {user && avatarUrl ? (
-                <Image
-                  src={avatarUrl}
-                  alt={user.displayName || "User"}
+              {user ? (
+                <UserAvatar
+                  src={user.photoURL}
+                  alt={user.displayName || user.email || "User"}
                   width={48}
                   height={48}
                   className="object-cover"
-                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <User className="w-7 h-7 text-white" />
@@ -760,4 +741,3 @@ export default function Header() {
     </>
   );
 }
-

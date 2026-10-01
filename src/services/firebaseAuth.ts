@@ -9,6 +9,10 @@ export interface FirebaseUser {
 }
 
 export const getCurrentFirebaseUser = (): Promise<FirebaseUser | null> => {
+  if (!app) {
+    return Promise.resolve(null);
+  }
+
   return new Promise((resolve) => {
     const auth = getAuth(app);
     
@@ -42,23 +46,38 @@ export const getCurrentFirebaseUser = (): Promise<FirebaseUser | null> => {
 };
 
 export const signOutFirebase = async () => {
-  const auth = getAuth(app);
-  await auth.signOut();
-  
-  // Clear all local storage data
-  localStorage.removeItem('userId');
-  localStorage.removeItem('cart');
-  localStorage.removeItem('wishlist');
-  
-  // Clear any session data
-  if (typeof window !== 'undefined') {
-    // Clear email verification cookies
-    document.cookie = "email_verified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    
-    // Clear any potential session cookies or data
-    document.cookie.split(";").forEach(function(c) { 
-      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+  let logoutError: Error | null = null;
+
+  try {
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
     });
+    if (!response.ok) {
+      throw new Error(`Logout request failed (${response.status})`);
+    }
+  } catch (error) {
+    logoutError =
+      error instanceof Error ? error : new Error("Unable to clear server session");
   }
+
+  if (app) {
+    try {
+      await getAuth(app).signOut();
+    } catch (error) {
+      if (!logoutError) {
+        logoutError =
+          error instanceof Error ? error : new Error("Unable to sign out of Firebase");
+      }
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("userId");
+    for (const name of ["auth_token", "email_verified", "userId"]) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+    }
+  }
+
+  if (logoutError) throw logoutError;
 };

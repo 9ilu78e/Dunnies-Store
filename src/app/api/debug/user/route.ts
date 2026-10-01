@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from "@/lib/mongodb";
-import FirebaseUser from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-    
     const { searchParams } = new URL(request.url);
     const uid = searchParams.get('uid');
     const email = searchParams.get('email');
@@ -16,12 +13,12 @@ export async function GET(request: NextRequest) {
     
     let user;
     if (uid) {
-      user = await FirebaseUser.findOne({ uid });
+      user = await prisma.firebaseUser.findUnique({ where: { uid } });
     } else if (email) {
-      user = await FirebaseUser.findOne({ email });
+      user = await prisma.firebaseUser.findUnique({ where: { email } });
     } else {
       // Get all users
-      user = await FirebaseUser.find({});
+      user = await prisma.firebaseUser.findMany();
     }
     
     console.log('Found user(s):', user);

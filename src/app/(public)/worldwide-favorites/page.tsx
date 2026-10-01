@@ -54,7 +54,7 @@ const curatedCollections = [
   },
   {
     label: "Wellness rituals",
-    description: "Clean pantry heroes and mindful self-care from indie makers.",
+    description: "Artisan keepsakes and thoughtful self-care gifts from indie makers.",
     href: "/product",
   },
   {

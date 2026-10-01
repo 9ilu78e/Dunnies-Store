@@ -32,16 +32,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const currentUser = await getCurrentUser();
       
       if (currentUser) {
+        const normalizedEmail = currentUser.email || `${currentUser.uid}@local.user`;
         // Determine role - only admin for your specific email
-        const isAdmin = currentUser.email === 'toonm831@gmail.com';
+        const isAdmin = normalizedEmail === 'toonm831@gmail.com';
         const role = isAdmin ? 'admin' : 'user';
         
         const userData: User = {
           uid: currentUser.uid,
-          email: currentUser.email,
+          email: normalizedEmail,
           displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-          photoURL: currentUser.photoURL,
-          provider: currentUser.provider,
+          photoURL: currentUser.photoURL || undefined,
+          provider: currentUser.provider || 'firebase',
           role: role
         };
         

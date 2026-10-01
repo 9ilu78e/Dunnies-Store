@@ -94,8 +94,7 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
             Shop products
           </h1>
           <p className="text-slate-600 mt-2">
-            Browse curated collections of gifts, groceries, home goods, and
-            more.
+            Browse thoughtful gifts and memorable souvenirs for every occasion.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full max-w-lg">

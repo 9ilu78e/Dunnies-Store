@@ -109,22 +109,22 @@ async function fetchProductsByCategory(
             category.name
           )
         );
-      } else if (category.type === "grocery") {
-        const groceries = await prisma.grocery.findMany({
+      } else if (category.type === "souvenir") {
+        const souvenirs = await prisma.souvenir.findMany({
           where: {},
           orderBy: { createdAt: "desc" },
         });
-        return groceries.map((grocery: any) =>
+        return souvenirs.map((souvenir: any) =>
           adaptProductRecord(
             {
-              id: grocery.id,
-              name: grocery.name,
-              description: grocery.description || "",
-              price: grocery.price,
-              imageUrl: grocery.imageUrl || "",
+              id: souvenir.id,
+              name: souvenir.name,
+              description: souvenir.description || "",
+              price: souvenir.price,
+              imageUrl: souvenir.imageUrl || "",
               imageUrls:
-                grocery.imageUrls && grocery.imageUrls.length > 0
-                  ? grocery.imageUrls
+                souvenir.imageUrls && souvenir.imageUrls.length > 0
+                  ? souvenir.imageUrls
                   : undefined,
               category: category.name,
             },
@@ -167,7 +167,7 @@ async function fetchProductsByCategory(
       }
     }
 
-    const [products, gifts, groceries] = await Promise.all([
+    const [products, gifts, souvenirs] = await Promise.all([
       prisma.product.findMany({
         include: { category: true, comments: true },
         orderBy: { createdAt: "desc" },
@@ -175,7 +175,7 @@ async function fetchProductsByCategory(
       prisma.gift.findMany({
         orderBy: { createdAt: "desc" },
       }),
-      prisma.grocery.findMany({
+      prisma.souvenir.findMany({
         orderBy: { createdAt: "desc" },
       }),
     ]);
@@ -233,21 +233,21 @@ async function fetchProductsByCategory(
     );
 
     allProducts.push(
-      ...groceries.map((grocery: any) =>
+      ...souvenirs.map((souvenir: any) =>
         adaptProductRecord(
           {
-            id: grocery.id,
-            name: grocery.name,
-            description: grocery.description || "",
-            price: grocery.price,
-            imageUrl: grocery.imageUrl || "",
+            id: souvenir.id,
+            name: souvenir.name,
+            description: souvenir.description || "",
+            price: souvenir.price,
+            imageUrl: souvenir.imageUrl || "",
             imageUrls:
-              grocery.imageUrls && grocery.imageUrls.length > 0
-                ? grocery.imageUrls
+              souvenir.imageUrls && souvenir.imageUrls.length > 0
+                ? souvenir.imageUrls
                 : undefined,
-            category: "Groceries",
+            category: "Souvenirs",
           },
-          "Groceries"
+          "Souvenirs"
         )
       )
     );

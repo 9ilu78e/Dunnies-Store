@@ -17,7 +17,7 @@ import CategoriesGrid from "@/components/layout/CategoriesGrid";
 import CategoryShowcase from "@/components/layout/CategoryShowcase";
 import FeaturedProducts from "@/components/layout/FeaturedProducts";
 import FeaturedGifts from "@/components/layout/FeaturedGifts";
-import FeaturedGroceries from "@/components/layout/FeaturedGroceries";
+import FeaturedSouvenirs from "@/components/layout/FeaturedSouvenirs";
 import EcommerceHighlights from "@/components/layout/EcommerceHighlights";
 import PromoBanners from "@/components/layout/PromoBanners";
 import Testimonials from "@/components/layout/Testimonials";
@@ -33,7 +33,7 @@ export default function HomePage() {
       <CategoryShowcase />
       <FeaturedProducts />
       <FeaturedGifts />
-      <FeaturedGroceries />
+      <FeaturedSouvenirs />
       <SpotlightCollections />
       <EcommerceHighlights />
       <PromoBanners />

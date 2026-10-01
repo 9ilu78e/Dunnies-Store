@@ -33,14 +33,14 @@ export async function GET(request: NextRequest) {
 
         if (cat.type === "gift") {
           const giftCount = await prisma.gift.count({
-            where: {},
+            where: { categoryId: cat.id },
           });
           count = giftCount;
-        } else if (cat.type === "grocery") {
-          const groceryCount = await prisma.grocery.count({
-            where: {},
+        } else if (cat.type === "souvenir") {
+          const souvenirCount = await prisma.souvenir.count({
+            where: { categoryId: cat.id },
           });
-          count = groceryCount;
+          count = souvenirCount;
         }
 
         return {

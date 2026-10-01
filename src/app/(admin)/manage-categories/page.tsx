@@ -25,7 +25,7 @@ export default function ManageCategoriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [selectedType, setSelectedType] = useState<
-    "product" | "gift" | "grocery"
+    "product" | "gift" | "souvenir"
   >("product");
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
@@ -102,7 +102,7 @@ export default function ManageCategoriesPage() {
             Categories
           </h1>
           <p className="text-gray-600 text-lg mt-2">
-            Organize products, gifts, and groceries into categories
+            Organize products, gifts, and souvenirs into categories
           </p>
         </div>
         <button
@@ -115,7 +115,7 @@ export default function ManageCategoriesPage() {
       </div>
 
       <div className="flex gap-2">
-        {(["product", "gift", "grocery"] as const).map((type) => (
+        {(["product", "gift", "souvenir"] as const).map((type) => (
           <button
             key={type}
             onClick={() => setSelectedType(type)}

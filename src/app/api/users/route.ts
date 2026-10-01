@@ -4,6 +4,19 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    if (searchParams.get("count") === "true") {
+      const result = await prisma.$queryRaw<Array<{ total: number }>>`
+        SELECT COUNT(DISTINCT LOWER(email))::int AS total
+        FROM (
+          SELECT email FROM "User"
+          UNION ALL
+          SELECT email FROM "FirebaseUser"
+        ) AS all_users
+      `;
+
+      return NextResponse.json({ totalUsers: result[0]?.total ?? 0 });
+    }
+
     const limitParam = searchParams.get("limit");
     const take = limitParam ? Math.min(Number(limitParam), 100) : 50;
 

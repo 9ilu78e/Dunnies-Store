@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
     "lint": "eslint .",
     "format": "prettier --write .",
     "postinstall": "prisma generate"
@@ -26,7 +28,6 @@
     "firebase-admin": "^13.6.1",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.554.0",
-    "mongoose": "^9.1.6",
     "next": "latest",
     "nodemailer": "^8.0.1",
     "postcss": "^8.5.6",
