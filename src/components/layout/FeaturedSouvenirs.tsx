@@ -6,7 +6,7 @@ import { ChevronRight } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 import ProductList from "@/components/product/ProductList";
 
-interface Grocery {
+interface Souvenir {
   id: string;
   name: string;
   price: number;
@@ -14,53 +14,53 @@ interface Grocery {
   description: string;
 }
 
-export default function FeaturedGroceries() {
-  const [groceries, setGroceries] = useState<Grocery[]>([]);
+export default function FeaturedSouvenirs() {
+  const [souvenirs, setSouvenirs] = useState<Souvenir[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchGroceries = async () => {
+    const fetchSouvenirs = async () => {
       try {
-        const response = await fetch("/api/groceries");
+        const response = await fetch("/api/souvenirs");
         if (response.ok) {
           const data = await response.json();
-          setGroceries((data.groceries || []).slice(0, 2));
+          setSouvenirs((data.souvenirs || []).slice(0, 2));
         }
       } catch (error) {
-        console.error("Failed to fetch groceries:", error);
+        console.error("Failed to fetch souvenirs:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchGroceries();
+    fetchSouvenirs();
   }, []);
 
-  const formattedGroceries = groceries.map((gr) => ({
-    id: gr.id,
-    name: gr.name,
-    price: gr.price,
-    image: gr.imageUrl || "https://via.placeholder.com/400x400",
-    description: gr.description,
+  const formattedSouvenirs = souvenirs.map((souvenir) => ({
+    id: souvenir.id,
+    name: souvenir.name,
+    price: souvenir.price,
+    image: souvenir.imageUrl || "https://via.placeholder.com/400x400",
+    description: souvenir.description,
     rating: 4.5,
     reviews: 0,
-    href: `/product/${gr.id}`,
+    href: `/souvenirs/${souvenir.id}`,
   }));
 
   return (
-    <section className="py-8 sm:py-12 lg:py-16 bg-linear-to-b from-green-50 to-white">
+    <section className="py-8 sm:py-12 lg:py-16 bg-linear-to-b from-amber-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8 sm:mb-10 lg:mb-12">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              Featured Groceries
+              Featured Souvenirs
             </h2>
             <p className="text-lg text-gray-600">
-              Fresh essentials delivered to your door
+              Keepsakes and mementos for meaningful moments
             </p>
           </div>
           <Link
-            href="/groceries"
+            href="/souvenirs"
             className="hidden sm:flex items-center space-x-2 text-purple-600 font-semibold hover:text-purple-700 group"
           >
             <span>View All</span>
@@ -69,13 +69,13 @@ export default function FeaturedGroceries() {
         </div>
 
         {loading ? (
-          <Loader text="Loading featured groceries..." />
-        ) : groceries.length === 0 ? (
+          <Loader text="Loading featured souvenirs..." />
+        ) : souvenirs.length === 0 ? (
           <div className="text-center p-12">
-            <p className="text-gray-600">No groceries available yet.</p>
+            <p className="text-gray-600">No souvenirs available yet.</p>
           </div>
         ) : (
-          <ProductList products={formattedGroceries} cols={2} gap={8} />
+          <ProductList products={formattedSouvenirs} cols={2} gap={8} />
         )}
       </div>
     </section>

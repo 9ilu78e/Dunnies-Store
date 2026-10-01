@@ -81,11 +81,10 @@ export default function AboutPage() {
             </p>
             <p>
               Starting from a small warehouse in Lagos, we've grown into a
-              trusted name across Nigeria. We work directly with manufacturers
-              and verified suppliers to ensure every product meets our strict
-              quality standards. From fresh groceries to premium gifts,
-              electronics to fashion, we've carefully curated our selection to
-              serve the diverse needs of Nigerian families.
+              trusted name across Nigeria. We work with carefully selected
+              makers and suppliers to bring customers meaningful souvenirs,
+              locally inspired keepsakes, and thoughtful gifts for the moments
+              worth remembering.
             </p>
           </div>
         </div>

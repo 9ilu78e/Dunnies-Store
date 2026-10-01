@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       {
         status: 'error',
         error: errorMessage,
-        hint: 'Check your MongoDB Atlas connection and IP whitelist',
+        hint: 'Check DATABASE_URL, confirm PostgreSQL is running, and apply Prisma migrations',
       },
       { status: 500 }
     )

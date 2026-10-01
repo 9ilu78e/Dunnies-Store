@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebaseAdmin";
-import connectDB from "@/lib/mongodb";
-import FirebaseUser from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,57 +47,31 @@ export async function POST(request: NextRequest) {
     console.log('Is admin by email check:', isAdminByEmail);
     console.log('Admin dashboard path: /dashboard');
 
-    // Connect to MongoDB
     let user;
     try {
-      await connectDB();
-
-      console.log('✅ MongoDB connected, checking database...');
-
-      // First check if user exists
-      const existingUser = await FirebaseUser.findOne({ uid });
-      console.log('Existing user found:', existingUser);
-      
-      if (existingUser) {
-        console.log('Existing user role from database:', existingUser.role);
-      }
-
-      // If user exists, preserve their role, otherwise create new user with "user" role
-      if (existingUser) {
-        // Update existing user but preserve role
-        user = await FirebaseUser.findOneAndUpdate(
-          { uid },
-          {
-            email,
-            name,
-            photo: picture,
-            provider: "firebase",
-            updatedAt: new Date()
-          },
-          { new: true }
-        );
-        console.log('Updated existing user, role preserved:', user.role);
-      } else {
-        // Create new user - check if admin by email
-        const newRole = isAdminByEmail ? 'admin' : 'user';
-        console.log('Creating new user with role:', newRole, '(based on email check)');
-        
-        user = new FirebaseUser({
+      user = await prisma.firebaseUser.upsert({
+        where: { email },
+        update: {
+          uid,
+          name: name || undefined,
+          photo: picture || null,
+          provider: "firebase",
+        },
+        create: {
           uid,
           email,
-          name,
-          photo: picture,
+          name: name || email.split("@")[0],
+          photo: picture || null,
           provider: "firebase",
-          role: newRole
-        });
-        await user.save();
-        console.log('Created new user with role:', user.role);
-      }
+          role: isAdminByEmail ? "admin" : "user",
+        },
+      });
 
       console.log('✅ Database operation successful');
       console.log('Final user role from database:', user.role);
-    } catch (dbError: any) {
-      console.error('❌ Database connection failed for Google auth, using fallback:', dbError.message);
+    } catch (dbError) {
+      const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+      console.error('❌ Database connection failed for Google auth, using fallback:', errorMessage);
       
       // Create fallback user data - use admin role if email matches known admin
       const fallbackRole = isAdminByEmail ? 'admin' : 'user';
@@ -115,7 +88,7 @@ export async function POST(request: NextRequest) {
       console.log('Final fallback user role:', user.role);
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         uid: user.uid,
@@ -126,6 +99,16 @@ export async function POST(request: NextRequest) {
         role: user.role
       }
     });
+
+    response.cookies.set("auth_token", idToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60,
+    });
+
+    return response;
 
   } catch (error: any) {
     console.error("Firebase auth error:", error);

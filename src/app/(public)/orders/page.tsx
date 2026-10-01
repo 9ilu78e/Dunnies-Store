@@ -53,18 +53,18 @@ export default function OrdersPage() {
       total: 89.5,
       items: [
         {
-          name: "Fresh Fruit Box",
+          name: "Handcrafted Keepsake",
           quantity: 1,
           price: 34.99,
           image:
-            "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=100&q=80",
+            "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=100&q=80",
         },
         {
-          name: "Dairy Bundle",
+          name: "Locally Inspired Souvenir",
           quantity: 1,
           price: 54.51,
           image:
-            "https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=100&q=80",
+            "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=100&q=80",
         },
       ],
       statusColor: "text-blue-600",
@@ -370,4 +370,3 @@ export default function OrdersPage() {
     </div>
   );
 }
-

@@ -22,6 +22,7 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/hooks/useWishlist";
 import { getBaseUrl } from "@/utils/url";
 import { useAuth } from "@/hooks/useAuth";
+import { getWhatsAppLink } from "@/lib/whatsapp";
 
 type ProductDetailProps = {
   product: ProductRecord;

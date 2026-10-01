@@ -1,87 +1,84 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/services/authService";
+import jwt from "jsonwebtoken";
+import { adminAuth } from "@/lib/firebaseAdmin";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== CURRENT USER API CALLED ===');
-    
-    // Get current user using our unified auth service
-    const user = await getCurrentUser();
+    const authToken = request.cookies.get("auth_token")?.value;
+    const verifiedEmail = request.cookies.get("email_verified")?.value;
+    const emailUserId = request.cookies.get("userId")?.value;
 
-    console.log('Current user result:', user);
+    let responseUser;
 
-    if (!user) {
-      console.log('No user found from auth service, checking for token-based fallback...');
-      
-      // Fallback: Check for Authorization header or cookies for token-based auth
-      const authHeader = request.headers.get('authorization');
-      const token = authHeader?.replace('Bearer ', '') || 
-                   request.cookies.get('auth_token')?.value;
-      
-      if (token) {
-        console.log('Found token, creating fallback user');
-        // Determine role based on email - only admin for your specific email
-        const isAdmin = false; // Default to false for token fallback since we don't have email
-        const role = isAdmin ? 'admin' : 'user';
-        
-        const fallbackUser = {
-          uid: 'firebase_user',
-          email: 'user@example.com',
-          displayName: 'User',
-          photoURL: null,
-          provider: 'firebase',
-          role: role
-        };
-        
-        return NextResponse.json({
-          user: fallbackUser,
+    if (authToken) {
+      try {
+        const decodedToken = await adminAuth.verifyIdToken(authToken);
+        const user = await prisma.firebaseUser.findUnique({
+          where: { uid: decodedToken.uid },
         });
+        if (user) {
+          responseUser = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.name,
+            photoURL: user.photo,
+            provider: user.provider,
+            role: user.role,
+          };
+        }
+      } catch {
+        const decodedToken = jwt.verify(
+          authToken,
+          process.env.NEXTAUTH_SECRET || "your-secret-key"
+        );
+        if (typeof decodedToken !== "string" && typeof decodedToken.userId === "string") {
+          const user = await prisma.user.findUnique({
+            where: { id: decodedToken.userId },
+          });
+          if (user) {
+            responseUser = {
+              uid: user.id,
+              email: user.email,
+              displayName: user.fullName,
+              photoURL: null,
+              provider: "email",
+              role: user.role,
+            };
+          }
+        }
       }
-      
-      console.log('No user found anywhere, returning 401');
+    } else if (verifiedEmail && emailUserId) {
+      const user = await prisma.firebaseUser.findFirst({
+        where: {
+          email: { equals: decodeURIComponent(verifiedEmail), mode: "insensitive" },
+          uid: emailUserId,
+        },
+      });
+      if (user) {
+        responseUser = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.name,
+          photoURL: user.photo,
+          provider: user.provider,
+          role: user.role,
+        };
+      }
+    }
+
+    if (!responseUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log('User found, returning user data:', {
-      uid: user.uid,
-      email: user.email,
-      role: user.role || 'user'
-    });
-
-    return NextResponse.json({
-      user: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        provider: user.provider,
-        role: user.role || 'user'
-      },
-    });
+    return NextResponse.json({ user: responseUser });
   } catch (error) {
-    console.error("Current user error:", error);
-    
-    // Final fallback: Check if this is a known admin session by checking any existing session
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '') || 
-                 request.cookies.get('auth_token')?.value;
-    
-    if (token) {
-      console.log('Error but found token, creating fallback user');
-      const fallbackUser = {
-        uid: 'firebase_user',
-        email: 'user@example.com',
-        displayName: 'User',
-        photoURL: null,
-        provider: 'firebase',
-        role: 'user' // Default to user role
-      };
-      
-      return NextResponse.json({
-        user: fallbackUser,
-      });
-    }
-    
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.error("Current user lookup failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const status = message.includes("jwt") || message.includes("token") ? 401 : 500;
+    return NextResponse.json(
+      { error: status === 401 ? "Unauthorized" : "Unable to load current user" },
+      { status }
+    );
   }
 }

@@ -12,19 +12,22 @@ interface LogoutModalProps {
 
 export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleLogout = async () => {
     setLoading(true);
+    setError("");
     try {
       await signOutFirebase();
-      router.push("/login");
+      onClose();
+      router.replace("/login");
       router.refresh();
     } catch (err) {
       console.error("Logout failed:", err);
+      setError("Logout could not be completed. Please try again.");
     } finally {
       setLoading(false);
-      onClose();
     }
   };
 
@@ -32,7 +35,10 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/60"
+        onClick={() => !loading && onClose()}
+      />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in fade-in zoom-in duration-200">
         <button
           onClick={onClose}
@@ -48,6 +54,11 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
           </div>
           <h3 className="text-xl font-bold text-gray-800 mb-2">Logout?</h3>
           <p className="text-gray-600 text-sm">Your cart will be saved</p>
+          {error && (
+            <p role="alert" className="mt-3 text-sm text-red-600">
+              {error}
+            </p>
+          )}
         </div>
 
         <div className="flex gap-3 mt-6">

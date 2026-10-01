@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import UserAvatar from "@/components/ui/UserAvatar";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -27,18 +27,7 @@ type CurrentUser = {
   firstName?: string;
   email: string;
   phone?: string | null;
-};
-
-const getAvatarUrl = (fullName?: string, email?: string) => {
-  if (email) {
-    return `https://unavatar.io/${encodeURIComponent(email)}`;
-  }
-  if (fullName) {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      fullName
-    )}&background=8b5cf6&color=fff`;
-  }
-  return "https://ui-avatars.com/api/?name=Dunnis+Stores&background=8b5cf6&color=fff";
+  photoURL?: string | null;
 };
 
 export default function ProfileSettingsPage() {
@@ -94,11 +83,6 @@ export default function ProfileSettingsPage() {
       mounted = false;
     };
   }, [router]);
-
-  const avatar = useMemo(
-    () => getAvatarUrl(user?.fullName, user?.email),
-    [user?.fullName, user?.email]
-  );
 
   const userFullName =
     [profile.firstName, profile.lastName].filter(Boolean).join(" ") ||
@@ -263,13 +247,12 @@ export default function ProfileSettingsPage() {
                 {}
                 <div className="flex flex-col sm:flex-row items-center sm:gap-6 mb-8 pb-8 border-b border-gray-200 gap-4">
                   <div className="relative shrink-0">
-                    <Image
-                      src={avatar}
+                    <UserAvatar
+                      src={user?.photoURL}
                       alt={userFullName}
                       width={96}
                       height={96}
                       className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-gray-200"
-                      referrerPolicy="no-referrer"
                     />
                     {isEditing && (
                       <button className="absolute bottom-0 right-0 bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 transition-all">

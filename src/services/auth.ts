@@ -1,4 +1,5 @@
 import axios from "axios";
+import { signOutFirebase } from "@/services/firebaseAuth";
 
 const api = axios.create({
   baseURL: "",
@@ -38,7 +39,7 @@ export const register = async (data: { name: string; email: string; password: st
 };
 
 export const logout = async () => {
-  await api.post("/api/auth/logout");
+  await signOutFirebase();
 };
 
 export const getCurrentUser = async () => {

@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   fullName  String
   email     String   @unique
   phone     String?
@@ -25,11 +25,11 @@ model User {
 }
 
 model Category {
-  id          String   @id @default(cuid()) @map("_id")
+  id          String   @id @default(cuid())
   name        String
   description String?
   imageUrl    String?
-  type        String   @default("product") // "product", "gift", "grocery"
+  type        String   @default("product") // "product", "gift", "souvenir"
   priority    String   @default("normal") // "popular", "trending", "new", "normal"
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -37,13 +37,13 @@ model Category {
   
   products    Product[]
   gifts       Gift[]    @relation("GiftCategory")
-  groceries   Grocery[] @relation("GroceryCategory")
+  souvenirs   Souvenir[] @relation("SouvenirCategory")
   
   @@unique([name, type])
 }
 
 model Product {
-  id          String   @id @default(cuid()) @map("_id")
+  id          String   @id @default(cuid())
   name        String
   description String
   price       Float
@@ -61,7 +61,7 @@ model Product {
 }
 
 model Gift {
-  id          String   @id @default(cuid()) @map("_id")
+  id          String   @id @default(cuid())
   name        String
   description String?
   price       Float
@@ -74,8 +74,8 @@ model Gift {
   category    Category? @relation("GiftCategory", fields: [categoryId], references: [id])
 }
 
-model Grocery {
-  id          String   @id @default(cuid()) @map("_id")
+model Souvenir {
+  id          String   @id @default(cuid())
   name        String
   description String?
   price       Float
@@ -85,11 +85,11 @@ model Grocery {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  category    Category? @relation("GroceryCategory", fields: [categoryId], references: [id])
+  category    Category? @relation("SouvenirCategory", fields: [categoryId], references: [id])
 }
 
 model Order {
-  id            String     @id @default(cuid()) @map("_id")
+  id            String     @id @default(cuid())
   userId        String?
   customerName  String
   customerEmail String
@@ -106,7 +106,7 @@ model Order {
 }
 
 model EmailLog {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   to        String
   subject   String
   body      String
@@ -117,7 +117,7 @@ model EmailLog {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   orderId   String
   productId String
   quantity  Int
@@ -127,7 +127,7 @@ model OrderItem {
 }
 
 model ProductComment {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   productId String
   userId    String
   text      String
@@ -145,7 +145,7 @@ model ProductComment {
 }
 
 model CommentReply {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   commentId String
   userId    String
   text      String
@@ -161,7 +161,7 @@ model CommentReply {
 }
 
 model CommentLike {
-  id             String   @id @default(cuid()) @map("_id")
+  id             String   @id @default(cuid())
   userId         String
   commentId      String?
   replyId        String?
@@ -178,7 +178,7 @@ model CommentLike {
 }
 
 model ProductLike {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   productId String
   userId    String
   createdAt DateTime @default(now())
@@ -189,4 +189,16 @@ model ProductLike {
   @@unique([productId, userId])
   @@index([productId])
   @@index([userId])
+}
+
+model FirebaseUser {
+  id        String   @id @default(cuid())
+  uid       String   @unique @default(cuid())
+  email     String   @unique
+  name      String
+  photo     String?
+  provider  String   @default("firebase")
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

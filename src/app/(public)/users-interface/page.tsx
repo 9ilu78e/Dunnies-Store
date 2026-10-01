@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/ui/Loader";
+import UserAvatar from "@/components/ui/UserAvatar";
 import ProductCategoriesGrid from "@/components/layout/ProductCategoriesGrid";
 import { getCurrentUser } from "@/services/authService";
 import {
@@ -27,26 +27,7 @@ type CurrentUser = {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-};
-
-const getAvatarUrl = (photoURL?: string | null, displayName?: string | null, email?: string | null) => {
-  // Use Firebase photoURL if available
-  if (photoURL) {
-    return photoURL;
-  }
-  
-  // Fallback to other services
-  if (email) {
-    return `https://unavatar.io/${encodeURIComponent(email)}`;
-  }
-
-  if (displayName) {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      displayName
-    )}&background=8b5cf6&color=fff`;
-  }
-
-  return "https://ui-avatars.com/api/?name=Dunnis+Stores&background=8b5cf6&color=fff";
+  role?: string;
 };
 
 const essentialLinks = [
@@ -114,7 +95,7 @@ const supportCards = [
 const giftIdeas = [
   {
     title: "Birthday Bundles",
-    blurb: "Fresh picks for celebrations happening right now.",
+    blurb: "Thoughtful finds for celebrations happening right now.",
     href: "/gifts/birthday",
     tag: "Trending",
   },
@@ -152,6 +133,11 @@ export default function UsersInterfacePage() {
           return;
         }
 
+        if (currentUser.role?.toLowerCase() === "admin") {
+          router.replace("/dashboard");
+          return;
+        }
+
         setUser(currentUser);
       } catch (error) {
         if (isMounted) {
@@ -176,10 +162,6 @@ export default function UsersInterfacePage() {
     return user.displayName || user.email || "User";
   }, [user]);
 
-  const avatarUrl = useMemo(() => {
-    return getAvatarUrl(user?.photoURL, user?.displayName, user?.email);
-  }, [user?.photoURL, user?.displayName, user?.email]);
-
   if (loading) {
     return (
       <section className="min-h-[60vh] flex items-center justify-center">
@@ -200,13 +182,12 @@ export default function UsersInterfacePage() {
             <div className="flex items-start sm:items-center gap-3 sm:gap-4">
               <div className="relative shrink-0">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl border-2 border-white/30 overflow-hidden shadow-lg">
-                  <Image
-                    src={avatarUrl}
+                  <UserAvatar
+                    src={user.photoURL}
                     alt={`${greetingName} avatar`}
                     width={80}
                     height={80}
                     className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
                   />
                 </div>
                 <Link

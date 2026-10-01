@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from "@/lib/mongodb";
-import FirebaseUser from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,23 +9,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Connect to MongoDB
-    await connectDB();
-
-    // Find or create user with email
-    let user = await FirebaseUser.findOne({ email });
-    
-    if (!user) {
-      // Create new user if doesn't exist
-      user = new FirebaseUser({
+    const user = await prisma.firebaseUser.upsert({
+      where: { email },
+      update: {},
+      create: {
         email,
-        name: email.split('@')[0], // Use email prefix as name
+        name: email.split('@')[0],
         provider: "email",
-        role: "user", // Default role
-        uid: `email_${Date.now()}`, // Generate unique ID
-      });
-      await user.save();
-    }
+      },
+    });
 
     // Set session cookie for email verified user
     const response = NextResponse.json({
@@ -46,14 +37,16 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 60 * 60 * 24, // 24 hours
     });
 
     // Set user ID in localStorage equivalent cookie
     response.cookies.set('userId', user.uid, {
-      httpOnly: false, // Allow client-side access
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 60 * 60 * 24, // 24 hours
     });
 

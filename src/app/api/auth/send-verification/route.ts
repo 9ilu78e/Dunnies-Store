@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { prisma } from '@/lib/prisma';
 
 // Store verification tokens temporarily (in production, use Redis or database)
 const verificationTokens = new Map<string, { email: string; expires: number }>();
@@ -19,8 +20,6 @@ const createTransporter = () => {
   console.log('Host: smtp-relay.brevo.com');
   console.log('Port: 587');
   console.log('Secure: false');
-  console.log('Username:', process.env.SMTP_USERNAME);
-  console.log('Password length:', process.env.SMTP_PASSWORD?.length || 0);
   
   return nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
@@ -54,10 +53,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('=== EMAIL VERIFICATION REQUEST ===');
-    console.log('Email to send:', email);
-    console.log('SMTP Username:', process.env.SMTP_USERNAME);
-    console.log('SMTP Password exists:', !!process.env.SMTP_PASSWORD);
-    console.log('Sender Email:', process.env.SENDER_EMAIL);
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -65,15 +60,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
+    if (!process.env.SMTP_USERNAME || !process.env.SMTP_PASSWORD || !process.env.SENDER_EMAIL) {
+      console.error('Email verification is unavailable because SMTP configuration is incomplete.');
+      return NextResponse.json(
+        {
+          error: 'Email login is not configured. Set SMTP_USERNAME, SMTP_PASSWORD, and SENDER_EMAIL in .env.local, then restart the app.',
+        },
+        { status: 503 }
+      );
+    }
+
     // Generate verification token
     const token = generateVerificationToken();
     const expires = Date.now() + 15 * 60 * 1000; // 15 minutes
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const verificationLink = `${frontendUrl}/verify-email?token=${token}`;
-
-    console.log('Generated token:', token);
-    console.log('Verification link:', verificationLink);
-    console.log('Token expires at:', new Date(expires));
 
     // Store verification token
     verificationTokens.set(token, { email, expires });
@@ -92,42 +93,157 @@ export async function POST(request: NextRequest) {
     }
     
     const mailOptions = {
-      from: process.env.SENDER_EMAIL,
+      from: {
+        name: 'Dunnis Stores',
+        address: process.env.SENDER_EMAIL,
+      },
       to: email,
-      subject: 'Login Verification - Dunnis Stores',
+      subject: 'Your Dunnis Stores sign-in link',
+      text: `Use this link to sign in to Dunnis Stores:\n\n${verificationLink}\n\nThis link expires in 15 minutes. If you didn't request it, you can ignore this email.`,
       html: `
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #8b5cf6; font-size: 24px; margin-bottom: 10px;">Dunnis Stores</h1>
-            <p style="color: #666; font-size: 16px;">Login Verification</p>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Your Dunnis Stores sign-in link</title>
+        </head>
+        <body style="margin:0; padding:0; background-color:#f4f4f5; font-family: Arial, Helvetica, sans-serif;">
+          <!-- Preheader (hidden preview text) -->
+          <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:#f4f4f5;">
+            Tap the button to sign in to Dunnis Stores. This link expires in 15 minutes.
           </div>
-          
-          <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
-            <h2 style="color: #333; font-size: 18px; margin-bottom: 15px;">Click to Verify Your Login</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Click the button below to verify your email and login to your account</p>
-            
-            <a href="${verificationLink}" 
-               style="background: #8b5cf6; color: white; font-size: 16px; font-weight: bold; padding: 12px 30px; border-radius: 8px; text-decoration: none; display: inline-block;">
-              Verify and Login
-            </a>
-            
-            <p style="color: #666; font-size: 12px; margin-top: 20px;">This link will expire in 15 minutes</p>
-            <p style="color: #999; font-size: 12px; margin-top: 10px;">If the button doesn't work, copy and paste this link:</p>
-            <p style="color: #8b5cf6; font-size: 11px; word-break: break-all;">${verificationLink}</p>
-          </div>
-          
-          <div style="text-align: center; color: #666; font-size: 14px;">
-            <p>If you didn't request this login verification, please ignore this email.</p>
-            <p style="margin-top: 10px;">This is an automated message from Dunnis Stores.</p>
-          </div>
-        </div>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5; padding:24px 12px;">
+            <tr>
+              <td align="center">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+
+                  <!-- Top promo bar -->
+                  <tr>
+                    <td align="center" style="background-color:#111827; color:#ffffff; font-size:12px; letter-spacing:1px; padding:10px 16px; text-transform:uppercase;">
+                      Fresh deals every day &nbsp;•&nbsp; Shop with confidence
+                    </td>
+                  </tr>
+
+                  <!-- Header / Logo -->
+                  <tr>
+                    <td align="center" style="padding:32px 24px 8px 24px;">
+                      <div style="font-size:28px; font-weight:800; letter-spacing:1px; color:#111827;">
+                        DUNNIS <span style="color:#8b5cf6;">STORES</span>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Hero -->
+                  <tr>
+                    <td align="center" style="padding:16px 32px 0 32px;">
+                      <div style="width:64px; height:64px; line-height:64px; border-radius:50%; background-color:#f5f3ff; font-size:30px; margin:0 auto 16px auto;">
+                        🛍️
+                      </div>
+                      <h1 style="margin:0 0 12px 0; font-size:26px; line-height:1.3; color:#111827;">
+                        Welcome back! Let's get you signed in
+                      </h1>
+                      <p style="margin:0; font-size:15px; line-height:1.6; color:#4b5563;">
+                        Tap the button below to securely sign in to your Dunnis Stores account and continue shopping.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- CTA Button -->
+                  <tr>
+                    <td align="center" style="padding:28px 32px 8px 32px;">
+                      <a href="${verificationLink}"
+                         style="display:inline-block; background-color:#8b5cf6; background-image:linear-gradient(90deg,#8b5cf6,#ec4899); color:#ffffff; text-decoration:none; font-size:16px; font-weight:bold; padding:16px 40px; border-radius:8px;">
+                        Sign in to Dunnis Stores
+                      </a>
+                    </td>
+                  </tr>
+
+                  <!-- Expiry notice -->
+                  <tr>
+                    <td align="center" style="padding:12px 32px 24px 32px;">
+                      <p style="margin:0; font-size:13px; color:#6b7280;">
+                        ⏱️ This link expires in <strong>15 minutes</strong>.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Divider -->
+                  <tr>
+                    <td style="padding:0 32px;">
+                      <hr style="border:none; border-top:1px solid #e5e7eb; margin:0;" />
+                    </td>
+                  </tr>
+
+                  <!-- Perks row -->
+                  <tr>
+                    <td style="padding:24px 24px 8px 24px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" width="33%" style="padding:8px; font-size:12px; color:#374151;">
+                            <div style="font-size:22px; margin-bottom:6px;">🚚</div>
+                            <strong>Fast Delivery</strong><br />
+                            <span style="color:#6b7280;">Right to your door</span>
+                          </td>
+                          <td align="center" width="33%" style="padding:8px; font-size:12px; color:#374151;">
+                            <div style="font-size:22px; margin-bottom:6px;">🔒</div>
+                            <strong>Secure Checkout</strong><br />
+                            <span style="color:#6b7280;">Safe &amp; protected</span>
+                          </td>
+                          <td align="center" width="33%" style="padding:8px; font-size:12px; color:#374151;">
+                            <div style="font-size:22px; margin-bottom:6px;">💬</div>
+                            <strong>Friendly Support</strong><br />
+                            <span style="color:#6b7280;">Here when you need us</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Fallback link -->
+                  <tr>
+                    <td style="padding:16px 32px 8px 32px;">
+                      <p style="margin:0 0 6px 0; font-size:12px; color:#6b7280;">
+                        Button not working? Copy and paste this link into your browser:
+                      </p>
+                      <p style="margin:0; font-size:12px; word-break:break-all;">
+                        <a href="${verificationLink}" style="color:#8b5cf6; text-decoration:underline;">${verificationLink}</a>
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Security note -->
+                  <tr>
+                    <td style="padding:16px 32px 32px 32px;">
+                      <p style="margin:0; font-size:12px; line-height:1.6; color:#9ca3af;">
+                        If you didn't request this email, you can safely ignore it. Someone may have entered your email address by mistake.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td align="center" style="background-color:#111827; padding:24px 24px;">
+                      <p style="margin:0 0 6px 0; font-size:14px; font-weight:bold; color:#ffffff; letter-spacing:1px;">
+                        DUNNIS STORES
+                      </p>
+                      <p style="margin:0; font-size:12px; color:#9ca3af;">
+                        &copy; ${new Date().getFullYear()} Dunnis Stores. All rights reserved.
+                      </p>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
       `,
     };
 
     console.log('Mail options prepared:');
-    console.log('From:', process.env.SENDER_EMAIL);
-    console.log('To:', email);
-    console.log('Subject: Login Verification - Dunnis Stores');
+    console.log('Subject: Your Dunnis Stores sign-in link');
 
     try {
       const result = await transporter.sendMail(mailOptions);
@@ -183,34 +299,25 @@ export async function GET(request: NextRequest) {
     // Delete token after successful verification
     verificationTokens.delete(token);
 
-    // Try to connect to MongoDB and create/find user
-    let user = null;
+    // Find or create the verified user in PostgreSQL.
+    let user;
     try {
-      const connectDB = (await import("@/lib/mongodb")).default;
-      const FirebaseUser = (await import("@/models/User")).default;
-      
-      await connectDB();
-
-      // Find or create user with email
-      user = await FirebaseUser.findOne({ email: verificationData.email });
-      
-      if (!user) {
-        // Create new user if doesn't exist
-        user = new FirebaseUser({
-          email: verificationData.email,
-          name: verificationData.email.split('@')[0], // Use email prefix as name
-          provider: "email",
-          role: "user", // Default role
-          uid: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
-        });
-        await user.save();
-      }
+      user = await prisma.firebaseUser.upsert({
+        where: { email: verificationData.email },
+        update: {},
+        create: {
+            email: verificationData.email,
+            name: verificationData.email.split('@')[0],
+            provider: "email",
+        },
+      });
 
       console.log('Email verification successful for:', verificationData.email);
       console.log('User role from database:', user.role);
       console.log('User UID:', user.uid);
-    } catch (dbError: any) {
-      console.error('⚠️ Database connection failed, using fallback:', dbError.message);
+    } catch (dbError) {
+      const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+      console.error('⚠️ Database connection failed, using fallback:', errorMessage);
       
       // Create fallback user data
       user = {
@@ -236,14 +343,16 @@ export async function GET(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 60 * 60 * 24, // 24 hours
     });
 
     // Set user ID cookie
     response.cookies.set('userId', user.uid, {
-      httpOnly: false, // Allow client-side access
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 60 * 60 * 24, // 24 hours
     });
 

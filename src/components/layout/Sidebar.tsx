@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import UserAvatar from "@/components/ui/UserAvatar";
 import {
   LayoutDashboard,
   Package,
@@ -37,8 +36,8 @@ const navItems = [
     icon: Package,
   },
   {
-    label: "Groceries",
-    href: "/manage-groceries",
+    label: "Souvenirs",
+    href: "/manage-souvenirs",
     icon: Package,
   },
   {
@@ -66,6 +65,7 @@ const navItems = [
 type SidebarUser = {
   fullName?: string;
   email?: string;
+  photoURL?: string;
 } | null;
 
 interface SidebarProps {
@@ -75,19 +75,6 @@ interface SidebarProps {
 
 export default function Sidebar({ user, onNavClick }: SidebarProps) {
   const pathname = usePathname();
-
-  const avatarUrl = useMemo(() => {
-    if (!user) return "";
-    if (user.email) {
-      return `https://unavatar.io/${encodeURIComponent(user.email)}`;
-    }
-    if (user.fullName) {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        user.fullName
-      )}&background=0f172a&color=fff`;
-    }
-    return "";
-  }, [user]);
 
   return (
     <aside className="h-full w-72 bg-linear-to-b from-purple-950 via-purple-900 to-purple-800 text-white flex flex-col border-r border-purple-950">
@@ -99,14 +86,13 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
 
         <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3 shadow-inner">
           <div className="w-10 h-10 rounded-2xl overflow-hidden bg-white/10 flex items-center justify-center shrink-0">
-            {avatarUrl ? (
-              <Image
-                src={avatarUrl}
-                alt={user?.fullName || "Admin avatar"}
-                width={58}
-                height={58}
+            {user ? (
+              <UserAvatar
+                src={user.photoURL}
+                alt={user.fullName || user.email || "Admin"}
+                width={40}
+                height={40}
                 className="object-cover"
-                referrerPolicy="no-referrer"
               />
             ) : (
               <User className="w-10 h-10" />

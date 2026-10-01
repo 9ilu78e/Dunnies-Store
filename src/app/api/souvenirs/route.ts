@@ -4,17 +4,17 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    const groceries = await prisma.grocery.findMany({
+    const souvenirs = await prisma.souvenir.findMany({
       orderBy: { createdAt: "desc" },
     });
 
-    // Fetch all comments and likes for these groceries
-    const groceryIds = groceries.map((g: any) => g.id);
+    // Fetch all comments and likes for these souvenirs
+    const souvenirIds = souvenirs.map((g: any) => g.id);
     const allComments = await prisma.productComment.findMany({
-      where: { productId: { in: groceryIds } },
+      where: { productId: { in: souvenirIds } },
     });
     const allLikes = await prisma.productLike.findMany({
-      where: { productId: { in: groceryIds } },
+      where: { productId: { in: souvenirIds } },
     });
 
     // Create maps for efficient lookup
@@ -31,35 +31,35 @@ export async function GET(request: NextRequest) {
       likesMap.get(l.productId)!.push(l);
     });
 
-    const groceriesWithProcessedImages = groceries.map((grocery: any) => {
-      const groceryComments = commentsMap.get(grocery.id) || [];
-      const groceryLikes = likesMap.get(grocery.id) || [];
+    const souvenirsWithProcessedImages = souvenirs.map((souvenir: any) => {
+      const souvenirComments = commentsMap.get(souvenir.id) || [];
+      const souvenirLikes = likesMap.get(souvenir.id) || [];
 
       // Map imageUrls array to image (first) and images (all)
-      const imageUrls = Array.isArray(grocery.imageUrls) && grocery.imageUrls.length > 0
-        ? grocery.imageUrls
-        : (grocery.imageUrl && typeof grocery.imageUrl === 'string')
-        ? [grocery.imageUrl]
+      const imageUrls = Array.isArray(souvenir.imageUrls) && souvenir.imageUrls.length > 0
+        ? souvenir.imageUrls
+        : (souvenir.imageUrl && typeof souvenir.imageUrl === 'string')
+        ? [souvenir.imageUrl]
         : [];
 
       // Calculate average rating
-      const ratings = (groceryComments as any[]).map((c: any) => c.rating);
+      const ratings = (souvenirComments as any[]).map((c: any) => c.rating);
       const averageRating = ratings.length > 0 
         ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
         : 0;
 
       return {
-        ...grocery,
+        ...souvenir,
         image: imageUrls[0] || "",
         images: imageUrls,
-        imageUrl: imageUrls[0] || grocery.imageUrl || "",
+        imageUrl: imageUrls[0] || souvenir.imageUrl || "",
         averageRating,
-        totalComments: groceryComments.length,
-        totalLikes: groceryLikes.length,
+        totalComments: souvenirComments.length,
+        totalLikes: souvenirLikes.length,
       };
     });
 
-    return NextResponse.json({ groceries: groceriesWithProcessedImages }, {
+    return NextResponse.json({ souvenirs: souvenirsWithProcessedImages }, {
       headers: {
         'Cache-Control': 'no-store, must-revalidate',
         'Pragma': 'no-cache',
@@ -67,9 +67,9 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("[GROCERIES_GET]", error);
+    console.error("[SOUVENIRS_GET]", error);
     return NextResponse.json(
-      { error: "Unable to fetch groceries" },
+      { error: "Unable to fetch souvenirs" },
       { status: 500 }
     );
   }
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const groceryData: any = {
+    const souvenirData: any = {
       name,
       description,
       price: parseFloat(price),
@@ -95,26 +95,26 @@ export async function POST(request: NextRequest) {
 
     // Handle imageUrls array from frontend
     if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0) {
-      groceryData.imageUrls = imageUrls;
-      groceryData.imageUrl = imageUrls[0] || imageUrl;
+      souvenirData.imageUrls = imageUrls;
+      souvenirData.imageUrl = imageUrls[0] || imageUrl;
     } else if (imageUrl && String(imageUrl).trim()) {
-      groceryData.imageUrl = imageUrl;
-      groceryData.imageUrls = [imageUrl];
+      souvenirData.imageUrl = imageUrl;
+      souvenirData.imageUrls = [imageUrl];
     }
 
     if (categoryId && String(categoryId).trim() && String(categoryId) !== "null") {
-      groceryData.categoryId = categoryId;
+      souvenirData.categoryId = categoryId;
     }
 
-    const grocery = await prisma.grocery.create({
-      data: groceryData,
+    const souvenir = await prisma.souvenir.create({
+      data: souvenirData,
     });
 
-    return NextResponse.json({ grocery }, { status: 201 });
+    return NextResponse.json({ souvenir }, { status: 201 });
   } catch (error) {
-    console.error("[GROCERIES_POST]", error);
+    console.error("[SOUVENIRS_POST]", error);
     return NextResponse.json(
-      { error: "Unable to create grocery" },
+      { error: "Unable to create souvenir" },
       { status: 500 }
     );
   }

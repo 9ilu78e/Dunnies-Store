@@ -56,7 +56,7 @@ export default async function EditProduct({
               </label>
               <select className="w-full rounded-2xl border border-gray-200 mt-1 p-3 focus:border-purple-500 focus:outline-none">
                 <option>Gifts</option>
-                <option>Groceries</option>
+                <option>Souvenirs</option>
                 <option>Home</option>
               </select>
             </div>

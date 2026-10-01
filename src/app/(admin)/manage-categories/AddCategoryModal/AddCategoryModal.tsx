@@ -8,7 +8,7 @@ interface AddCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  selectedType: "product" | "gift" | "grocery";
+  selectedType: "product" | "gift" | "souvenir";
   editingCategory?: {
     id: string;
     name: string;

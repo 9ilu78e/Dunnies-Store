@@ -33,13 +33,14 @@ async function getProductFromDatabase(id: string) {
       };
     }
 
-    const grocery = await prisma.grocery.findUnique({
+    const souvenir = await prisma.souvenir.findUnique({
       where: { id },
+      include: { category: true },
     });
 
-    if (grocery) {
+    if (souvenir) {
       return {
-        ...grocery,
+        ...souvenir,
         categoryId: null,
         category: null,
         priority: "normal",

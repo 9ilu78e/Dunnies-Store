@@ -38,8 +38,7 @@ export default function AdminDashboard() {
         console.log('Auth response data:', data);
         
         // Check if user is admin (by role or email)
-        const isAdmin = data.user?.role === "admin" || 
-                       data.user?.email === "toonm831@gmail.com";
+        const isAdmin = data.user?.role === "admin";
         
         console.log('Is admin check:', isAdmin, '(role:', data.user?.role, 'email:', data.user?.email, ')');
         
@@ -75,26 +74,28 @@ export default function AdminDashboard() {
         const giftsRes = await fetch("/api/gifts");
         const giftsData = giftsRes.ok ? await giftsRes.json() : { gifts: [] };
 
-        const groceriesRes = await fetch("/api/groceries");
-        const groceriesData = groceriesRes.ok
-          ? await groceriesRes.json()
-          : { groceries: [] };
+        const souvenirsRes = await fetch("/api/souvenirs");
+        const souvenirsData = souvenirsRes.ok
+          ? await souvenirsRes.json()
+          : { souvenirs: [] };
 
         const ordersRes = await fetch("/api/orders");
         const ordersData = ordersRes.ok
           ? await ordersRes.json()
           : { orders: [] };
 
-        const usersRes = await fetch("/api/users");
-        const usersData = usersRes.ok ? await usersRes.json() : { users: [] };
+        const usersRes = await fetch("/api/users?count=true");
+        if (!usersRes.ok) {
+          throw new Error("Failed to fetch user count");
+        }
+        const usersData = await usersRes.json();
 
         const orders = ordersData.orders || [];
         const products = productsData.products || [];
         const gifts = giftsData.gifts || [];
-        const groceries = groceriesData.groceries || [];
-        const users = usersData.users || [];
+        const souvenirs = souvenirsData.souvenirs || [];
 
-        const allItems = [...products, ...gifts, ...groceries];
+        const allItems = [...products, ...gifts, ...souvenirs];
         const totalRevenue = orders.reduce(
           (sum: number, order: any) => sum + (order.total || 0),
           0
@@ -115,7 +116,7 @@ export default function AdminDashboard() {
           totalProducts: allItems.length,
           totalOrders: orders.length,
           totalRevenue: totalRevenue,
-          totalCustomers: users.length,
+          totalCustomers: usersData.totalUsers,
           recentOrders,
           bestSellers,
         });
@@ -157,7 +158,7 @@ export default function AdminDashboard() {
       bgColor: "bg-emerald-50",
     },
     {
-      label: "Total Customers",
+      label: "Total Users",
       value: data?.totalCustomers || 0,
       trend: `${data?.totalCustomers || 0} users`,
       icon: Users,

@@ -34,9 +34,9 @@ export default function Footer() {
                 Dunni Stores
               </h3>
               <p className="text-sm leading-relaxed text-gray-400">
-                Your trusted online marketplace for premium products, fresh
-                groceries, and everything you need delivered right to your
-                doorstep across Nigeria.
+                Your home for thoughtful gifts and memorable souvenirs,
+                carefully chosen to help celebrate the moments that matter
+                across Nigeria.
               </p>
             </div>
 
@@ -156,10 +156,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/groceries"
+                  href="/souvenirs"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
-                  Fresh Groceries
+                  Souvenirs & Keepsakes
                 </Link>
               </li>
               <li>

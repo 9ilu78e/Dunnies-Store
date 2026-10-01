@@ -4,17 +4,17 @@ import ProductDetailWrapper from "@/components/product/ProductDetailWrapper";
 import { type ProductRecord } from "@/Data/products";
 import { prisma } from "@/lib/prisma";
 
-type GroceryDetailPageProps = {
+type SouvenirDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-async function getGroceryFromDatabase(id: string) {
+async function getSouvenirFromDatabase(id: string) {
   try {
-    const grocery = await prisma.grocery.findUnique({
+    const souvenir = await prisma.souvenir.findUnique({
       where: { id },
     });
 
-    if (grocery) {
+    if (souvenir) {
       // Fetch comments and likes separately
       const comments = await prisma.productComment.findMany({
         where: { productId: id },
@@ -23,7 +23,7 @@ async function getGroceryFromDatabase(id: string) {
         where: { productId: id },
       });
 
-      return { ...grocery, comments, likes };
+      return { ...souvenir, comments, likes };
     }
 
     return null;
@@ -32,17 +32,17 @@ async function getGroceryFromDatabase(id: string) {
   }
 }
 
-function transformDatabaseGrocery(dbGrocery: any): ProductRecord {
+function transformDatabaseSouvenir(dbSouvenir: any): ProductRecord {
   console.log(
-    `[GroceryDetail] ${dbGrocery.name}: imageUrl="${
-      dbGrocery.imageUrl
+    `[SouvenirDetail] ${dbSouvenir.name}: imageUrl="${
+      dbSouvenir.imageUrl
     }", imageUrls=${
-      dbGrocery.imageUrls ? `[${dbGrocery.imageUrls.join(",")}]` : "[]"
+      dbSouvenir.imageUrls ? `[${dbSouvenir.imageUrls.join(",")}]` : "[]"
     }`
   );
 
   // Calculate average rating from comments
-  const ratings = (dbGrocery.comments as any[]).map((c: any) => c.rating);
+  const ratings = (dbSouvenir.comments as any[]).map((c: any) => c.rating);
   const averageRating =
     ratings.length > 0
       ? Math.round(
@@ -55,18 +55,18 @@ function transformDatabaseGrocery(dbGrocery: any): ProductRecord {
   // Prioritize imageUrls array first, then imageUrl, then unsplash default
   let imageUrls = [];
   if (
-    dbGrocery.imageUrls &&
-    Array.isArray(dbGrocery.imageUrls) &&
-    dbGrocery.imageUrls.length > 0
+    dbSouvenir.imageUrls &&
+    Array.isArray(dbSouvenir.imageUrls) &&
+    dbSouvenir.imageUrls.length > 0
   ) {
-    imageUrls = dbGrocery.imageUrls.filter((url: string) => url && url.trim());
+    imageUrls = dbSouvenir.imageUrls.filter((url: string) => url && url.trim());
   }
   if (
     imageUrls.length === 0 &&
-    dbGrocery.imageUrl &&
-    dbGrocery.imageUrl.trim()
+    dbSouvenir.imageUrl &&
+    dbSouvenir.imageUrl.trim()
   ) {
-    imageUrls = [dbGrocery.imageUrl];
+    imageUrls = [dbSouvenir.imageUrl];
   }
   if (imageUrls.length === 0) {
     imageUrls = [
@@ -75,39 +75,39 @@ function transformDatabaseGrocery(dbGrocery: any): ProductRecord {
   }
 
   return {
-    id: dbGrocery.id,
-    name: dbGrocery.name,
-    description: dbGrocery.description || "",
-    longDescription: dbGrocery.description || "",
-    price: dbGrocery.price,
+    id: dbSouvenir.id,
+    name: dbSouvenir.name,
+    description: dbSouvenir.description || "",
+    longDescription: dbSouvenir.description || "",
+    price: dbSouvenir.price,
     originalPrice: undefined,
     rating: averageRating,
-    reviewsCount: dbGrocery.comments.length,
+    reviewsCount: dbSouvenir.comments.length,
     image: imageUrls[0],
     images: imageUrls,
-    tag: "Grocery",
-    category: "Groceries",
-    href: `/groceries/${dbGrocery.id}`,
+    tag: "Souvenir",
+    category: "Souvenirs",
+    href: `/souvenirs/${dbSouvenir.id}`,
     stockStatus: "in-stock" as const,
-    highlights: ["Fresh quality", "Fast delivery", "Best prices"],
+    highlights: ["Locally inspired", "Giftable keepsake", "Made to remember"],
     specs: [
-      { label: "SKU", value: dbGrocery.id },
-      { label: "Category", value: "Groceries" },
+      { label: "SKU", value: dbSouvenir.id },
+      { label: "Category", value: "Souvenirs" },
     ],
     reviews: [],
   };
 }
 
-export default async function GroceryDetailPage({
+export default async function SouvenirDetailPage({
   params,
-}: GroceryDetailPageProps) {
+}: SouvenirDetailPageProps) {
   const { id } = await params;
 
-  let dbGrocery = await getGroceryFromDatabase(id);
+  let dbSouvenir = await getSouvenirFromDatabase(id);
   let product: ProductRecord | null = null;
 
-  if (dbGrocery) {
-    product = transformDatabaseGrocery(dbGrocery);
+  if (dbSouvenir) {
+    product = transformDatabaseSouvenir(dbSouvenir);
   }
 
   if (!product) {

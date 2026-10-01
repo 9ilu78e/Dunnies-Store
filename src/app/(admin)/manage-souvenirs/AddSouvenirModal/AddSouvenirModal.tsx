@@ -4,17 +4,17 @@ import { useState, useRef, useEffect } from "react";
 import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 
-interface AddGroceryModalProps {
+interface AddSouvenirModalProps {
   onClose: () => void;
   onSuccess: () => void;
-  groceryId?: string | null;
+  souvenirId?: string | null;
 }
 
-export default function AddGroceryModal({
+export default function AddSouvenirModal({
   onClose,
   onSuccess,
-  groceryId,
-}: AddGroceryModalProps) {
+  souvenirId,
+}: AddSouvenirModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -32,31 +32,31 @@ export default function AddGroceryModal({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/categories?type=grocery");
+        const response = await fetch("/api/categories?type=souvenir");
         if (response.ok) {
           const data = await response.json();
           setCategories(data.categories || []);
         }
 
-        if (groceryId) {
-          const groceryResponse = await fetch(`/api/groceries/${groceryId}`);
-          if (groceryResponse.ok) {
-            const groceryData = await groceryResponse.json();
-            const grocery = groceryData.grocery;
+        if (souvenirId) {
+          const souvenirResponse = await fetch(`/api/souvenirs/${souvenirId}`);
+          if (souvenirResponse.ok) {
+            const souvenirData = await souvenirResponse.json();
+            const souvenir = souvenirData.souvenir;
             setFormData({
-              name: grocery.name || "",
-              description: grocery.description || "",
-              price: grocery.price || "",
-              imageUrl: grocery.imageUrl || "",
-              categoryId: grocery.categoryId || "",
+              name: souvenir.name || "",
+              description: souvenir.description || "",
+              price: souvenir.price || "",
+              imageUrl: souvenir.imageUrl || "",
+              categoryId: souvenir.categoryId || "",
             });
-            if (grocery.imageUrl) {
-              setImagePreviews([grocery.imageUrl]);
+            if (souvenir.imageUrl) {
+              setImagePreviews([souvenir.imageUrl]);
             }
             // Load existing imageUrls
-            if (grocery.imageUrls && grocery.imageUrls.length > 0) {
+            if (souvenir.imageUrls && souvenir.imageUrls.length > 0) {
               setImagePreviews((prev) => [
-                ...new Set([...prev, ...grocery.imageUrls]),
+                ...new Set([...prev, ...souvenir.imageUrls]),
               ]);
             }
           }
@@ -68,10 +68,10 @@ export default function AddGroceryModal({
       }
     };
 
-    if (groceryId || formData.name === "") {
+    if (souvenirId || formData.name === "") {
       fetchData();
     }
-  }, [groceryId]);
+  }, [souvenirId]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -125,7 +125,7 @@ export default function AddGroceryModal({
         if (image instanceof File) {
           const uploadFormData = new FormData();
           uploadFormData.append("file", image);
-          uploadFormData.append("folder", "groceries");
+          uploadFormData.append("folder", "souvenirs");
 
           const uploadResponse = await fetch("/api/upload", {
             method: "POST",
@@ -156,8 +156,8 @@ export default function AddGroceryModal({
         categoryId: formData.categoryId,
       };
 
-      const url = groceryId ? `/api/groceries/${groceryId}` : "/api/groceries";
-      const method = groceryId ? "PUT" : "POST";
+      const url = souvenirId ? `/api/souvenirs/${souvenirId}` : "/api/souvenirs";
+      const method = souvenirId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
@@ -170,7 +170,7 @@ export default function AddGroceryModal({
       if (!response.ok) {
         const data = await response.json();
         throw new Error(
-          data.error || `Failed to ${groceryId ? "update" : "create"} grocery`
+          data.error || `Failed to ${souvenirId ? "update" : "create"} souvenir`
         );
       }
 
@@ -185,9 +185,9 @@ export default function AddGroceryModal({
       setImagePreviews([]);
 
       showToast(
-        groceryId
-          ? `Grocery "${formData.name}" updated successfully!`
-          : `Grocery "${formData.name}" added successfully!`,
+        souvenirId
+          ? `Souvenir "${formData.name}" updated successfully!`
+          : `Souvenir "${formData.name}" added successfully!`,
         "success"
       );
 
@@ -207,7 +207,7 @@ export default function AddGroceryModal({
       <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">
-            {groceryId ? "Edit Grocery" : "Add Grocery"}
+            {souvenirId ? "Edit Souvenir" : "Add Souvenir"}
           </h2>
           <button
             onClick={onClose}
@@ -279,7 +279,7 @@ export default function AddGroceryModal({
 
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Grocery Images (up to 10) *
+              Souvenir Images (up to 10) *
             </label>
             <button
               type="button"
@@ -366,12 +366,12 @@ export default function AddGroceryModal({
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading
-                ? groceryId
+                ? souvenirId
                   ? "Updating..."
                   : "Creating..."
-                : groceryId
-                ? "Update Grocery"
-                : "Add Grocery"}
+                : souvenirId
+                ? "Update Souvenir"
+                : "Add Souvenir"}
             </button>
           </div>
         </form>

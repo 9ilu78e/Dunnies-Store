@@ -10,13 +10,13 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const grocery = await prisma.grocery.findUnique({
+    const souvenir = await prisma.souvenir.findUnique({
       where: { id },
     });
 
-    if (!grocery) {
+    if (!souvenir) {
       return NextResponse.json(
-        { error: "Grocery not found" },
+        { error: "Souvenir not found" },
         { status: 404 }
       );
     }
@@ -35,27 +35,27 @@ export async function GET(
       : 0;
 
     // Map imageUrls array to image (first) and images (all)
-    const imageUrls = Array.isArray(grocery.imageUrls) && grocery.imageUrls.length > 0
-      ? grocery.imageUrls
-      : (grocery.imageUrl && typeof grocery.imageUrl === 'string')
-      ? [grocery.imageUrl]
+    const imageUrls = Array.isArray(souvenir.imageUrls) && souvenir.imageUrls.length > 0
+      ? souvenir.imageUrls
+      : (souvenir.imageUrl && typeof souvenir.imageUrl === 'string')
+      ? [souvenir.imageUrl]
       : [];
 
     return NextResponse.json({ 
-      grocery: {
-        ...grocery,
+      souvenir: {
+        ...souvenir,
         image: imageUrls[0] || "",
         images: imageUrls,
-        imageUrl: imageUrls[0] || grocery.imageUrl || "",
+        imageUrl: imageUrls[0] || souvenir.imageUrl || "",
         averageRating,
         totalComments: comments.length,
         totalLikes: likes.length,
       }
     });
   } catch (error) {
-    console.error("[GROCERIES_GET]", error);
+    console.error("[SOUVENIRS_GET]", error);
     return NextResponse.json(
-      { error: "Unable to fetch grocery" },
+      { error: "Unable to fetch souvenir" },
       { status: 500 }
     );
   }
@@ -67,12 +67,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const existing = await prisma.grocery.findUnique({
+    const existing = await prisma.souvenir.findUnique({
       where: { id },
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Grocery not found" }, { status: 404 });
+      return NextResponse.json({ error: "Souvenir not found" }, { status: 404 });
     }
 
     const contentType = request.headers.get("content-type");
@@ -106,7 +106,7 @@ export async function PUT(
       const processedImages: string[] = [];
       for (const image of images) {
         if (image instanceof File) {
-          const uploadedUrl = await saveUploadedFile(image, "groceries");
+          const uploadedUrl = await saveUploadedFile(image, "souvenirs");
           if (uploadedUrl) {
             processedImages.push(uploadedUrl);
           }
@@ -126,16 +126,16 @@ export async function PUT(
       );
     }
 
-    const grocery = await prisma.grocery.update({
+    const souvenir = await prisma.souvenir.update({
       where: { id },
       data: updateData,
     });
 
-    return NextResponse.json({ grocery });
+    return NextResponse.json({ souvenir });
   } catch (error) {
-    console.error("[GROCERIES_PUT]", error);
+    console.error("[SOUVENIRS_PUT]", error);
     return NextResponse.json(
-      { error: "Unable to update grocery" },
+      { error: "Unable to update souvenir" },
       { status: 500 }
     );
   }
@@ -148,15 +148,15 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const grocery = await prisma.grocery.delete({
+    const souvenir = await prisma.souvenir.delete({
       where: { id },
     });
 
-    return NextResponse.json({ grocery });
+    return NextResponse.json({ souvenir });
   } catch (error) {
-    console.error("[GROCERIES_DELETE]", error);
+    console.error("[SOUVENIRS_DELETE]", error);
     return NextResponse.json(
-      { error: "Unable to delete grocery" },
+      { error: "Unable to delete souvenir" },
       { status: 500 }
     );
   }
