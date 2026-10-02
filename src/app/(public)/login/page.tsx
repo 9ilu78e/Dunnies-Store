@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Mail } from "lucide-react";
 import { signInWithGoogle } from "@/lib/firebase";
 import { showToast } from "@/components/ui/Toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const USER_INTERFACE_PATH = "/users-interface";
 const ADMIN_DASHBOARD_PATH = "/dashboard";
@@ -30,6 +31,15 @@ export default function LoginPage() {
   const [success, setSuccess] = useState("");
   const [email, setEmail] = useState("");
   const router = useRouter();
+  const { refreshUser } = useAuth();
+
+  const takeReturnPath = () => {
+    const returnPath = sessionStorage.getItem("dunnis:returnTo");
+    sessionStorage.removeItem("dunnis:returnTo");
+    return returnPath?.startsWith("/") && !returnPath.startsWith("//")
+      ? returnPath
+      : null;
+  };
 
   const handleLogin = async () => {
     setError("");
@@ -52,10 +62,10 @@ export default function LoginPage() {
       }
 
       // Send verification email
-      const response = await fetch('/api/auth/send-verification', {
-        method: 'POST',
+      const response = await fetch("/api/auth/send-verification", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
       });
@@ -63,15 +73,14 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send verification email');
+        throw new Error(data.error || "Failed to send verification email");
       }
 
       showToast("Verification link sent! Check your email.", "success");
-
     } catch (error: any) {
-      console.error('Login Error:', error);
-      setError(error.message || 'Failed to send verification email');
-      showToast(error.message || 'Failed to send verification email', 'error');
+      console.error("Login Error:", error);
+      setError(error.message || "Failed to send verification email");
+      showToast(error.message || "Failed to send verification email", "error");
     } finally {
       setIsEmailLoading(false);
     }
@@ -84,6 +93,7 @@ export default function LoginPage() {
     try {
       const data = await signInWithGoogle();
       console.log("Google Sign-In response:", data);
+      await refreshUser();
 
       if (data.user?.uid) {
         localStorage.setItem("userId", data.user.uid);
@@ -93,35 +103,38 @@ export default function LoginPage() {
       showToast("Login successful! Redirecting...", "success");
 
       // Determine destination based on user role
-      let destination = '/users-interface'; // default for users
-      
-      console.log('=== GOOGLE LOGIN REDIRECT LOGIC ===');
-      console.log('Google login user data:', data.user);
-      console.log('User role from API:', data.user?.role);
-      console.log('User email:', data.user?.email);
-      
+      let destination = "/users-interface"; // default for users
+
+      console.log("=== GOOGLE LOGIN REDIRECT LOGIC ===");
+      console.log("Google login user data:", data.user);
+      console.log("User role from API:", data.user?.role);
+      console.log("User email:", data.user?.email);
+
       // Additional admin check for debugging
-      const knownAdminEmails = ['toonm831@gmail.com'];
-      const isAdminByEmail = knownAdminEmails.includes(data.user?.email || '');
-      console.log('Is admin by email check:', isAdminByEmail);
-      
-      if (data.user?.role === 'admin') {
-        destination = '/dashboard'; // admin dashboard
-        console.log('✅ Admin detected by role, redirecting to:', destination);
+      const knownAdminEmails = ["toonm831@gmail.com"];
+      const isAdminByEmail = knownAdminEmails.includes(data.user?.email || "");
+      console.log("Is admin by email check:", isAdminByEmail);
+
+      if (data.user?.role === "admin") {
+        destination = "/dashboard"; // admin dashboard
+        console.log("✅ Admin detected by role, redirecting to:", destination);
       } else if (isAdminByEmail) {
-        destination = '/dashboard'; // admin dashboard
-        console.log('⚠️ Admin detected by email fallback, redirecting to:', destination);
+        destination = "/dashboard"; // admin dashboard
+        console.log(
+          "⚠️ Admin detected by email fallback, redirecting to:",
+          destination
+        );
       } else {
-        console.log('👤 Regular user detected, redirecting to:', destination);
+        console.log("👤 Regular user detected, redirecting to:", destination);
       }
 
+      destination = takeReturnPath() || destination;
       console.log("Redirecting to:", destination);
-      
+
       // Redirect after a short delay to show the toast
       setTimeout(() => {
         router.push(destination);
       }, 1500);
-
     } catch (error: unknown) {
       console.error("Google Sign-In Error:", error);
       const code =
@@ -133,9 +146,7 @@ export default function LoginPage() {
           : "";
       const message =
         code === "auth/unauthorized-domain"
-          ? `This website is not authorized for Google sign-in. Add ${
-              window.location.hostname
-            } in Firebase Console under Authentication > Settings > Authorized domains.`
+          ? `This website is not authorized for Google sign-in. Add ${window.location.hostname} in Firebase Console under Authentication > Settings > Authorized domains.`
           : code === "auth/operation-not-allowed"
           ? "Google sign-in is disabled for this Firebase project. Enable the Google provider in Firebase Console under Authentication > Sign-in method."
           : code === "auth/popup-blocked"
@@ -173,7 +184,10 @@ export default function LoginPage() {
           <div className="space-y-4">
             {/* Email Input Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -203,7 +217,7 @@ export default function LoginPage() {
                   Sending Verification...
                 </>
               ) : (
-                'Login'
+                "Login"
               )}
             </button>
 
@@ -212,7 +226,9 @@ export default function LoginPage() {
                 <span className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
               </div>
             </div>
 
@@ -256,7 +272,8 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              By signing in, you agree to our Terms of Service and Privacy Policy
+              By signing in, you agree to our Terms of Service and Privacy
+              Policy
             </p>
           </div>
         </div>

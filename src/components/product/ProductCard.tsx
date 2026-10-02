@@ -105,9 +105,7 @@ export default function ProductCard({
                   : "bg-red-600 text-white"
               }`}
             >
-              {stockQuantity > 0
-                ? `${stockQuantity} in stock`
-                : "Out of stock"}
+              {stockQuantity > 0 ? `${stockQuantity} in stock` : "Out of stock"}
             </span>
           )}
         </div>
@@ -138,7 +136,7 @@ export default function ProductCard({
         </div>
 
         <div className="p-2">
-          <span className="block line-clamp-2 text-[13px] leading-4 text-gray-700 transition-colors group-hover:text-purple-600">
+          <span className="block line-clamp-2 text-[15px] leading-5 text-gray-700 transition-colors group-hover:text-purple-600">
             {name}
           </span>
 

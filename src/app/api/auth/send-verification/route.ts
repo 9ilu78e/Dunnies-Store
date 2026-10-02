@@ -263,13 +263,27 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error sending verification email:", error);
+    const errorCode =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    if (errorCode === "P2021" || errorCode === "P2022") {
+      return NextResponse.json(
+        {
+          error:
+            "The sign-in database is missing required tables. Apply the latest database migrations, then try again.",
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       {
-        error: "Unable to create the sign-in link. Please try again.",
+        error:
+          "Unable to create the sign-in link because the database is unavailable. Please try again shortly.",
       },
-      { status: 500 }
+      { status: 503 }
     );
   }
 }

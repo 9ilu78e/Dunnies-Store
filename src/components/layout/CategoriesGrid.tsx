@@ -121,7 +121,7 @@ export default function CategoriesGrid({ type }: { type: CategoryType }) {
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-5 lg:py-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
               {content.title}
             </h2>
             <p className="text-gray-600 text-xs sm:text-sm">
@@ -182,11 +182,11 @@ export default function CategoriesGrid({ type }: { type: CategoryType }) {
 
                       <div className="absolute bottom-1.5 left-1.5 right-1.5">
                         <div className="rounded-md bg-white/95 px-1.5 py-0.5 shadow-sm backdrop-blur-sm">
-                          <span className="block truncate text-sm font-bold leading-5 text-gray-900">
+                          <span className="block truncate text-base font-bold leading-5 text-gray-900">
                             {cat.name}
                           </span>
                           <div className="flex items-center justify-between leading-4">
-                            <span className="text-[10px] font-medium text-violet-600">
+                            <span className="text-xs font-medium text-violet-600">
                               {cat._count?.products || 0} items
                             </span>
                             <ArrowRight className="h-3 w-3 text-violet-600 transition-transform group-hover/card:translate-x-1" />

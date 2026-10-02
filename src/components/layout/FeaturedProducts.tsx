@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import ProductList from "@/components/product/ProductList";
+import ProductCard from "@/components/product/ProductCard";
 
 interface Product {
   id: string;
@@ -86,7 +86,19 @@ export default function FeaturedProducts() {
             <p className="text-gray-600">No products available yet.</p>
           </div>
         ) : (
-          <ProductList products={formattedProducts} cols={4} gap={6} />
+          <div
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 sm:gap-5"
+            aria-label="All products. Scroll horizontally to see more."
+          >
+            {formattedProducts.map((product) => (
+              <div
+                key={product.id}
+                className="h-full w-[44%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
+              >
+                <ProductCard {...product} className="rounded-xl" />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </section>
