@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Flame, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronDown, Flame, Sparkles } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import ProductList from "@/components/product/ProductList";
+import ProductCard from "@/components/product/ProductCard";
 
 interface Product {
   id: string;
@@ -22,6 +22,7 @@ interface Product {
 export default function SpotlightCollections() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedConciergeId, setSelectedConciergeId] = useState("");
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -67,6 +68,9 @@ export default function SpotlightCollections() {
     name: product.name,
     href: `/product/${product.id}`,
   }));
+  const selectedConciergeProduct =
+    signatureHighlights.find((product) => product.id === selectedConciergeId) ??
+    signatureHighlights[0];
 
   return (
     <section className="py-16 bg-linear-to-b from-purple-50 via-white to-purple-50/60">
@@ -107,7 +111,23 @@ export default function SpotlightCollections() {
               </div>
               {bestSellerCards.length > 0 ? (
                 <>
-                  <ProductList products={bestSellerCards} cols={4} gap={6} />
+                  <div
+                    className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 sm:gap-5"
+                    aria-label="Best-selling products. Scroll horizontally to see more."
+                  >
+                    {bestSellerCards.map((product, index) => (
+                      <div
+                        key={product.id}
+                        className="w-[72%] shrink-0 snap-start sm:w-[46%] lg:w-[31%] xl:w-[40%]"
+                      >
+                        <ProductCard
+                          {...product}
+                          priority={index === 0}
+                          className="rounded-xl"
+                        />
+                      </div>
+                    ))}
+                  </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <p className="text-sm text-gray-500">
                       Updated daily based on verified reviews and repeat orders.
@@ -142,18 +162,38 @@ export default function SpotlightCollections() {
 
               {signatureHighlights.length > 0 ? (
                 <>
-                  <ul className="space-y-4">
-                    {signatureHighlights.map((product) => (
-                      <li
-                        key={product.id}
-                        className="bg-white/5 border border-white/10 rounded-2xl p-4"
-                      >
-                        <p className="text-base font-semibold">
+                  <label className="relative block">
+                    <span className="mb-2 block text-sm font-semibold text-purple-100">
+                      Choose a concierge pick
+                    </span>
+                    <select
+                      value={selectedConciergeProduct?.id ?? ""}
+                      onChange={(event) =>
+                        setSelectedConciergeId(event.target.value)
+                      }
+                      className="w-full appearance-none rounded-xl border border-white/30 bg-purple-800 px-4 py-3 pr-10 text-sm text-white outline-none transition focus:border-white focus:ring-2 focus:ring-white/30"
+                    >
+                      {signatureHighlights.map((product) => (
+                        <option
+                          key={product.id}
+                          value={product.id}
+                          className="bg-white text-gray-900"
+                        >
                           {product.name}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute bottom-3.5 right-3 h-4 w-4 text-white" />
+                  </label>
+                  {selectedConciergeProduct && (
+                    <Link
+                      href={selectedConciergeProduct.href}
+                      className="rounded-2xl border border-white/10 bg-white/5 p-4 text-base font-semibold transition hover:bg-white/10"
+                    >
+                      View {selectedConciergeProduct.name}
+                      <ArrowRight className="ml-2 inline h-4 w-4" />
+                    </Link>
+                  )}
 
                   <Link
                     href="/signature-experiences"
