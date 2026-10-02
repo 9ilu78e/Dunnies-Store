@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     title: "Can I edit my order?",
-    body: "You can tweak delivery addresses, gift notes, or cancel items before they ship. Chat with concierge for urgent updates.",
+    body: "You can tweak delivery addresses, gift notes, or cancel items before they ship. Contact our team for urgent updates.",
     href: "/contact",
   },
 ];
@@ -48,7 +48,7 @@ const contactOptions = [
     cta: "Call now",
   },
   {
-    title: "Email concierge",
+    title: "Email support",
     description: "Detailed inquiries and partnerships.",
     icon: Mail,
     href: "mailto:support@dunnis.store",
@@ -93,8 +93,8 @@ export default function HelpCenterPage() {
               </p>
               <h1 className="text-3xl font-bold mb-3">How can we help?</h1>
               <p className="text-base text-white/90">
-                Search quick answers, browse step-by-steps, or reach our concierge team
-                any time—whatever suits you best.
+                Search quick answers, browse step-by-steps, or reach our support
+                team any time—whatever suits you best.
               </p>
             </div>
             <div className="relative w-full max-w-lg">
@@ -199,4 +199,3 @@ export default function HelpCenterPage() {
     </section>
   );
 }
-

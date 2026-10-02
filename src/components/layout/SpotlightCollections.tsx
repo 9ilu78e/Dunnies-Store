@@ -79,7 +79,7 @@ export default function SpotlightCollections() {
         const data = await response.json();
         setCategories(data.categories || []);
       } catch (categoryError) {
-        console.error("Failed to fetch concierge categories:", categoryError);
+        console.error("Failed to fetch categories:", categoryError);
         setCategoriesError("Categories are temporarily unavailable.");
       } finally {
         setCategoriesLoading(false);
@@ -157,7 +157,7 @@ export default function SpotlightCollections() {
               </div>
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-                  <h3 className="text-lg font-bold">Concierge curated</h3>
+                  <h3 className="text-lg font-bold">Signature picks</h3>
                   <ChevronDown
                     aria-hidden="true"
                     className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180"
@@ -211,7 +211,7 @@ export default function SpotlightCollections() {
                     href="/signature-experiences"
                     className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white text-gray-900 font-semibold py-3 hover:bg-purple-50 transition"
                   >
-                    Explore concierge picks
+                    Explore signature picks
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

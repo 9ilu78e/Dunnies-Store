@@ -54,7 +54,7 @@ export default function SignatureProductSelector({
           onChange={(event) => setCategoryId(event.target.value)}
           className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-900 shadow-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
         >
-          <option value="all">All concierge picks</option>
+          <option value="all">All signature picks</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
@@ -67,7 +67,7 @@ export default function SignatureProductSelector({
         <ProductList products={filteredProducts} cols={3} gap={8} />
       ) : (
         <p className="rounded-xl bg-gray-50 p-6 text-center text-sm text-gray-600">
-          No concierge picks in this category yet.
+          No signature picks in this category yet.
         </p>
       )}
     </div>

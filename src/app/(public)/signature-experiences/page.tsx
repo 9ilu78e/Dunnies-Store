@@ -54,16 +54,16 @@ async function fetchSignatureExperiences() {
   }
 }
 
-const conciergePromises = [
+const signatureBenefits = [
   "White-glove packaging with handwritten notes on request",
   "Next-day delivery within Lagos and express nationwide shipping",
-  "Dedicated concierge chat for swaps, customizations, or bulk gifting",
+  "Personalized support for swaps, customizations, or bulk gifting",
 ];
 
 export const metadata: Metadata = {
   title: "Signature Experiences – Dunnis Stores",
   description:
-    "Let our concierge team do the thinking. Discover curated drops that feel personal, premium, and totally effortless.",
+    "Discover curated drops that feel personal, premium, and totally effortless.",
 };
 
 export default async function SignatureExperiencesPage() {
@@ -74,7 +74,7 @@ export default async function SignatureExperiencesPage() {
       <div className="max-w-7xl mx-auto space-y-12">
         <header className="rounded-3xl bg-white/10 border border-white/20 p-8 backdrop-blur shadow-2xl">
           <p className="text-xs font-semibold tracking-[0.4em] text-purple-200 uppercase">
-            Concierge
+            Signature collection
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold mt-3">
             Signature experiences
@@ -85,7 +85,7 @@ export default async function SignatureExperiencesPage() {
             elevated packaging, and feel bespoke without the sourcing hassle.
           </p>
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {conciergePromises.map((promise) => (
+            {signatureBenefits.map((promise) => (
               <div
                 key={promise}
                 className="rounded-2xl bg-white/5 border border-white/10 p-4 text-sm text-purple-100"
@@ -96,10 +96,10 @@ export default async function SignatureExperiencesPage() {
           </div>
           <details className="relative mt-6 w-fit">
             <summary className="cursor-pointer list-none rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 [&::-webkit-details-marker]:hidden">
-              Explore Concierge
+              Explore signature experiences
             </summary>
             <nav
-              aria-label="Concierge pages"
+              aria-label="Signature experience pages"
               className="absolute left-0 top-full z-10 mt-2 min-w-56 overflow-hidden rounded-2xl border border-purple-100 bg-white py-2 text-purple-900 shadow-xl"
             >
               <Link
@@ -142,17 +142,15 @@ export default async function SignatureExperiencesPage() {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-gray-200 pt-6">
             <div className="text-sm text-gray-500">
-              Need corporate or wedding gifting support?
-              <span className="font-semibold text-gray-800 ml-1">
-                Concierge@dunnis.store
-              </span>
+              Need corporate or wedding gifting support? Contact our team for
+              tailored packages.
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/contact"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-purple-200 text-purple-700 px-6 py-2 text-sm font-semibold hover:bg-purple-50 transition"
               >
-                Talk to concierge
+                Contact our team
               </Link>
               <Link
                 href="/best-sellers"
