@@ -13,18 +13,28 @@ type ApiProduct = {
   name: string;
   description: string;
   price: number;
+  stockQuantity?: number;
   imageUrl: string;
   imageUrls?: string[];
   category?: string | null;
   rating?: number;
   reviewsCount?: number;
   likesCount?: number;
+  flashSalePrice?: number | null;
+  flashSaleEndsAt?: string | Date | null;
 };
 
 const adaptProductRecord = (
   product: ApiProduct,
   tag?: string
 ): ProductRecord => {
+  const saleEndTime = product.flashSaleEndsAt
+    ? new Date(product.flashSaleEndsAt).getTime()
+    : 0;
+  const isFlashSaleActive =
+    typeof product.flashSalePrice === "number" &&
+    product.flashSalePrice > 0 &&
+    saleEndTime > Date.now();
   // Prioritize imageUrls array, fallback to imageUrl, then default
   const imageUrls =
     product.imageUrls && product.imageUrls.length > 0
@@ -54,8 +64,11 @@ const adaptProductRecord = (
     name: product.name,
     description: product.description,
     longDescription: product.description,
-    price: product.price,
-    originalPrice: undefined,
+    price: isFlashSaleActive
+      ? product.flashSalePrice ?? product.price
+      : product.price,
+    stockQuantity: product.stockQuantity,
+    originalPrice: isFlashSaleActive ? product.price : undefined,
     rating: product.rating ?? 0,
     reviewsCount: product.reviewsCount ?? 0,
     image: imageUrls[0],
@@ -71,7 +84,7 @@ const adaptProductRecord = (
 };
 
 type ProductPageProps = {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; search?: string }>;
 };
 
 async function fetchProductsByCategory(
@@ -89,7 +102,8 @@ async function fetchProductsByCategory(
 
       if (category.type === "gift") {
         const gifts = await prisma.gift.findMany({
-          where: {},
+          where: { categoryId },
+          include: { category: true },
           orderBy: { createdAt: "desc" },
         });
         return gifts.map((gift: any) =>
@@ -104,14 +118,15 @@ async function fetchProductsByCategory(
                 gift.imageUrls && gift.imageUrls.length > 0
                   ? gift.imageUrls
                   : undefined,
-              category: category.name,
+              category: gift.category?.name || category.name,
             },
             category.name
           )
         );
       } else if (category.type === "souvenir") {
         const souvenirs = await prisma.souvenir.findMany({
-          where: {},
+          where: { categoryId },
+          include: { category: true },
           orderBy: { createdAt: "desc" },
         });
         return souvenirs.map((souvenir: any) =>
@@ -126,7 +141,7 @@ async function fetchProductsByCategory(
                 souvenir.imageUrls && souvenir.imageUrls.length > 0
                   ? souvenir.imageUrls
                   : undefined,
-              category: category.name,
+              category: souvenir.category?.name || category.name,
             },
             category.name
           )
@@ -160,6 +175,8 @@ async function fetchProductsByCategory(
                 ? product.imageUrls
                 : undefined,
             category: product.category?.name,
+            flashSalePrice: product.flashSalePrice,
+            flashSaleEndsAt: product.flashSaleEndsAt,
             rating: averageRating,
             reviewsCount: product.comments.length,
           });
@@ -173,9 +190,11 @@ async function fetchProductsByCategory(
         orderBy: { createdAt: "desc" },
       }),
       prisma.gift.findMany({
+        include: { category: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.souvenir.findMany({
+        include: { category: true },
         orderBy: { createdAt: "desc" },
       }),
     ]);
@@ -206,6 +225,8 @@ async function fetchProductsByCategory(
               ? product.imageUrls
               : undefined,
           category: product.category?.name,
+          flashSalePrice: product.flashSalePrice,
+          flashSaleEndsAt: product.flashSaleEndsAt,
           rating: averageRating,
           reviewsCount: product.comments.length,
         });
@@ -225,9 +246,9 @@ async function fetchProductsByCategory(
               gift.imageUrls && gift.imageUrls.length > 0
                 ? gift.imageUrls
                 : undefined,
-            category: "Gifts",
+            category: gift.category?.name || "Gifts",
           },
-          "Gifts"
+          gift.category?.name || "Gifts"
         )
       )
     );
@@ -245,9 +266,9 @@ async function fetchProductsByCategory(
               souvenir.imageUrls && souvenir.imageUrls.length > 0
                 ? souvenir.imageUrls
                 : undefined,
-            category: "Souvenirs",
+            category: souvenir.category?.name || "Souvenirs",
           },
-          "Souvenirs"
+          souvenir.category?.name || "Souvenirs"
         )
       )
     );
@@ -262,7 +283,7 @@ async function fetchProductsByCategory(
 export default async function ProductListingPage({
   searchParams,
 }: ProductPageProps) {
-  const { category } = await searchParams;
+  const { category, search = "" } = await searchParams;
   const catalog = await fetchProductsByCategory(category);
 
   const pageTitle = category ? "Products by Category" : "All Products";
@@ -284,15 +305,7 @@ export default async function ProductListingPage({
           </h1>
           <p className="text-slate-600 mt-2">{pageDescription}</p>
         </div>
-        {catalog.length > 0 ? (
-          <ProductsCatalog products={catalog} />
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">
-              No products available in this category. Please check back soon!
-            </p>
-          </div>
-        )}
+        <ProductsCatalog products={catalog} initialSearchQuery={search} />
       </div>
     </section>
   );

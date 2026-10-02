@@ -1,6 +1,13 @@
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
+import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  type Auth,
+} from "firebase/auth";
+import type { FirebaseApp } from "firebase/app";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
@@ -12,25 +19,37 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
 };
 
-const hasFirebaseConfig = Object.values(firebaseConfig).every((value) => value && value.trim() !== "");
+const hasFirebaseConfig = [
+  firebaseConfig.apiKey,
+  firebaseConfig.authDomain,
+  firebaseConfig.projectId,
+  firebaseConfig.appId,
+].every((value) => value.trim() !== "");
 
-let app: any = null;
-let auth: any = null;
-let analytics: any = null;
-let googleProvider: any = null;
+let app: FirebaseApp | undefined;
+let auth: Auth | undefined;
+let analytics: Analytics | undefined;
+let googleProvider: GoogleAuthProvider | undefined;
 
-// Initialize Firebase only on the client and only when all required values are configured.
 if (typeof window !== 'undefined' && hasFirebaseConfig) {
   app = initializeApp(firebaseConfig);
-  analytics = getAnalytics(app);
   auth = getAuth(app);
   googleProvider = new GoogleAuthProvider();
+  if (firebaseConfig.measurementId) {
+    void isSupported()
+      .then((supported) => {
+        if (supported && app) analytics = getAnalytics(app);
+      })
+      .catch((error: unknown) => {
+        console.error("Firebase Analytics initialization failed:", error);
+      });
+  }
 }
 
 // Google Sign-In function
 export const signInWithGoogle = async () => {
-  if (!auth) {
-    throw new Error('Firebase Auth is not initialized. Please ensure you are running in a browser environment.');
+  if (!auth || !googleProvider) {
+    throw new Error('Firebase Auth is not configured. Set the public Firebase API key, auth domain, project ID, and app ID.');
   }
   
   try {
@@ -93,7 +112,12 @@ export const signInWithGoogle = async () => {
     }
   } catch (error: any) {
     console.error('Google Sign-In Error:', error);
-    if (error.name === 'AbortError') {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "name" in error &&
+      error.name === "AbortError"
+    ) {
       throw new Error('Request timed out. Please check your connection and try again.');
     }
     throw error;

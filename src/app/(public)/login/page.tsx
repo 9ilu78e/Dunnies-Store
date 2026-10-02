@@ -122,9 +122,31 @@ export default function LoginPage() {
         router.push(destination);
       }, 1500);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Google Sign-In Error:", error);
-      showToast(error.message || "Google Sign-In failed", "error");
+      const code =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        typeof error.code === "string"
+          ? error.code
+          : "";
+      const message =
+        code === "auth/unauthorized-domain"
+          ? `This website is not authorized for Google sign-in. Add ${
+              window.location.hostname
+            } in Firebase Console under Authentication > Settings > Authorized domains.`
+          : code === "auth/operation-not-allowed"
+          ? "Google sign-in is disabled for this Firebase project. Enable the Google provider in Firebase Console under Authentication > Sign-in method."
+          : code === "auth/popup-blocked"
+          ? "Your browser blocked the Google sign-in popup. Allow popups for this website and try again."
+          : code === "auth/network-request-failed"
+          ? "Firebase could not be reached. Check your connection and make sure browser extensions or network filters are not blocking Firebase."
+          : error instanceof Error
+          ? error.message
+          : "Google Sign-In failed";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setIsGoogleLoading(false);
     }

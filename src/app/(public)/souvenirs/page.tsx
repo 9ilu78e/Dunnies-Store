@@ -13,6 +13,11 @@ type ApiProduct = {
   name: string;
   description: string;
   price: number;
+  stockQuantity?: number;
+  rating?: number;
+  reviewsCount?: number;
+  flashSalePrice?: number | null;
+  flashSaleEndsAt?: Date | string | null;
   imageUrl: string;
   imageUrls?: string[];
   category?: string | null;
@@ -22,7 +27,10 @@ const adaptProductRecord = (
   product: ApiProduct,
   tag?: string
 ): ProductRecord => {
-  // Prioritize imageUrls array, fallback to imageUrl, then default
+  const isFlashSaleActive =
+    typeof product.flashSalePrice === "number" &&
+    !!product.flashSaleEndsAt &&
+    new Date(product.flashSaleEndsAt).getTime() > Date.now();
   const imageUrls =
     product.imageUrls && product.imageUrls.length > 0
       ? product.imageUrls
@@ -37,16 +45,22 @@ const adaptProductRecord = (
     name: product.name,
     description: product.description,
     longDescription: product.description,
-    price: product.price,
-    originalPrice: undefined,
-    rating: 0,
-    reviewsCount: 0,
+    price: isFlashSaleActive ? product.flashSalePrice! : product.price,
+    originalPrice: isFlashSaleActive ? product.price : undefined,
+    stockQuantity: product.stockQuantity ?? 0,
+    rating: product.rating ?? 0,
+    reviewsCount: product.reviewsCount ?? 0,
     image: imageUrls[0],
     images: imageUrls,
     tag: tag ?? product.category ?? "Souvenir",
     category: product.category ?? "Souvenir",
     href: `/souvenirs/${product.id}`,
-    stockStatus: "in-stock",
+    stockStatus:
+      !product.stockQuantity
+        ? "out-of-stock"
+        : product.stockQuantity <= 5
+        ? "low-stock"
+        : "in-stock",
     highlights: [],
     specs: [],
     reviews: [],
@@ -59,14 +73,34 @@ async function fetchSouvenirs(): Promise<ProductRecord[]> {
       include: { category: true },
       orderBy: { createdAt: "desc" },
     });
+    const comments = await prisma.productComment.findMany({
+      where: { productId: { in: souvenirs.map((souvenir) => souvenir.id) } },
+      select: { productId: true, rating: true },
+    });
+    const ratingsBySouvenir = new Map<string, number[]>();
+    for (const comment of comments) {
+      const ratings = ratingsBySouvenir.get(comment.productId) ?? [];
+      ratings.push(comment.rating);
+      ratingsBySouvenir.set(comment.productId, ratings);
+    }
 
-    return souvenirs.map((souvenir: any) =>
-      adaptProductRecord(
+    return souvenirs.map((souvenir) => {
+      const ratings = ratingsBySouvenir.get(souvenir.id) ?? [];
+      return adaptProductRecord(
         {
           id: souvenir.id,
           name: souvenir.name,
           description: souvenir.description || "",
           price: souvenir.price,
+          stockQuantity: souvenir.stockQuantity,
+          flashSalePrice: souvenir.flashSalePrice,
+          flashSaleEndsAt: souvenir.flashSaleEndsAt,
+          rating:
+            ratings.length > 0
+              ? ratings.reduce((sum, rating) => sum + rating, 0) /
+                ratings.length
+              : 0,
+          reviewsCount: ratings.length,
           imageUrl: souvenir.imageUrl || "",
           imageUrls:
             souvenir.imageUrls && souvenir.imageUrls.length > 0
@@ -75,8 +109,8 @@ async function fetchSouvenirs(): Promise<ProductRecord[]> {
           category: souvenir.category?.name || "Souvenir",
         },
         "Souvenir"
-      )
-    );
+      );
+    });
   } catch (error) {
     console.error("Failed to fetch souvenirs:", error);
     return [];

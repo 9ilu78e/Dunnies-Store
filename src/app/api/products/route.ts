@@ -74,7 +74,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, price, imageUrl, imageUrls, categoryId, priority } = body;
+    const {
+      name,
+      description,
+      price,
+      imageUrl,
+      imageUrls,
+      categoryId,
+      priority,
+      stockQuantity,
+    } = body;
 
     if (!name || !description || !price) {
       return NextResponse.json(
@@ -83,10 +92,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const parsedStockQuantity = Number(stockQuantity ?? 0);
+    if (
+      !Number.isSafeInteger(parsedStockQuantity) ||
+      parsedStockQuantity < 0
+    ) {
+      return NextResponse.json(
+        { error: "Stock quantity must be a non-negative whole number" },
+        { status: 400 }
+      );
+    }
+
     const productData: any = {
       name,
       description,
       price: parseFloat(price),
+      stockQuantity: parsedStockQuantity,
     };
     
     // Only include categoryId if it has a valid value

@@ -78,25 +78,67 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, price, imageUrl, imageUrls, categoryId } = body;
+    const {
+      name,
+      description,
+      price,
+      imageUrl,
+      imageUrls,
+      categoryId,
+      stockQuantity,
+      priority,
+      flashSalePrice,
+      flashSaleEndsAt,
+    } = body;
 
-    if (!name || !description || !price) {
+    const parsedPrice = Number(price);
+    const parsedStockQuantity = Number(stockQuantity ?? 0);
+    const parsedFlashSalePrice =
+      flashSalePrice === "" || flashSalePrice === null || flashSalePrice === undefined
+        ? null
+        : Number(flashSalePrice);
+    const parsedFlashSaleEndsAt = flashSaleEndsAt
+      ? new Date(flashSaleEndsAt)
+      : null;
+
+    if (
+      typeof name !== "string" ||
+      !name.trim() ||
+      !Number.isFinite(parsedPrice) ||
+      parsedPrice <= 0 ||
+      !Number.isSafeInteger(parsedStockQuantity) ||
+      parsedStockQuantity < 0 ||
+      (parsedFlashSalePrice === null && !!flashSaleEndsAt) ||
+      (parsedFlashSalePrice !== null &&
+        (!Number.isFinite(parsedFlashSalePrice) ||
+          parsedFlashSalePrice <= 0 ||
+          parsedFlashSalePrice >= parsedPrice ||
+          !parsedFlashSaleEndsAt ||
+          Number.isNaN(parsedFlashSaleEndsAt.getTime()) ||
+          parsedFlashSaleEndsAt.getTime() <= Date.now())) ||
+      (flashSaleEndsAt &&
+        (!parsedFlashSaleEndsAt || Number.isNaN(parsedFlashSaleEndsAt.getTime())))
+    ) {
       return NextResponse.json(
-        { error: "Name, description, and price are required" },
+        { error: "Enter a name, valid price, non-negative stock, and valid flash sale details" },
         { status: 400 }
       );
     }
 
     const giftData: any = {
-      name,
-      description,
-      price: parseFloat(price),
+      name: name.trim(),
+      description: typeof description === "string" ? description : "",
+      price: parsedPrice,
+      stockQuantity: parsedStockQuantity,
+      priority: typeof priority === "string" ? priority : "normal",
+      flashSalePrice: parsedFlashSalePrice,
+      flashSaleEndsAt: parsedFlashSalePrice ? parsedFlashSaleEndsAt : null,
     };
 
     // Handle imageUrls array from frontend
-    if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0) {
+    if (imageUrls && Array.isArray(imageUrls)) {
       giftData.imageUrls = imageUrls;
-      giftData.imageUrl = imageUrls[0] || imageUrl;
+      giftData.imageUrl = imageUrls[0] || imageUrl || null;
     } else if (imageUrl && String(imageUrl).trim()) {
       giftData.imageUrl = imageUrl;
       giftData.imageUrls = [imageUrl];

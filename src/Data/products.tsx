@@ -13,6 +13,7 @@ export type ProductRecord = {
   description: string;
   longDescription: string;
   price: number;
+  stockQuantity?: number;
   originalPrice?: number;
   rating: number;
   reviewsCount: number;

@@ -10,8 +10,13 @@ interface Product {
   id: string;
   name: string;
   price: number;
+  stockQuantity: number;
   imageUrl: string;
   description: string;
+  averageRating: number;
+  totalComments: number;
+  flashSalePrice: number | null;
+  flashSaleEndsAt: string | null;
 }
 
 export default function SpotlightCollections() {
@@ -36,16 +41,26 @@ export default function SpotlightCollections() {
     fetchProducts();
   }, []);
 
-  const bestSellerCards = products.slice(0, 4).map((product) => ({
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    price: product.price,
-    image: product.imageUrl || "https://via.placeholder.com/400x400",
-    rating: 4.5,
-    reviews: 0,
-    href: `/product/${product.id}`,
-  }));
+  const bestSellerCards = products.slice(0, 4).map((product) => {
+    const isFlashSaleActive =
+      product.flashSalePrice !== null &&
+      product.flashSaleEndsAt !== null &&
+      new Date(product.flashSaleEndsAt).getTime() > Date.now();
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: isFlashSaleActive
+        ? product.flashSalePrice ?? product.price
+        : product.price,
+      originalPrice: isFlashSaleActive ? product.price : undefined,
+      image: product.imageUrl || "https://via.placeholder.com/400x400",
+      rating: product.averageRating ?? 0,
+      reviews: product.totalComments ?? 0,
+      stockQuantity: product.stockQuantity,
+      href: `/product/${product.id}`,
+    };
+  });
 
   const signatureHighlights = products.slice(0, 3).map((product) => ({
     id: product.id,
@@ -133,7 +148,9 @@ export default function SpotlightCollections() {
                         key={product.id}
                         className="bg-white/5 border border-white/10 rounded-2xl p-4"
                       >
-                        <p className="text-base font-semibold">{product.name}</p>
+                        <p className="text-base font-semibold">
+                          {product.name}
+                        </p>
                       </li>
                     ))}
                   </ul>

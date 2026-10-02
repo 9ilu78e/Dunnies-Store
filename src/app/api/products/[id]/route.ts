@@ -80,13 +80,23 @@ export async function PUT(request: NextRequest, { params }: Params) {
         imageUrl: formData.get("imageUrl"),
         categoryId: formData.get("categoryId"),
         priority: formData.get("priority"),
+        stockQuantity: formData.get("stockQuantity"),
         images: formData.getAll("images"),
       };
     } else {
       body = await request.json();
     }
 
-    const { name, description, price, imageUrl, categoryId, priority, images } = body;
+    const {
+      name,
+      description,
+      price,
+      imageUrl,
+      categoryId,
+      priority,
+      stockQuantity,
+      images,
+    } = body;
     const parsedPrice =
       typeof price === "string" ? parseFloat(price) : Number(price);
 
@@ -101,6 +111,19 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
     if (priority) updateData.priority = priority;
     if (!Number.isNaN(parsedPrice)) updateData.price = parsedPrice;
+    if (stockQuantity !== undefined && stockQuantity !== null && stockQuantity !== "") {
+      const parsedStockQuantity = Number(stockQuantity);
+      if (
+        !Number.isSafeInteger(parsedStockQuantity) ||
+        parsedStockQuantity < 0
+      ) {
+        return NextResponse.json(
+          { error: "Stock quantity must be a non-negative whole number" },
+          { status: 400 }
+        );
+      }
+      updateData.stockQuantity = parsedStockQuantity;
+    }
 
     if (images && Array.isArray(images) && images.length > 0) {
       const processedImages: string[] = [];

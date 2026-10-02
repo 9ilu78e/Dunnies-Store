@@ -15,7 +15,10 @@ async function getProductFromDatabase(id: string) {
   try {
     let product = await prisma.product.findUnique({
       where: { id },
-      include: { category: true },
+      include: {
+        category: true,
+        comments: { select: { rating: true } },
+      },
     });
 
     if (product) return product;
@@ -54,6 +57,25 @@ async function getProductFromDatabase(id: string) {
 }
 
 function transformDatabaseProduct(dbProduct: any): ProductRecord {
+  const ratings = (dbProduct.comments || []).map(
+    (comment: { rating: number }) => comment.rating
+  );
+  const averageRating =
+    ratings.length > 0
+      ? Math.round(
+          (ratings.reduce((sum: number, rating: number) => sum + rating, 0) /
+            ratings.length) *
+            10
+        ) / 10
+      : 0;
+  const flashSaleEndsAt = dbProduct.flashSaleEndsAt
+    ? new Date(dbProduct.flashSaleEndsAt).getTime()
+    : 0;
+  const isFlashSaleActive =
+    typeof dbProduct.flashSalePrice === "number" &&
+    dbProduct.flashSalePrice > 0 &&
+    flashSaleEndsAt > Date.now();
+
   console.log(
     `[ProductDetail] ${dbProduct.name}: imageUrl="${
       dbProduct.imageUrl
@@ -89,13 +111,14 @@ function transformDatabaseProduct(dbProduct: any): ProductRecord {
     name: dbProduct.name,
     description: dbProduct.description || "",
     longDescription: dbProduct.description || "",
-    price: dbProduct.price,
-    originalPrice: undefined,
-    rating: 4.5,
-    reviewsCount: 0,
+    price: isFlashSaleActive ? dbProduct.flashSalePrice : dbProduct.price,
+    stockQuantity: dbProduct.stockQuantity,
+    originalPrice: isFlashSaleActive ? dbProduct.price : undefined,
+    rating: averageRating,
+    reviewsCount: ratings.length,
     image: imageUrls[0],
     images: imageUrls,
-    tag: dbProduct.priority || "New",
+    tag: isFlashSaleActive ? "Flash Sale" : dbProduct.priority || "New",
     category: dbProduct.category?.name || "Uncategorized",
     href: `/product/${dbProduct.id}`,
     stockStatus: "in-stock" as const,

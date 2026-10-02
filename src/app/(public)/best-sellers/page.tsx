@@ -8,22 +8,44 @@ async function fetchBestSellers() {
     const products = await prisma.product.findMany({
       include: {
         category: true,
+        comments: { select: { rating: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 18,
     });
 
-    return products.map((product: any) => ({
-      id: product.id,
-      name: product.name,
-      description: product.description || "",
-      price: product.price,
-      rating: 4.5,
-      reviews: 0,
-      image: product.imageUrl || "",
-      tag: product.category?.name || "Product",
-      href: `/product/${product.id}`,
-    }));
+    return products.map((product: any) => {
+      const isFlashSaleActive =
+        product.flashSalePrice !== null &&
+        product.flashSaleEndsAt !== null &&
+        product.flashSaleEndsAt.getTime() > Date.now();
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description || "",
+        price: isFlashSaleActive
+          ? product.flashSalePrice ?? product.price
+          : product.price,
+        originalPrice: isFlashSaleActive ? product.price : undefined,
+        rating:
+          product.comments.length > 0
+            ? Math.round(
+                (product.comments.reduce(
+                  (sum: number, comment: { rating: number }) =>
+                    sum + comment.rating,
+                  0
+                ) /
+                  product.comments.length) *
+                  10
+              ) / 10
+            : 0,
+        reviews: product.comments.length,
+        stockQuantity: product.stockQuantity,
+        image: product.imageUrl || "",
+        tag: product.category?.name || "Product",
+        href: `/product/${product.id}`,
+      };
+    });
   } catch (error) {
     console.error("Failed to fetch best sellers:", error);
     return [];

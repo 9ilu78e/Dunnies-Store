@@ -1,23 +1,54 @@
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { verifyUserAuth, unauthorizedResponse } from "@/lib/authMiddleware";
+import { unauthorizedResponse, verifyUserAuth } from "@/lib/authMiddleware";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> {
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+async function getLikeCount(productId: string) {
+  const [userLikes, firebaseLikes] = await Promise.all([
+    prisma.productLike.count({ where: { productId } }),
+    prisma.firebaseProductLike.count({ where: { productId } }),
+  ]);
+
+  return userLikes + firebaseLikes;
+}
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const auth = await verifyUserAuth(request);
+    const likeCount = await getLikeCount(id);
+    let isLikedByUser = false;
 
-    // For now, return basic like count without database
-    // In production, you'd implement a proper likes system with MongoDB
-    return NextResponse.json({
-      likeCount: 0,
-      isLikedByUser: false,
-    });
+    if (auth.user) {
+      const firebaseUser = await prisma.firebaseUser.findUnique({
+        where: { uid: auth.user.id },
+      });
+
+      if (firebaseUser) {
+        isLikedByUser = Boolean(
+          await prisma.firebaseProductLike.findUnique({
+            where: {
+              productId_userUid: { productId: id, userUid: firebaseUser.uid },
+            },
+          })
+        );
+      } else {
+        isLikedByUser = Boolean(
+          await prisma.productLike.findUnique({
+            where: {
+              productId_userId: { productId: id, userId: auth.user.id },
+            },
+          })
+        );
+      }
+    }
+
+    return NextResponse.json({ likeCount, isLikedByUser });
   } catch (error) {
-    console.error("Error fetching likes:", error);
+    console.error("[PRODUCT_LIKES_GET]", error);
     return NextResponse.json(
       { error: "Failed to fetch likes" },
       { status: 500 }
@@ -25,30 +56,79 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> {
+export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
-    // Verify user is authenticated
     const auth = await verifyUserAuth(request);
     if (!auth.isAuthenticated || !auth.user) {
-      console.log('Like API: User not authenticated');
       return unauthorizedResponse("You must be logged in to like products");
     }
 
-    console.log('Like API: User authenticated:', auth.user.email);
-    const { id } = await params;
+    if (auth.user.role === "admin") {
+      return NextResponse.json(
+        { error: "Admin users cannot like products" },
+        { status: 403 }
+      );
+    }
 
-    // For now, just return success without actual database operations
-    // In production, you'd implement proper likes with MongoDB
-    return NextResponse.json({
-      liked: true,
-      likeCount: 1,
-      message: "Product liked successfully (temporary implementation)",
+    const { id } = await params;
+    const product = await prisma.product.findUnique({ where: { id } });
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const firebaseUser = await prisma.firebaseUser.findUnique({
+      where: { uid: auth.user.id },
     });
+
+    let liked: boolean;
+    if (firebaseUser) {
+      const existingLike = await prisma.firebaseProductLike.findUnique({
+        where: {
+          productId_userUid: { productId: id, userUid: firebaseUser.uid },
+        },
+      });
+
+      if (existingLike) {
+        await prisma.firebaseProductLike.delete({
+          where: { id: existingLike.id },
+        });
+        liked = false;
+      } else {
+        await prisma.firebaseProductLike.create({
+          data: { productId: id, userUid: firebaseUser.uid },
+        });
+        liked = true;
+      }
+    } else {
+      const account = await prisma.user.findUnique({
+        where: { id: auth.user.id },
+      });
+      if (!account) {
+        return unauthorizedResponse("Your account could not be found");
+      }
+
+      const existingLike = await prisma.productLike.findUnique({
+        where: {
+          productId_userId: { productId: id, userId: account.id },
+        },
+      });
+
+      if (existingLike) {
+        await prisma.productLike.delete({
+          where: { id: existingLike.id },
+        });
+        liked = false;
+      } else {
+        await prisma.productLike.create({
+          data: { productId: id, userId: account.id },
+        });
+        liked = true;
+      }
+    }
+
+    return NextResponse.json({ liked, likeCount: await getLikeCount(id) });
   } catch (error) {
-    console.error("Error toggling like:", error);
+    console.error("[PRODUCT_LIKES_POST]", error);
     return NextResponse.json(
       { error: "Failed to toggle like" },
       { status: 500 }
