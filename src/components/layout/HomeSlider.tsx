@@ -30,7 +30,8 @@ export default function HeroSlider() {
             title: "Special Holiday Gifts",
             subtitle: "Make every moment memorable",
             description: "Discover unique gifts for your loved ones",
-            image: "/assets/slide1.jpg",
+            image:
+              "/assets/ChatGPT%20Image%20Oct%202,%202026,%2005_17_04%20PM.png",
             cta: "Shop Gifts",
             href: "/gift",
             tag: "New Arrivals",
@@ -40,7 +41,8 @@ export default function HeroSlider() {
             subtitle: "Make every memory last",
             description:
               "Discover meaningful mementos and locally inspired finds",
-            image: "/assets/slide2.jpg",
+            image:
+              "/assets/ChatGPT%20Image%20Oct%202,%202026,%2005_17_16%20PM.png",
             cta: "Shop Souvenirs",
             href: "/souvenirs",
             tag: "Made to Remember",
@@ -49,10 +51,21 @@ export default function HeroSlider() {
             title: "Premium Products",
             subtitle: "Quality you can trust",
             description: "Explore our collection of premium items",
-            image: "/assets/slide3.jpg",
+            image:
+              "/assets/ChatGPT%20Image%20Oct%202,%202026,%2005_17_27%20PM.png",
             cta: "Shop Products",
             href: "/product",
             tag: "Gift Picks",
+          },
+          {
+            title: "Bestsellers Everyone Loves",
+            subtitle: "Top picks chosen just for you",
+            description: "Browse our most-loved items and everyday essentials",
+            image:
+              "/assets/ChatGPT%20Image%20Oct%202,%202026,%2005_17_33%20PM.png",
+            cta: "Shop Bestsellers",
+            href: "/product",
+            tag: "Trending Now",
           },
         ];
 
@@ -64,7 +77,8 @@ export default function HeroSlider() {
             title: "Special Holiday Gifts",
             subtitle: "Make every moment memorable",
             description: "Discover unique gifts for your loved ones",
-            image: "/assets/slide1.jpg",
+            image:
+              "/assets/ChatGPT%20Image%20Oct%202,%202026,%2005_17_04%20PM.png",
             cta: "Shop Gifts",
             href: "/gift",
             tag: "New Arrivals",
@@ -74,7 +88,8 @@ export default function HeroSlider() {
             subtitle: "Make every memory last",
             description:
               "Discover meaningful mementos and locally inspired finds",
-            image: "/assets/slide2.jpg",
+            image:
+              "/assets/ChatGPT%20Image%20Oct%202,%202026,%2005_17_16%20PM.png",
             cta: "Shop Souvenirs",
             href: "/souvenirs",
             tag: "Made to Remember",
@@ -83,10 +98,21 @@ export default function HeroSlider() {
             title: "Premium Products",
             subtitle: "Quality you can trust",
             description: "Explore our collection of premium items",
-            image: "/assets/slide3.jpg",
+            image:
+              "/assets/ChatGPT%20Image%20Oct%202,%202026,%2005_17_27%20PM.png",
             cta: "Shop Products",
             href: "/product",
             tag: "Exclusive",
+          },
+          {
+            title: "Bestsellers Everyone Loves",
+            subtitle: "Top picks chosen just for you",
+            description: "Browse our most-loved items and everyday essentials",
+            image:
+              "/assets/ChatGPT%20Image%20Oct%202,%202026,%2005_17_33%20PM.png",
+            cta: "Shop Bestsellers",
+            href: "/product",
+            tag: "Trending Now",
           },
         ]);
       } finally {
