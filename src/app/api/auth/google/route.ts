@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
+import {
+  FirebaseAdminConfigurationError,
+  getFirebaseAdminAuth,
+} from "@/lib/firebaseAdmin";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -112,6 +115,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error("Firebase auth error:", error);
+
+    if (error instanceof FirebaseAdminConfigurationError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 503 }
+      );
+    }
     
     if (error.code === 'auth/argument-error') {
       return NextResponse.json(
