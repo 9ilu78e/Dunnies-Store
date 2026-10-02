@@ -73,8 +73,19 @@ function transformDatabaseGift(dbGift: any): ProductRecord {
     name: dbGift.name,
     description: dbGift.description || "",
     longDescription: dbGift.description || "",
-    price: dbGift.price,
-    originalPrice: undefined,
+    price:
+      dbGift.flashSalePrice &&
+      dbGift.flashSaleEndsAt &&
+      new Date(dbGift.flashSaleEndsAt).getTime() > Date.now()
+        ? dbGift.flashSalePrice
+        : dbGift.price,
+    originalPrice:
+      dbGift.flashSalePrice &&
+      dbGift.flashSaleEndsAt &&
+      new Date(dbGift.flashSaleEndsAt).getTime() > Date.now()
+        ? dbGift.price
+        : undefined,
+    stockQuantity: dbGift.stockQuantity,
     rating: averageRating,
     reviewsCount: dbGift.comments.length,
     image: imageUrls[0],
@@ -82,7 +93,12 @@ function transformDatabaseGift(dbGift: any): ProductRecord {
     tag: "Gift",
     category: "Gifts",
     href: `/gift/${dbGift.id}`,
-    stockStatus: "in-stock" as const,
+    stockStatus:
+      dbGift.stockQuantity === 0
+        ? ("out-of-stock" as const)
+        : dbGift.stockQuantity <= 5
+        ? ("low-stock" as const)
+        : ("in-stock" as const),
     highlights: ["Premium quality", "Fast delivery", "Perfect gift"],
     specs: [
       { label: "SKU", value: dbGift.id },

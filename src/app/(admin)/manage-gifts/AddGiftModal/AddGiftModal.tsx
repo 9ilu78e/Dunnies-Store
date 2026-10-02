@@ -4,6 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 
+const toDateTimeLocal = (value: string | Date) => {
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+};
+
 interface AddGiftModalProps {
   onClose: () => void;
   onSuccess: () => void;
@@ -20,8 +27,12 @@ export default function AddGiftModal({
     name: "",
     description: "",
     price: "",
+    stockQuantity: "0",
     imageUrl: "",
     categoryId: "",
+    priority: "normal",
+    flashSalePrice: "",
+    flashSaleEndsAt: "",
   });
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -47,8 +58,16 @@ export default function AddGiftModal({
               name: gift.name || "",
               description: gift.description || "",
               price: gift.price || "",
+              stockQuantity: String(gift.stockQuantity ?? 0),
               imageUrl: gift.imageUrl || "",
               categoryId: gift.categoryId || "",
+              priority: gift.priority || "normal",
+              flashSalePrice: gift.flashSalePrice
+                ? String(gift.flashSalePrice)
+                : "",
+              flashSaleEndsAt: gift.flashSaleEndsAt
+                ? toDateTimeLocal(gift.flashSaleEndsAt)
+                : "",
             });
             if (gift.imageUrl) {
               setImagePreviews([gift.imageUrl]);
@@ -151,9 +170,17 @@ export default function AddGiftModal({
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
+        stockQuantity: Number(formData.stockQuantity),
         imageUrl: formData.imageUrl || allImageUrls[0] || "",
         imageUrls: allImageUrls,
         categoryId: formData.categoryId,
+        priority: formData.priority,
+        flashSalePrice: formData.flashSalePrice
+          ? Number(formData.flashSalePrice)
+          : null,
+        flashSaleEndsAt: formData.flashSaleEndsAt
+          ? new Date(formData.flashSaleEndsAt).toISOString()
+          : null,
       };
 
       const url = giftId ? `/api/gifts/${giftId}` : "/api/gifts";
@@ -178,8 +205,12 @@ export default function AddGiftModal({
         name: "",
         description: "",
         price: "",
+        stockQuantity: "0",
         imageUrl: "",
         categoryId: "",
+        priority: "normal",
+        flashSalePrice: "",
+        flashSaleEndsAt: "",
       });
       setImages([]);
       setImagePreviews([]);
@@ -258,6 +289,22 @@ export default function AddGiftModal({
               onChange={handleChange}
               placeholder="0.00"
               step="0.01"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">
+              Number of gifts in stock *
+            </label>
+            <input
+              type="number"
+              name="stockQuantity"
+              value={formData.stockQuantity}
+              onChange={handleChange}
+              min="0"
+              step="1"
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
             />
@@ -349,6 +396,54 @@ export default function AddGiftModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">
+              Priority
+            </label>
+            <select
+              name="priority"
+              value={formData.priority}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+            >
+              <option value="normal">Normal</option>
+              <option value="bestseller">Best Seller</option>
+              <option value="trending">Trending</option>
+              <option value="new">New</option>
+              <option value="featured">Featured</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">
+                Flash sale price (₦)
+              </label>
+              <input
+                type="number"
+                name="flashSalePrice"
+                value={formData.flashSalePrice}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                placeholder="Optional"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">
+                Flash sale ends
+              </label>
+              <input
+                type="datetime-local"
+                name="flashSaleEndsAt"
+                value={formData.flashSaleEndsAt}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+              />
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">

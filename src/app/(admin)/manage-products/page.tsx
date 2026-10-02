@@ -11,6 +11,7 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  stockQuantity: number;
   imageUrl: string;
   createdAt: string;
 }
@@ -160,6 +161,9 @@ export default function ManageProducts() {
                     </p>
                     <p className="text-2xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                       ₦{product.price.toLocaleString()}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-gray-600">
+                      {product.stockQuantity} in stock
                     </p>
                   </div>
                   <div className="text-right">

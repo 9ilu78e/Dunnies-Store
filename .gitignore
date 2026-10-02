@@ -30,6 +30,10 @@ coverage/
 prisma/*.db
 prisma/*.db-journal
 
+# User-uploaded files
+public/uploads/
+.uploads/
+
 # Operating system files
 .DS_Store
 Thumbs.db

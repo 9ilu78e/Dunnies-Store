@@ -12,6 +12,7 @@ import {
   Settings,
   User,
   BarChart3,
+  BadgePercent,
 } from "lucide-react";
 
 const navItems = [
@@ -24,6 +25,11 @@ const navItems = [
     label: "Products",
     href: "/manage-products",
     icon: Package,
+  },
+  {
+    label: "Flash Sales",
+    href: "/manage-flash-sales",
+    icon: BadgePercent,
   },
   {
     label: "Product Analytics",
@@ -82,7 +88,6 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
         <p className="text-[20px] uppercase tracking-[0.15em] text-purple-300 font-bold">
           Dunnis Admin
         </p>
-        
 
         <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3 shadow-inner">
           <div className="w-10 h-10 rounded-2xl overflow-hidden bg-white/10 flex items-center justify-center shrink-0">

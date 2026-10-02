@@ -12,6 +12,9 @@ interface Gift {
   name: string;
   description: string;
   price: number;
+  stockQuantity: number;
+  priority: string;
+  flashSalePrice: number | null;
   imageUrl: string;
   imageUrls?: string[];
   createdAt: string;
@@ -169,6 +172,14 @@ export default function ManageGifts() {
                     </p>
                     <p className="text-2xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                       ₦{gift.price.toLocaleString()}
+                    </p>
+                    {gift.flashSalePrice && (
+                      <p className="text-xs font-semibold text-red-600">
+                        Sale: ₦{gift.flashSalePrice.toLocaleString()}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs font-medium text-gray-600">
+                      {gift.stockQuantity} in stock · {gift.priority}
                     </p>
                   </div>
                   <div className="text-right">

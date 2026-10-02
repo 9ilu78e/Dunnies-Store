@@ -10,8 +10,13 @@ interface Product {
   id: string;
   name: string;
   price: number;
+  stockQuantity: number;
   imageUrl: string;
   description: string;
+  averageRating: number;
+  totalComments: number;
+  flashSalePrice: number | null;
+  flashSaleEndsAt: string | null;
 }
 
 export default function FeaturedProducts() {
@@ -36,16 +41,24 @@ export default function FeaturedProducts() {
     fetchProducts();
   }, []);
 
-  const formattedProducts = products.map((p) => ({
-    id: p.id,
-    name: p.name,
-    price: p.price,
-    image: p.imageUrl || "https://via.placeholder.com/400x400",
-    description: p.description,
-    rating: 4.5,
-    reviews: 0,
-    href: `/product/${p.id}`,
-  }));
+  const formattedProducts = products.map((p) => {
+    const isFlashSaleActive =
+      p.flashSalePrice !== null &&
+      p.flashSaleEndsAt !== null &&
+      new Date(p.flashSaleEndsAt).getTime() > Date.now();
+    return {
+      id: p.id,
+      name: p.name,
+      price: isFlashSaleActive ? p.flashSalePrice ?? p.price : p.price,
+      stockQuantity: p.stockQuantity,
+      originalPrice: isFlashSaleActive ? p.price : undefined,
+      image: p.imageUrl || "https://via.placeholder.com/400x400",
+      description: p.description,
+      rating: p.averageRating ?? 0,
+      reviews: p.totalComments ?? 0,
+      href: `/product/${p.id}`,
+    };
+  });
 
   return (
     <section className="py-8 sm:py-12 lg:py-16 bg-white">

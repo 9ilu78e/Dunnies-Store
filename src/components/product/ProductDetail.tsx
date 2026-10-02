@@ -57,6 +57,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [loadingLikes, setLoadingLikes] = useState(false);
+  const [togglingLike, setTogglingLike] = useState(false);
   const [totalComments, setTotalComments] = useState(0);
   const [commentLikes, setCommentLikes] = useState<
     Record<string, { count: number; isLiked: boolean }>
@@ -157,12 +158,16 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       }
     };
 
-    if (isClient && user) {
+    if (isClient) {
       fetchLikes();
     }
   }, [product.id, user?.uid, isClient]);
 
   const handleToggleLike = async () => {
+    if (authLoading) {
+      return;
+    }
+
     if (isAdmin) {
       alert("Admin users cannot like products");
       return;
@@ -174,12 +179,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     }
 
     try {
+      setTogglingLike(true);
       const response = await fetch(
         `${getBaseUrl()}/api/products/${product.id}/likes`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user.uid }),
         }
       );
       if (response.status === 401) {
@@ -196,6 +200,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       }
     } catch (error) {
       console.error("Error toggling like:", error);
+    } finally {
+      setTogglingLike(false);
     }
   };
 
@@ -244,9 +250,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const stockLabel = useMemo(() => {
     switch (product.stockStatus) {
       case "in-stock":
-        return "In stock";
+        return product.stockQuantity === undefined
+          ? "In stock"
+          : `${product.stockQuantity} in stock`;
       case "low-stock":
-        return "Low stock";
+        return product.stockQuantity === undefined
+          ? "Low stock"
+          : `Only ${product.stockQuantity} left`;
       default:
         return "Currently unavailable";
     }
@@ -543,11 +553,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
               <button
                 onClick={handleToggleLike}
+                disabled={authLoading || loadingLikes || togglingLike}
                 className={`inline-flex flex-row items-center justify-center gap-1.5 rounded-full px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition ${
                   isLiked
                     ? "bg-red-100 text-red-600 hover:bg-red-200"
                     : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                }`}
+                } disabled:cursor-not-allowed disabled:opacity-60`}
                 title="Like this product"
               >
                 <Heart

@@ -20,17 +20,33 @@ interface Category {
 
 interface ProductsCatalogProps {
   products: ProductRecord[];
+  initialSearchQuery?: string;
 }
 
-export default function ProductsCatalog({ products }: ProductsCatalogProps) {
+const normalizeSearchText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+
+export default function ProductsCatalog({
+  products,
+  initialSearchQuery = "",
+}: ProductsCatalogProps) {
   const [layout, setLayout] = useState<"grid" | "list">("grid");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    setSearchQuery(initialSearchQuery);
+  }, [initialSearchQuery]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -56,19 +72,31 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
     const timer = setTimeout(() => {
       let filtered = products;
 
-      if (searchQuery) {
-        filtered = filtered.filter(
-          (product) =>
-            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.description
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase())
-        );
+      const searchTerms = normalizeSearchText(searchQuery)
+        .split(/\s+/)
+        .filter(Boolean);
+      if (searchTerms.length > 0) {
+        filtered = filtered.filter((product) => {
+          const searchableText = normalizeSearchText(
+            [
+              product.name,
+              product.description,
+              product.longDescription,
+              product.category,
+              product.tag,
+              product.price.toString(),
+              product.originalPrice?.toString() || "",
+            ].join(" ")
+          );
+          return searchTerms.every((term) => searchableText.includes(term));
+        });
       }
 
       if (selectedCategory) {
         filtered = filtered.filter(
-          (product) => product.category === selectedCategory
+          (product) =>
+            normalizeSearchText(product.category) ===
+            normalizeSearchText(selectedCategory)
         );
       }
 
@@ -97,12 +125,13 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
             Browse thoughtful gifts and memorable souvenirs for every occasion.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-lg">
+        <div className="flex w-full max-w-lg flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search items, categories, keywords..."
+              aria-label="Search products, gifts, and souvenirs"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-full border border-purple-200 bg-white py-3 pl-12 pr-4 text-sm focus:border-purple-500 focus:outline-none"
@@ -214,6 +243,7 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
               rating: product.rating,
               reviews: product.reviewsCount,
               image: product.image,
+              stockQuantity: product.stockQuantity,
               tag: product.tag,
               href: product.href,
             }))}
@@ -271,7 +301,9 @@ export default function ProductsCatalog({ products }: ProductsCatalogProps) {
       ) : (
         <div className="text-center py-12">
           <p className="text-gray-500 text-base">
-            No products found matching your search.
+            {searchQuery.trim()
+              ? `No products found matching "${searchQuery.trim()}".`
+              : "No products found in this category."}
           </p>
         </div>
       )}

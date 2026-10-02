@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { getCurrentUser } from "@/services/authService";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -64,9 +64,35 @@ export default function Header() {
   const [giftCategories, setGiftCategories] = useState<Category[]>([]);
   const [souvenirCategories, setSouvenirCategories] = useState<Category[]>([]);
   const pathname = usePathname();
+  const router = useRouter();
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { items: wishlistItems } = useWishlist();
 
   const { totalItems } = useCart();
+
+  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    const query = searchQuery.trim();
+    router.replace(
+      query ? `/product?search=${encodeURIComponent(query)}` : "/product"
+    );
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+
+    searchTimer.current = setTimeout(() => {
+      const query = value.trim();
+      const destination = query
+        ? `/product?search=${encodeURIComponent(query)}`
+        : "/product";
+      router.replace(destination);
+      setIsMobileMenuOpen(false);
+    }, 250);
+  };
 
   useEffect(() => {
     let isSubscribed = true;
@@ -238,7 +264,10 @@ export default function Header() {
             <span className="font-medium">Free Worldwide Delivery</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/track" className="hover:underline hidden sm:inline font-medium">
+            <Link
+              href="/track"
+              className="hover:underline hidden sm:inline font-medium"
+            >
               Track Order
             </Link>
             <Link href="/help" className="hover:underline font-medium">
@@ -284,21 +313,19 @@ export default function Header() {
 
             {/* Enhanced Search Box */}
             <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-              <div className="relative w-full group">
+              <form className="relative w-full group" onSubmit={submitSearch}>
                 <div className="relative">
                   <input
                     type="text"
                     placeholder="Search for gifts, souvenirs, and more..."
+                    aria-label="Search products, gifts, and souvenirs"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 pl-10 pr-28 rounded-full border-2 border-gray-200 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100 transition-all duration-200 text-sm"
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="w-full rounded-full border-2 border-gray-200 py-2 pl-10 pr-4 text-sm transition-all duration-200 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100"
                   />
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
-                  <button className="absolute right-1 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-1.5 rounded-full hover:shadow-md hover:scale-105 transition-all duration-200 text-xs font-semibold flex items-center space-x-1">
-                    <span>Search</span>
-                  </button>
                 </div>
-              </div>
+              </form>
             </div>
 
             {/* Right Side Icons */}
@@ -333,7 +360,11 @@ export default function Header() {
                       My Account
                     </p>
                   </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-gray-500 group-hover:text-purple-600 transition-all duration-300 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-gray-500 group-hover:text-purple-600 transition-all duration-300 ${
+                      isUserDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </button>
 
                 {/* Enhanced Dropdown Menu */}
@@ -361,7 +392,9 @@ export default function Header() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-xs truncate">Hello, {greetingName}!</p>
+                        <p className="font-semibold text-xs truncate">
+                          Hello, {greetingName}!
+                        </p>
                         {user?.email && (
                           <p className="text-[10px] text-purple-100 truncate">
                             {user.email}
@@ -547,16 +580,17 @@ export default function Header() {
 
         {/* Mobile Search */}
         <div className="md:hidden px-4 pb-3 border-t border-gray-100 pt-3">
-          <div className="relative">
+          <form className="relative" onSubmit={submitSearch}>
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search products, gifts, and souvenirs..."
+              aria-label="Search products, gifts, and souvenirs"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2.5 pl-11 pr-4 rounded-full border-2 border-purple-200 focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 text-sm shadow-sm"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full rounded-full border-2 border-purple-200 py-2.5 pl-11 pr-4 text-sm shadow-sm focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100"
             />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
-          </div>
+          </form>
         </div>
       </header>
 
@@ -582,7 +616,10 @@ export default function Header() {
         <div className="p-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Menu</h2>
-            <button onClick={toggleMobileMenu} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+            <button
+              onClick={toggleMobileMenu}
+              className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+            >
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -630,7 +667,7 @@ export default function Header() {
                   >
                     Login
                   </Link>
-                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -707,7 +744,9 @@ export default function Header() {
                 <span className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
                   <Heart
                     className={`w-4 h-4 ${
-                      wishlistCount ? "text-red-500 fill-red-500" : "text-red-600"
+                      wishlistCount
+                        ? "text-red-500 fill-red-500"
+                        : "text-red-600"
                     }`}
                   />
                 </span>

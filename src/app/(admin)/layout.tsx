@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Menu, Search, Bell, User } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import AdminLogoutModal from "@/components/layout/AdminLogoutModal";
 import { getCurrentUser } from "@/services/authService";
 import UserAvatar from "@/components/ui/UserAvatar";
+
+interface AdminSearchResult {
+  id: string;
+  title: string;
+  detail?: string;
+  type: string;
+  href: string;
+}
 
 export default function AdminLayout({
   children,
@@ -15,6 +24,11 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<AdminSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const router = useRouter();
   const [user, setUser] = useState<{ 
   fullName?: string; 
   email?: string; 
@@ -52,6 +66,53 @@ export default function AdminLayout({
     fetchAdmin();
   }, [isClient]);
 
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setSearchResults([]);
+      setSearchError("");
+      setSearchLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError("");
+      setSearchResults([]);
+      try {
+        const response = await fetch(
+          `/api/admin/search?q=${encodeURIComponent(query)}`,
+          { signal: controller.signal }
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Search failed");
+        }
+        setSearchResults(data.results || []);
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setSearchError(
+          error instanceof Error ? error.message : "Search failed"
+        );
+        setSearchResults([]);
+      } finally {
+        if (!controller.signal.aborted) setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [searchQuery]);
+
+  const openSearchResult = (result: AdminSearchResult) => {
+    setSearchQuery("");
+    setShowSearchResults(false);
+    router.push(result.href);
+  };
+
   return (
     <div className="flex h-screen bg-linear-to-br from-purple-50 via-white to-purple-100">
       <div
@@ -87,22 +148,82 @@ export default function AdminLayout({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className="flex items-center bg-linear-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-full px-2 sm:px-4 py-1.5 sm:py-2 shadow-sm hover:shadow-md transition-all flex-1 min-w-0">
-              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 shrink-0" />
-              <input
-                type="search"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-base focus:outline-none w-full text-gray-700 placeholder:text-gray-500"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="text-gray-400 hover:text-gray-600 transition shrink-0"
+            <div className="relative flex-1 min-w-0">
+              <div className="flex min-w-0 items-center rounded-full border-2 border-purple-300 bg-linear-to-r from-purple-50 to-pink-50 px-2 py-1.5 shadow-sm transition-all hover:shadow-md sm:px-4 sm:py-2">
+                <Search className="h-4 w-4 shrink-0 text-purple-600 sm:h-5 sm:w-5" />
+                <input
+                  type="search"
+                  placeholder="Search products, orders, users..."
+                  value={searchQuery}
+                  onFocus={() => setShowSearchResults(true)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchResults(true);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setShowSearchResults(false);
+                    if (event.key === "Enter" && searchResults[0]) {
+                      openSearchResult(searchResults[0]);
+                    }
+                  }}
+                  aria-label="Search admin records"
+                  aria-expanded={showSearchResults}
+                  aria-controls="admin-search-results"
+                  className="w-full bg-transparent px-2 py-0.5 text-xs text-gray-700 placeholder:text-gray-500 focus:outline-none sm:px-3 sm:py-1 sm:text-base"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Clear admin search"
+                    className="shrink-0 text-gray-400 transition hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {showSearchResults && searchQuery.trim().length >= 2 && (
+                <div
+                  id="admin-search-results"
+                  className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-xl border border-purple-100 bg-white p-2 shadow-xl"
                 >
-                  ✕
-                </button>
+                  {searchLoading ? (
+                    <p className="px-3 py-2 text-sm text-gray-500">
+                      Searching...
+                    </p>
+                  ) : searchError ? (
+                    <p className="px-3 py-2 text-sm text-red-600">
+                      {searchError}
+                    </p>
+                  ) : searchResults.length ? (
+                    searchResults.map((result) => (
+                      <button
+                        key={`${result.type}-${result.id}`}
+                        type="button"
+                        onClick={() => openSearchResult(result)}
+                        className="flex w-full items-start justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-purple-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-gray-800">
+                            {result.title}
+                          </span>
+                          {result.detail && (
+                            <span className="block truncate text-xs text-gray-500">
+                              {result.detail}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 text-xs text-purple-600">
+                          {result.type}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-3 py-2 text-sm text-gray-500">
+                      No matching admin records
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>

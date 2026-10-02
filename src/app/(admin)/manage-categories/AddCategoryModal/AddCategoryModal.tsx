@@ -111,11 +111,14 @@ export default function AddCategoryModal({
           body: uploadFormData,
         });
 
+        const uploadData = await uploadResponse.json();
         if (!uploadResponse.ok) {
-          throw new Error("Failed to upload image");
+          throw new Error(uploadData.error || "Failed to upload image");
         }
 
-        const uploadData = await uploadResponse.json();
+        if (typeof uploadData.url !== "string" || !uploadData.url) {
+          throw new Error("Image upload did not return a URL");
+        }
         imageUrl = uploadData.url;
       }
 
@@ -251,7 +254,7 @@ export default function AddCategoryModal({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp"
               onChange={handleImageSelect}
               className="hidden"
             />

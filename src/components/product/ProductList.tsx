@@ -11,6 +11,7 @@ interface Product {
   image?: string;
   tag?: string;
   discount?: number;
+  stockQuantity?: number;
   href?: string;
 }
 
@@ -25,14 +26,19 @@ export default function ProductList({
   cols = 4,
   gap = 6,
 }: ProductListProps) {
-  const gapClass = gap === 4 ? "gap-4" : gap === 8 ? "gap-8" : "gap-6";
+  const gapClass =
+    gap === 4
+      ? "gap-3 sm:gap-4"
+      : gap === 8
+      ? "gap-4 sm:gap-6"
+      : "gap-4 sm:gap-5";
 
   const gridCols = {
-    2: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-    3: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-    4: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-    5: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
-    6: "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6",
+    2: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+    3: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6",
+    4: "grid-cols-2 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6",
+    5: "grid-cols-2 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6",
+    6: "grid-cols-2 md:grid-cols-4 lg:grid-cols-6",
   }[cols];
 
   return (

@@ -79,8 +79,19 @@ function transformDatabaseSouvenir(dbSouvenir: any): ProductRecord {
     name: dbSouvenir.name,
     description: dbSouvenir.description || "",
     longDescription: dbSouvenir.description || "",
-    price: dbSouvenir.price,
-    originalPrice: undefined,
+    price:
+      dbSouvenir.flashSalePrice &&
+      dbSouvenir.flashSaleEndsAt &&
+      new Date(dbSouvenir.flashSaleEndsAt).getTime() > Date.now()
+        ? dbSouvenir.flashSalePrice
+        : dbSouvenir.price,
+    originalPrice:
+      dbSouvenir.flashSalePrice &&
+      dbSouvenir.flashSaleEndsAt &&
+      new Date(dbSouvenir.flashSaleEndsAt).getTime() > Date.now()
+        ? dbSouvenir.price
+        : undefined,
+    stockQuantity: dbSouvenir.stockQuantity,
     rating: averageRating,
     reviewsCount: dbSouvenir.comments.length,
     image: imageUrls[0],
@@ -88,7 +99,12 @@ function transformDatabaseSouvenir(dbSouvenir: any): ProductRecord {
     tag: "Souvenir",
     category: "Souvenirs",
     href: `/souvenirs/${dbSouvenir.id}`,
-    stockStatus: "in-stock" as const,
+    stockStatus:
+      dbSouvenir.stockQuantity === 0
+        ? ("out-of-stock" as const)
+        : dbSouvenir.stockQuantity <= 5
+        ? ("low-stock" as const)
+        : ("in-stock" as const),
     highlights: ["Locally inspired", "Giftable keepsake", "Made to remember"],
     specs: [
       { label: "SKU", value: dbSouvenir.id },

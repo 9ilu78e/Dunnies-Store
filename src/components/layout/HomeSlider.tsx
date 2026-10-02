@@ -38,7 +38,8 @@ export default function HeroSlider() {
           {
             title: "Souvenirs & Keepsakes",
             subtitle: "Make every memory last",
-            description: "Discover meaningful mementos and locally inspired finds",
+            description:
+              "Discover meaningful mementos and locally inspired finds",
             image: "/assets/slide2.jpg",
             cta: "Shop Souvenirs",
             href: "/souvenirs",
@@ -71,7 +72,8 @@ export default function HeroSlider() {
           {
             title: "Souvenirs & Keepsakes",
             subtitle: "Make every memory last",
-            description: "Discover meaningful mementos and locally inspired finds",
+            description:
+              "Discover meaningful mementos and locally inspired finds",
             image: "/assets/slide2.jpg",
             cta: "Shop Souvenirs",
             href: "/souvenirs",
@@ -108,72 +110,75 @@ export default function HeroSlider() {
   }
 
   return (
-    <section className="relative h-[500px] sm:h-[600px] overflow-hidden bg-linear-to-r from-purple-900 to-pink-900">
-      {slides.map((slide, i) => (
-        <div
-          key={i}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            i === current ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <div className="absolute inset-0 bg-black/40 z-10" />
-          <Image
-            src={slide.image}
-            alt={slide.title}
-            fill
-            sizes="100vw"
-            className="object-cover"
-            priority={i === 0}
-          />
+    <section className="bg-white px-3 pt-3 pb-1 sm:px-6 sm:pt-6 sm:pb-2 lg:px-8">
+      <div className="relative h-[260px] overflow-hidden rounded-2xl bg-linear-to-r from-purple-900 to-pink-900 sm:h-[330px] sm:rounded-3xl lg:h-[400px]">
+        {slides.map((slide, i) => (
+          <div
+            key={i}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              i === current ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="absolute inset-0 bg-black/40 z-10" />
+            <Image
+              src={slide.image}
+              alt={slide.title}
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority={i === 0}
+            />
 
-          <div className="absolute inset-0 z-20 flex items-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-              <div className="max-w-2xl">
-                <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full mb-4">
-                  <Gift className="w-5 h-5 text-yellow-300" />
-                  <span className="text-white text-sm font-semibold">
-                    {slide.tag}
-                  </span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
-                  {slide.title}
-                </h1>
-                <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-purple-100 mb-2">
-                  {slide.subtitle}
-                </p>
-                <p className="text-sm sm:text-base md:text-lg text-gray-200 mb-8">
-                  {slide.description}
-                </p>
-                <div className="flex flex-wrap gap-3 sm:gap-4">
-                  <Link
-                    href={slide.href}
-                    className="bg-white text-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl flex items-center space-x-2 text-sm sm:text-base"
-                  >
-                    <span>{slide.cta}</span>
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </Link>
-                  <Link
-                    href="/product"
-                    className="bg-transparent border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold hover:bg-white hover:text-purple-600 transition-all text-sm sm:text-base"
-                  >
-                    Shop All
-                  </Link>
+            <div className="absolute inset-0 z-20 flex items-center">
+              <div className="max-w-7xl mx-auto w-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+                <div className="max-w-2xl">
+                  <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full mb-2">
+                    <Gift className="w-4 h-4 text-yellow-300" />
+                    <span className="text-white text-xs font-semibold">
+                      {slide.tag}
+                    </span>
+                  </div>
+                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1 leading-tight">
+                    {slide.title}
+                  </h1>
+                  <p className="text-sm sm:text-base md:text-lg text-purple-100 mb-0.5">
+                    {slide.subtitle}
+                  </p>
+                  <p className="text-xs sm:text-sm md:text-base text-gray-200 mb-3">
+                    {slide.description}
+                  </p>
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                    <Link
+                      href={slide.href}
+                      className="bg-white text-purple-600 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl flex items-center space-x-2 text-xs sm:text-sm"
+                    >
+                      <span>{slide.cta}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href="/product"
+                      className="bg-transparent border-2 border-white text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-white hover:text-purple-600 transition-all text-xs sm:text-sm"
+                    >
+                      Shop All
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
+      </div>
+      <div className="flex justify-center gap-2 pt-3" aria-label="Slide navigation">
         {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
             className={`h-2 rounded-full transition-all ${
-              i === current ? "w-8 bg-white" : "w-2 bg-white/50"
+              i === current ? "w-6 bg-purple-700" : "w-2 bg-purple-300"
             }`}
             aria-label={`Go to slide ${i + 1}`}
+            aria-current={i === current ? "true" : undefined}
           />
         ))}
       </div>

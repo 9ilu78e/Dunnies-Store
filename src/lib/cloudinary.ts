@@ -23,15 +23,35 @@ export const uploadImage = async (file: File, folder = 'dunnies-store'): Promise
       folder,
       resource_type: 'auto',
       allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-      max_file_size: 10485760, // 10MB
-      quality: 'auto:good',
-      fetch_format: 'auto',
+      transformation: [{ quality: 'auto:good', fetch_format: 'auto' }],
     });
 
     return result.secure_url;
-  } catch (error: any) {
-    console.error('Error uploading to Cloudinary:', error);
-    throw new Error('Failed to upload image');
+  } catch (error) {
+    const cloudinaryError =
+      typeof error === 'object' && error !== null
+        ? (error as {
+            message?: unknown;
+            error?: { message?: unknown; http_code?: unknown };
+            http_code?: unknown;
+          })
+        : undefined;
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof cloudinaryError?.error?.message === 'string'
+          ? cloudinaryError.error.message
+          : typeof cloudinaryError?.message === 'string'
+            ? cloudinaryError.message
+            : 'Unknown Cloudinary upload error';
+    const statusCode =
+      typeof cloudinaryError?.http_code === 'number'
+        ? cloudinaryError.http_code
+        : typeof cloudinaryError?.error?.http_code === 'number'
+          ? cloudinaryError.error.http_code
+          : undefined;
+    console.error('[CLOUDINARY_UPLOAD]', statusCode, message);
+    throw new Error(message);
   }
 };
 

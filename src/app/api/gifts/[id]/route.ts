@@ -84,22 +84,115 @@ export async function PUT(
         description: formData.get("description"),
         price: formData.get("price"),
         imageUrl: formData.get("imageUrl"),
+        categoryId: formData.get("categoryId"),
+        stockQuantity: formData.get("stockQuantity"),
+        priority: formData.get("priority"),
+        flashSalePrice: formData.get("flashSalePrice"),
+        flashSaleEndsAt: formData.get("flashSaleEndsAt"),
         images: formData.getAll("images"),
       };
     } else {
       body = await request.json();
     }
 
-    const { name, description, price, imageUrl, images } = body;
-    const parsedPrice =
-      typeof price === "string" ? parseFloat(price) : Number(price);
+    const {
+      name,
+      description,
+      price,
+      imageUrl,
+      categoryId,
+      stockQuantity,
+      priority,
+      flashSalePrice,
+      flashSaleEndsAt,
+      imageUrls,
+      images,
+    } = body;
 
     const updateData: Record<string, unknown> = {};
 
-    if (name) updateData.name = name;
-    if (description) updateData.description = description;
-    if (imageUrl) updateData.imageUrl = imageUrl;
-    if (!Number.isNaN(parsedPrice)) updateData.price = parsedPrice;
+    if (name !== undefined) {
+      if (typeof name !== "string" || !name.trim()) {
+        return NextResponse.json({ error: "Name is required" }, { status: 400 });
+      }
+      updateData.name = name.trim();
+    }
+    if (description !== undefined) updateData.description = description;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl || null;
+    if (categoryId !== undefined) updateData.categoryId = categoryId || null;
+    if (Array.isArray(imageUrls)) {
+      const processedImageUrls = imageUrls.filter(
+        (url: unknown): url is string => typeof url === "string"
+      );
+      updateData.imageUrls = processedImageUrls;
+      if (imageUrl === undefined) {
+        updateData.imageUrl = processedImageUrls[0] || null;
+      }
+    }
+    if (price !== undefined && price !== "") {
+      const parsedPrice = Number(price);
+      if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+        return NextResponse.json({ error: "Price must be greater than zero" }, { status: 400 });
+      }
+      updateData.price = parsedPrice;
+    }
+    if (stockQuantity !== undefined && stockQuantity !== "") {
+      const parsedStockQuantity = Number(stockQuantity);
+      if (!Number.isSafeInteger(parsedStockQuantity) || parsedStockQuantity < 0) {
+        return NextResponse.json(
+          { error: "Stock quantity must be a non-negative whole number" },
+          { status: 400 }
+        );
+      }
+      updateData.stockQuantity = parsedStockQuantity;
+    }
+    if (priority !== undefined) updateData.priority = priority || "normal";
+    if (flashSalePrice !== undefined || flashSaleEndsAt !== undefined) {
+      const rawFlashSalePrice = flashSalePrice ?? null;
+      const parsedFlashSalePrice =
+        rawFlashSalePrice === "" || rawFlashSalePrice === null
+          ? null
+          : Number(rawFlashSalePrice);
+      const parsedFlashSaleEndsAt = flashSaleEndsAt
+        ? new Date(flashSaleEndsAt)
+        : null;
+      const updatedBasePrice =
+        typeof updateData.price === "number" ? updateData.price : existing.price;
+      if (
+        parsedFlashSalePrice !== null &&
+        (!Number.isFinite(parsedFlashSalePrice) ||
+          parsedFlashSalePrice <= 0 ||
+          parsedFlashSalePrice >= updatedBasePrice ||
+          !parsedFlashSaleEndsAt ||
+          Number.isNaN(parsedFlashSaleEndsAt.getTime()) ||
+          parsedFlashSaleEndsAt.getTime() <= Date.now())
+      ) {
+        return NextResponse.json(
+          { error: "Flash sale price must be greater than zero and less than the regular price" },
+          { status: 400 }
+        );
+      }
+      if (
+        flashSaleEndsAt &&
+        (!parsedFlashSaleEndsAt ||
+          Number.isNaN(parsedFlashSaleEndsAt.getTime()))
+      ) {
+        return NextResponse.json(
+          { error: "Flash sale end time is invalid" },
+          { status: 400 }
+        );
+      }
+      if (!parsedFlashSalePrice && flashSaleEndsAt) {
+        return NextResponse.json(
+          { error: "A flash sale end time requires a flash sale price" },
+          { status: 400 }
+        );
+      }
+      updateData.flashSalePrice = parsedFlashSalePrice;
+      updateData.flashSaleEndsAt = parsedFlashSalePrice
+        ? parsedFlashSaleEndsAt
+        : null;
+    }
 
     if (images && Array.isArray(images) && images.length > 0) {
       const processedImages: string[] = [];
