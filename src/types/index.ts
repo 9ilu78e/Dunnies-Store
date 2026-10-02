@@ -10,8 +10,12 @@ export interface Product {
 }
 
 export interface CartItem {
-    productId: string;
+    productId?: string;
+    itemId?: string;
+    itemType?: 'product' | 'gift' | 'souvenir';
     quantity: number;
+    name?: string;
+    price?: number;
 }
 
 export interface User {

@@ -1,22 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, LogOut, ShieldCheck, X } from "lucide-react";
 import { signOutFirebase } from "@/services/firebaseAuth";
 
 interface AdminLogoutModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoggedOut: () => void;
 }
 
 export default function AdminLogoutModal({
   isOpen,
   onClose,
+  onLoggedOut,
 }: AdminLogoutModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleLogout = async () => {
     setLoading(true);
@@ -24,9 +24,9 @@ export default function AdminLogoutModal({
 
     try {
       await signOutFirebase();
+      onLoggedOut();
       onClose();
-      router.replace("/login");
-      router.refresh();
+      window.location.replace("/login");
     } catch (logoutError) {
       console.error("Admin logout failed:", logoutError);
       setError("Could not end the admin session. Please try again.");

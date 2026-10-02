@@ -129,7 +129,11 @@ export default function CartPage() {
                       <div className="flex items-center bg-gray-100 rounded-xl p-1 sm:px-2 sm:py-1">
                         <button
                           onClick={() =>
-                            updateQuantity(item.id, item.quantity - 1)
+                            updateQuantity(
+                              item.id,
+                              item.quantity - 1,
+                              item.itemType
+                            )
                           }
                           className="p-1 sm:p-2 hover:text-violet-600 disabled:opacity-50"
                           disabled={item.quantity <= 1}
@@ -141,7 +145,11 @@ export default function CartPage() {
                         </span>
                         <button
                           onClick={() =>
-                            updateQuantity(item.id, item.quantity + 1)
+                            updateQuantity(
+                              item.id,
+                              item.quantity + 1,
+                              item.itemType
+                            )
                           }
                           className="p-1 sm:p-2 hover:text-violet-600"
                           disabled={
@@ -154,7 +162,7 @@ export default function CartPage() {
                         </button>
                       </div>
                       <button
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(item.id, item.itemType)}
                         className="text-red-500 flex items-center gap-1 sm:gap-2 text-sm font-semibold hover:text-red-700 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" /> Remove

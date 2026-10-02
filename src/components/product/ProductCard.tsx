@@ -17,6 +17,7 @@ interface ProductProps {
   tag?: string;
   discount?: number;
   stockQuantity?: number;
+  orderCount?: number;
   href?: string;
   className?: string;
   priority?: boolean;
@@ -31,6 +32,7 @@ export default function ProductCard({
   rating = 0,
   reviews = 0,
   image,
+  orderCount,
   discount = 0,
   stockQuantity,
   href = "#",
@@ -101,6 +103,11 @@ export default function ProductCard({
           )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {typeof orderCount === "number" && (
+            <span className="absolute left-2 top-2 rounded-full bg-purple-700/95 px-2 py-1 text-[10px] font-semibold text-white">
+              {orderCount} {orderCount === 1 ? "order" : "orders"}
+            </span>
+          )}
           {typeof stockQuantity === "number" && (
             <span
               className={`absolute bottom-2 left-2 rounded-full px-2 py-1 text-[10px] font-semibold ${

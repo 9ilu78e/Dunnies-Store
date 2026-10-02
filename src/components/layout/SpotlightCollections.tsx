@@ -2,75 +2,92 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, Flame, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, ChevronDown, Flame } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import ProductCard from "@/components/product/ProductCard";
+import ProductList from "@/components/product/ProductList";
 
-interface Product {
+interface BestSeller {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
   stockQuantity: number;
-  imageUrl: string;
+  image: string;
   description: string;
-  averageRating: number;
-  totalComments: number;
-  flashSalePrice: number | null;
-  flashSaleEndsAt: string | null;
+  rating: number;
+  reviews: number;
+  tag: string;
+  href: string;
+  orderCount: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  type: "product" | "gift" | "souvenir";
 }
 
 export default function SpotlightCollections() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const router = useRouter();
+  const [bestSellers, setBestSellers] = useState<BestSeller[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedConciergeId, setSelectedConciergeId] = useState("");
+  const [error, setError] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState("");
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchBestSellers = async () => {
       try {
-        const response = await fetch("/api/products");
-        if (response.ok) {
-          const data = await response.json();
-          setProducts(data.products || []);
+        const response = await fetch("/api/best-sellers?limit=4", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
+          throw new Error(
+            data?.error || "Best sellers are temporarily unavailable."
+          );
         }
+
+        const data = await response.json();
+        setBestSellers(data.products || []);
       } catch (error) {
-        console.error("Failed to fetch products:", error);
+        console.error("Failed to fetch best sellers:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Best sellers are temporarily unavailable."
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchBestSellers();
   }, []);
 
-  const bestSellerCards = products.slice(0, 4).map((product) => {
-    const isFlashSaleActive =
-      product.flashSalePrice !== null &&
-      product.flashSaleEndsAt !== null &&
-      new Date(product.flashSaleEndsAt).getTime() > Date.now();
-    return {
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: isFlashSaleActive
-        ? product.flashSalePrice ?? product.price
-        : product.price,
-      originalPrice: isFlashSaleActive ? product.price : undefined,
-      image: product.imageUrl || "https://via.placeholder.com/400x400",
-      rating: product.averageRating ?? 0,
-      reviews: product.totalComments ?? 0,
-      stockQuantity: product.stockQuantity,
-      href: `/product/${product.id}`,
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("/api/categories", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`Category request failed with status ${response.status}`);
+        }
+        const data = await response.json();
+        setCategories(data.categories || []);
+      } catch (categoryError) {
+        console.error("Failed to fetch concierge categories:", categoryError);
+        setCategoriesError("Categories are temporarily unavailable.");
+      } finally {
+        setCategoriesLoading(false);
+      }
     };
-  });
 
-  const signatureHighlights = products.slice(0, 3).map((product) => ({
-    id: product.id,
-    name: product.name,
-    href: `/product/${product.id}`,
-  }));
-  const selectedConciergeProduct =
-    signatureHighlights.find((product) => product.id === selectedConciergeId) ??
-    signatureHighlights[0];
+    fetchCategories();
+  }, []);
 
   return (
     <section className="py-16 bg-linear-to-b from-purple-50 via-white to-purple-50/60">
@@ -84,8 +101,8 @@ export default function SpotlightCollections() {
             What&apos;s hot right now
           </h2>
           <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-            Crowd favorites meet our signature concierge picks. Hand off your
-            gifting decisions with confidence.
+            Products, gifts, and souvenirs ranked by distinct orders, with new
+            items included until their sales history grows.
           </p>
         </div>
 
@@ -109,28 +126,16 @@ export default function SpotlightCollections() {
                   a guaranteed hit.
                 </p>
               </div>
-              {bestSellerCards.length > 0 ? (
+              {error ? (
+                <p className="text-red-600" role="alert">
+                  {error}
+                </p>
+              ) : bestSellers.length > 0 ? (
                 <>
-                  <div
-                    className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 sm:gap-5"
-                    aria-label="Best-selling products. Scroll horizontally to see more."
-                  >
-                    {bestSellerCards.map((product, index) => (
-                      <div
-                        key={product.id}
-                        className="w-[72%] shrink-0 snap-start sm:w-[46%] lg:w-[31%] xl:w-[40%]"
-                      >
-                        <ProductCard
-                          {...product}
-                          priority={index === 0}
-                          className="rounded-xl"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <ProductList products={bestSellers} cols={4} gap={6} />
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <p className="text-sm text-gray-500">
-                      Updated daily based on verified reviews and repeat orders.
+                      Ranked by non-cancelled orders; newest items break ties.
                     </p>
                     <Link
                       href="/best-sellers"
@@ -142,70 +147,75 @@ export default function SpotlightCollections() {
                   </div>
                 </>
               ) : (
-                <p className="text-gray-600">No products available</p>
+                <p className="text-gray-600">No catalog items available yet.</p>
               )}
             </div>
 
             <div className="rounded-3xl bg-linear-to-br from-purple-700 via-purple-600 to-fuchsia-600 text-white p-6 sm:p-8 flex flex-col gap-6 shadow-2xl">
               <div className="inline-flex items-center gap-2 text-sm font-semibold text-purple-200 bg-white/10 rounded-full px-4 py-1 self-start">
-                <Sparkles className="w-4 h-4 text-purple-200" />
                 Signature experiences
               </div>
-              <div>
-                <h3 className="text-lg font-bold">Concierge curated</h3>
-                <p className="text-purple-100 mt-2">
-                  For when you need the gift to feel personal, immersive, and
-                  far from basic. Each pick pairs premium packaging with a story
-                  to tell.
-                </p>
-              </div>
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                  <h3 className="text-lg font-bold">Concierge curated</h3>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180"
+                  />
+                </summary>
+                <div className="mt-3 space-y-5">
+                  <p className="text-purple-100">
+                    For when you need the gift to feel personal, immersive, and
+                    far from basic. Each pick pairs premium packaging with a
+                    story to tell.
+                  </p>
 
-              {signatureHighlights.length > 0 ? (
-                <>
                   <label className="relative block">
                     <span className="mb-2 block text-sm font-semibold text-purple-100">
-                      Choose a concierge pick
+                      Choose a category
                     </span>
                     <select
-                      value={selectedConciergeProduct?.id ?? ""}
-                      onChange={(event) =>
-                        setSelectedConciergeId(event.target.value)
-                      }
-                      className="w-full appearance-none rounded-xl border border-white/30 bg-purple-800 px-4 py-3 pr-10 text-sm text-white outline-none transition focus:border-white focus:ring-2 focus:ring-white/30"
+                      defaultValue=""
+                      disabled={categoriesLoading || categories.length === 0}
+                      onChange={(event) => {
+                        if (event.target.value) {
+                          router.push(
+                            `/product?category=${encodeURIComponent(event.target.value)}`
+                          );
+                        }
+                      }}
+                      className="w-full appearance-none rounded-xl border border-white/30 bg-purple-800 px-4 py-3 pr-10 text-sm text-white outline-none transition focus:border-white focus:ring-2 focus:ring-white/30 disabled:opacity-60"
                     >
-                      {signatureHighlights.map((product) => (
+                      <option value="" disabled className="bg-white text-gray-900">
+                        {categoriesLoading ? "Loading categories..." : "Select a category"}
+                      </option>
+                      {categories.map((category) => (
                         <option
-                          key={product.id}
-                          value={product.id}
+                          key={category.id}
+                          value={category.id}
                           className="bg-white text-gray-900"
                         >
-                          {product.name}
+                          {category.name} ({category.type})
                         </option>
                       ))}
                     </select>
                     <ChevronDown className="pointer-events-none absolute bottom-3.5 right-3 h-4 w-4 text-white" />
                   </label>
-                  {selectedConciergeProduct && (
-                    <Link
-                      href={selectedConciergeProduct.href}
-                      className="rounded-2xl border border-white/10 bg-white/5 p-4 text-base font-semibold transition hover:bg-white/10"
-                    >
-                      View {selectedConciergeProduct.name}
-                      <ArrowRight className="ml-2 inline h-4 w-4" />
-                    </Link>
+                  {categoriesError && (
+                    <p className="text-sm text-purple-100" role="status">
+                      {categoriesError}
+                    </p>
                   )}
 
                   <Link
                     href="/signature-experiences"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-gray-900 font-semibold py-3 hover:bg-purple-50 transition"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white text-gray-900 font-semibold py-3 hover:bg-purple-50 transition"
                   >
                     Explore concierge picks
                     <ArrowRight className="w-4 h-4" />
                   </Link>
-                </>
-              ) : (
-                <p className="text-purple-100">No products available</p>
-              )}
+                </div>
+              </details>
             </div>
           </div>
         )}

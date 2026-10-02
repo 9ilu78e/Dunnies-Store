@@ -541,7 +541,7 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1 pb-3 border-t border-gray-100 pt-3">
+          <nav className="hidden lg:flex w-full items-center justify-center space-x-1 pb-3 border-t border-gray-100 pt-3">
             {navItems.map((item, index) => (
               <div key={`${item.label}-${index}`} className="relative group">
                 {item.children ? (
@@ -777,6 +777,11 @@ export default function Header() {
       <LogoutModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
+        onLoggedOut={() => {
+          setUser(null);
+          setIsUserDropdownOpen(false);
+          setIsMobileMenuOpen(false);
+        }}
       />
     </>
   );

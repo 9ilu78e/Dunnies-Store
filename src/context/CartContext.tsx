@@ -9,8 +9,11 @@ import {
   ReactNode,
 } from "react";
 
+export type CatalogItemType = "product" | "gift" | "souvenir";
+
 type CartItem = {
   id: number | string;
+  itemType: CatalogItemType;
   name: string;
   price: number;
   quantity: number;
@@ -21,8 +24,12 @@ type CartItem = {
 type CartContextType = {
   items: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity">, quantity?: number) => boolean;
-  removeFromCart: (id: CartItem["id"]) => void;
-  updateQuantity: (id: CartItem["id"], quantity: number) => void;
+  removeFromCart: (id: CartItem["id"], itemType: CatalogItemType) => void;
+  updateQuantity: (
+    id: CartItem["id"],
+    quantity: number,
+    itemType: CatalogItemType
+  ) => void;
   refreshInventory: () => Promise<string[]>;
   inventoryChecking: boolean;
   clearCart: () => void;
@@ -40,8 +47,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem("dunnis-cart");
       if (stored) {
-        const parsed = JSON.parse(stored) as CartItem[];
-        if (Array.isArray(parsed)) setItems(parsed);
+        const parsed = JSON.parse(stored) as Array<
+          Omit<CartItem, "itemType"> & { itemType?: CatalogItemType }
+        >;
+        if (Array.isArray(parsed)) {
+          setItems(
+            parsed.map((item) => ({
+              ...item,
+              itemType: item.itemType ?? "product",
+            }))
+          );
+        }
       }
     } catch (error) {
       console.error("Unable to restore saved cart:", error);
@@ -63,14 +79,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (product.stockQuantity !== undefined && product.stockQuantity < 1) {
       return false;
     }
-    const existing = items.find((i) => i.id === product.id);
+    const existing = items.find(
+      (item) => item.id === product.id && item.itemType === product.itemType
+    );
     if (existing) {
       const nextQuantity = existing.quantity + quantity;
       const stockLimit = product.stockQuantity ?? existing.stockQuantity;
       if (stockLimit !== undefined && nextQuantity > stockLimit) return false;
       setItems((current) =>
         current.map((i) =>
-          i.id === product.id ? { ...i, ...product, quantity: nextQuantity } : i
+          i.id === product.id && i.itemType === product.itemType
+            ? { ...i, ...product, quantity: nextQuantity }
+            : i
         )
       );
       return true;
@@ -85,18 +105,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const removeFromCart = (id: CartItem["id"]) => {
-    setItems((current) => current.filter((i) => i.id !== id));
+  const removeFromCart = (id: CartItem["id"], itemType: CatalogItemType) => {
+    setItems((current) =>
+      current.filter((i) => i.id !== id || i.itemType !== itemType)
+    );
   };
 
-  const updateQuantity = (id: CartItem["id"], quantity: number) => {
+  const updateQuantity = (
+    id: CartItem["id"],
+    quantity: number,
+    itemType: CatalogItemType
+  ) => {
     if (quantity <= 0) {
-      removeFromCart(id);
+      removeFromCart(id, itemType);
       return;
     }
     setItems((current) =>
       current.map((i) =>
-        i.id === id
+        i.id === id && i.itemType === itemType
           ? {
               ...i,
               quantity:
@@ -117,7 +143,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productIds: items.map((item) => String(item.id)),
+          items: items.map((item) => ({
+            id: String(item.id),
+            itemType: item.itemType,
+          })),
         }),
         cache: "no-store",
       });
@@ -125,20 +154,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error(data.error || "Unable to verify cart inventory");
       }
-      const availableById = new Map<
+      const availableByItem = new Map<
         string,
-        { stockQuantity: number; price: number }
+        { stockQuantity: number; price: number; itemType: CatalogItemType }
       >(
-        data.products.map(
-          (product: { id: string; stockQuantity: number; price: number }) => [
-            product.id,
-            product,
+        data.items.map(
+          (item: {
+            id: string;
+            itemType: CatalogItemType;
+            stockQuantity: number;
+            price: number;
+          }) => [
+            `${item.itemType}:${item.id}`,
+            item,
           ]
         )
       );
       const unavailableNames: string[] = [];
       const reconciledItems = items.flatMap((item) => {
-        const available = availableById.get(String(item.id));
+        const available = availableByItem.get(
+          `${item.itemType}:${item.id}`
+        );
         if (!available || available.stockQuantity < 1) {
           unavailableNames.push(item.name);
           return [];

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
+import {
+  FirebaseAdminConfigurationError,
+  getFirebaseAdminAuth,
+} from "@/lib/firebaseAdmin";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -78,15 +81,9 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Firebase auth error:", error);
 
-    if (
-      error instanceof Error &&
-      error.message.startsWith("Firebase Admin is not configured.")
-    ) {
+    if (error instanceof FirebaseAdminConfigurationError) {
       return NextResponse.json(
-        {
-          error:
-            "Google sign-in is not configured on the server. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY in the Render service environment, then redeploy.",
-        },
+        { error: error.message },
         { status: 503 }
       );
     }

@@ -1,83 +1,33 @@
 import type { Metadata } from "next";
 import ProductCard from "@/components/product/ProductCard";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { getBestSellers } from "@/lib/bestSellers";
 
-async function fetchBestSellers() {
-  try {
-    const products = await prisma.product.findMany({
-      include: {
-        category: true,
-        comments: { select: { rating: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 18,
-    });
-
-    return products.map((product: any) => {
-      const isFlashSaleActive =
-        product.flashSalePrice !== null &&
-        product.flashSaleEndsAt !== null &&
-        product.flashSaleEndsAt.getTime() > Date.now();
-      return {
-        id: product.id,
-        name: product.name,
-        description: product.description || "",
-        price: isFlashSaleActive
-          ? product.flashSalePrice ?? product.price
-          : product.price,
-        originalPrice: isFlashSaleActive ? product.price : undefined,
-        rating:
-          product.comments.length > 0
-            ? Math.round(
-                (product.comments.reduce(
-                  (sum: number, comment: { rating: number }) =>
-                    sum + comment.rating,
-                  0
-                ) /
-                  product.comments.length) *
-                  10
-              ) / 10
-            : 0,
-        reviews: product.comments.length,
-        stockQuantity: product.stockQuantity,
-        image: product.imageUrl || "",
-        tag: product.category?.name || "Product",
-        href: `/product/${product.id}`,
-      };
-    });
-  } catch (error) {
-    console.error("Failed to fetch best sellers:", error);
-    return [];
-  }
-}
+export const dynamic = "force-dynamic";
 
 const promiseCards = [
   {
-    title: "Realtime rankings",
-    description:
-      "Pulled from live orders, wishlists, and re-deliveries across the globe.",
+    title: "Ranked by orders",
+    description: "Items appear in order of distinct, non-cancelled orders.",
   },
   {
-    title: "Purple-glove QC",
-    description:
-      "Every product is inspected by concierge teams before shipping out.",
+    title: "Products, gifts, and souvenirs",
+    description: "All three store collections share one bestseller ranking.",
   },
   {
-    title: "Doorstep ready",
-    description:
-      "Worldwide delivery partners ensure gifts arrive exactly how you imagined.",
+    title: "New items included",
+    description: "Items without orders remain visible and sort after sold items.",
   },
 ];
 
 export const metadata: Metadata = {
   title: "Best Sellers – Dunnis Stores",
   description:
-    "Shop the most-loved products on Dunnis Stores. Updated daily with verified reviews and repeat purchases.",
+    "Shop the most-ordered products, gifts, and souvenirs at Dunnis Stores.",
 };
 
 export default async function BestSellersPage() {
-  const bestSellers = await fetchBestSellers();
+  const bestSellers = await getBestSellers(18);
 
   return (
     <section className="bg-linear-to-b from-purple-50 via-white to-white py-12 px-4 sm:px-6 lg:px-8">
@@ -88,12 +38,12 @@ export default async function BestSellersPage() {
               Best sellers
             </p>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
-              Shop the products everyone is talking about
+              Shop the items customers order most
             </h1>
             <p className="text-base sm:text-lg text-purple-100 max-w-3xl">
-              These cult-favorite gifts, souvenirs, and daily luxuries are
-              moving fastest in every city we deliver to. Updated hourly with
-              live reviews, verified reorders, and concierge quality scores.
+              Products, gifts, and souvenirs are ranked by the number of
+              non-cancelled orders they appear in. Newer items break ties and
+              stay visible while they build a sales history.
             </p>
           </div>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -112,8 +62,8 @@ export default async function BestSellersPage() {
               </Link>
             </div>
             <div className="text-sm text-purple-100">
-              Updated <strong className="font-semibold">daily</strong> from live
-              orders and wishlist data.
+              Rankings use order history and exclude cancelled or refunded
+              orders.
             </div>
           </div>
         </header>
@@ -139,7 +89,7 @@ export default async function BestSellersPage() {
                 Bestseller grid
               </p>
               <h2 className="text-2xl font-bold text-slate-900 mt-2">
-                Finest picks loved globally
+                Most ordered across the store
               </h2>
             </div>
             <Link

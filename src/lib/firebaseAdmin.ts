@@ -1,40 +1,29 @@
 import admin from "firebase-admin";
 import { getAuth } from "firebase-admin/auth";
 
+export class FirebaseAdminConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FirebaseAdminConfigurationError";
+  }
+}
+
 export function getFirebaseAdminAuth() {
   if (admin.apps.length) {
     return getAuth();
   }
 
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n")
-    .trim()
-    .replace(/^["']|["']$/g, "");
   const projectId =
     process.env.FIREBASE_PROJECT_ID?.trim() ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
 
-  const missingSettings = [
-    !projectId && "FIREBASE_PROJECT_ID or NEXT_PUBLIC_FIREBASE_PROJECT_ID",
-    !clientEmail && "FIREBASE_CLIENT_EMAIL",
-    !privateKey && "FIREBASE_PRIVATE_KEY",
-  ].filter(Boolean);
-
-  if (missingSettings.length > 0) {
-    throw new Error(
-      `Firebase Admin is not configured. Set ${missingSettings.join(
-        " and "
-      )} in the deployment environment.`
+  if (!projectId) {
+    throw new FirebaseAdminConfigurationError(
+      "Google sign-in is not configured on the server. Set FIREBASE_PROJECT_ID or NEXT_PUBLIC_FIREBASE_PROJECT_ID to your Firebase project ID in the Render service environment, then redeploy."
     );
   }
 
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId,
-      clientEmail,
-      privateKey,
-    }),
-  });
+  admin.initializeApp({ projectId });
 
   return getAuth();
 }

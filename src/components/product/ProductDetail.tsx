@@ -24,9 +24,11 @@ import { getBaseUrl } from "@/utils/url";
 import { useAuth } from "@/hooks/useAuth";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { showToast } from "@/components/ui/Toast";
+import type { CatalogItemType } from "@/context/CartContext";
 
 type ProductDetailProps = {
   product: ProductRecord;
+  itemType?: CatalogItemType;
 };
 
 type Comment = {
@@ -40,7 +42,10 @@ type Comment = {
   createdAt: string;
 };
 
-export default function ProductDetail({ product }: ProductDetailProps) {
+export default function ProductDetail({
+  product,
+  itemType = "product",
+}: ProductDetailProps) {
   const router = useRouter();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -260,17 +265,23 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     const response = await fetch("/api/cart/availability", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productIds: [product.id] }),
+      body: JSON.stringify({
+        items: [{ id: product.id, itemType }],
+      }),
       cache: "no-store",
     });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Unable to check product stock");
     }
-    const current = data.products.find(
-      (item: { id: string; stockQuantity: number; price: number }) =>
-        item.id === product.id
-    ) as { id: string; stockQuantity: number; price: number } | undefined;
+    const current = data.items.find(
+      (item: {
+        id: string;
+        itemType: CatalogItemType;
+        stockQuantity: number;
+        price: number;
+      }) => item.id === product.id && item.itemType === itemType
+    ) as { id: string; itemType: CatalogItemType; stockQuantity: number; price: number } | undefined;
     return current;
   };
 
@@ -286,6 +297,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       const added = addToCart(
         {
           id: product.id,
+          itemType,
           name: product.name,
           price: current.price,
           image: selectedImage,

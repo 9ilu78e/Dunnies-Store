@@ -13,16 +13,24 @@ export default function WishlistPage() {
   const handleAddToCart = async (itemId: number | string) => {
     const product = items.find((item) => item.id === itemId);
     if (!product) return;
+    const itemType = product.href?.startsWith("/gift/")
+      ? "gift"
+      : product.href?.startsWith("/souvenirs/")
+      ? "souvenir"
+      : "product";
     try {
       const response = await fetch("/api/cart/availability", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productIds: [String(product.id)] }),
+        body: JSON.stringify({
+          items: [{ id: String(product.id), itemType }],
+        }),
         cache: "no-store",
       });
       const data = await response.json();
-      const stock = data.products?.find(
-        (entry: { id: string }) => entry.id === String(product.id)
+      const stock = data.items?.find(
+        (entry: { id: string; itemType: string }) =>
+          entry.id === String(product.id) && entry.itemType === itemType
       );
       if (!response.ok || !stock || stock.stockQuantity < 1) {
         showToast("This item is out of stock and cannot be added.", "warning");
@@ -31,6 +39,7 @@ export default function WishlistPage() {
       if (
         !addToCart({
           id: product.id,
+          itemType,
           name: product.name,
           price: stock.price,
           image:

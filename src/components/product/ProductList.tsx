@@ -12,6 +12,7 @@ interface Product {
   tag?: string;
   discount?: number;
   stockQuantity?: number;
+  orderCount?: number;
   href?: string;
 }
 

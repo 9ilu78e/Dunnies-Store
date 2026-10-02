@@ -126,7 +126,7 @@ export default async function GiftDetailPage({ params }: GiftDetailPageProps) {
     <ProductDetailWrapper>
       <section className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          <ProductDetail product={product} />
+          <ProductDetail product={product} itemType="gift" />
         </div>
       </section>
     </ProductDetailWrapper>
