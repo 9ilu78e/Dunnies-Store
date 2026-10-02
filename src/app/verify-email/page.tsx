@@ -4,20 +4,24 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
+import { useAuth } from "@/hooks/useAuth";
 
 function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('');
-  const [email, setEmail] = useState('');
+  const { refreshUser } = useAuth();
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading"
+  );
+  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    
+    const token = searchParams.get("token");
+
     if (!token) {
-      setStatus('error');
-      setMessage('Invalid verification link');
+      setStatus("error");
+      setMessage("Invalid verification link");
       return;
     }
 
@@ -26,25 +30,35 @@ function VerifyEmailContent() {
 
   const verifyEmail = async (token: string) => {
     try {
-      const response = await fetch(`/api/auth/send-verification?token=${token}`);
+      const response = await fetch(
+        `/api/auth/send-verification?token=${token}`
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Verification failed');
+        throw new Error(data.error || "Verification failed");
       }
 
+      await refreshUser();
       console.log("Verification successful:", data);
 
-      setStatus('success');
+      setStatus("success");
       setEmail(data.email);
-      setMessage('Email verified successfully! Redirecting to your dashboard...');
-      showToast('Email verified! Welcome to Dunnis Stores.', 'success');
+      setMessage(
+        "Email verified successfully! Redirecting to your dashboard..."
+      );
+      showToast("Email verified! Welcome to Dunnis Stores.", "success");
 
-      // Determine destination based on user role
-      let destination = '/users-interface'; // default for users
-      
-      if (data.user?.role === 'admin') {
-        destination = '/dashboard'; // admin dashboard
+      // Restore the product page that prompted sign-in when possible.
+      const returnPath = sessionStorage.getItem("dunnis:returnTo");
+      sessionStorage.removeItem("dunnis:returnTo");
+      let destination =
+        returnPath?.startsWith("/") && !returnPath.startsWith("//")
+          ? returnPath
+          : "/users-interface";
+
+      if (data.user?.role === "admin") {
+        destination = "/dashboard"; // admin dashboard
       }
 
       console.log("User data:", data.user);
@@ -60,11 +74,10 @@ function VerifyEmailContent() {
       // Redirect immediately without delay
       console.log("Executing immediate redirect to:", destination);
       router.push(destination);
-
     } catch (error: any) {
-      setStatus('error');
-      setMessage(error.message || 'Failed to verify email');
-      showToast(error.message || 'Verification failed', 'error');
+      setStatus("error");
+      setMessage(error.message || "Failed to verify email");
+      showToast(error.message || "Verification failed", "error");
     }
   };
 
@@ -72,22 +85,28 @@ function VerifyEmailContent() {
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-8 backdrop-blur-sm text-center">
-          {status === 'loading' && (
+          {status === "loading" && (
             <>
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Verifying Email</h1>
-              <p className="text-gray-600">Please wait while we verify your email...</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Verifying Email
+              </h1>
+              <p className="text-gray-600">
+                Please wait while we verify your email...
+              </p>
             </>
           )}
 
-          {status === 'success' && (
+          {status === "success" && (
             <>
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Email Verified!
+              </h1>
               <p className="text-gray-600 mb-4">{message}</p>
               {email && (
                 <p className="text-sm text-gray-500 mb-4">
@@ -96,17 +115,21 @@ function VerifyEmailContent() {
               )}
               <div className="flex items-center justify-center">
                 <Loader2 className="w-4 h-4 text-purple-600 animate-spin mr-2" />
-                <span className="text-sm text-purple-600">Redirecting to your dashboard...</span>
+                <span className="text-sm text-purple-600">
+                  Redirecting to your dashboard...
+                </span>
               </div>
             </>
           )}
 
-          {status === 'error' && (
+          {status === "error" && (
             <>
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <XCircle className="w-8 h-8 text-red-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Verification Failed</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Verification Failed
+              </h1>
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
@@ -114,7 +137,7 @@ function VerifyEmailContent() {
                 </div>
               </div>
               <button
-                onClick={() => router.push('/login')}
+                onClick={() => router.push("/login")}
                 className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium"
               >
                 Back to Login
@@ -129,18 +152,20 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-8 backdrop-blur-sm">
-            <div className="flex justify-center mb-6">
-              <Loader2 className="w-12 h-12 text-purple-600 animate-spin" />
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-8 backdrop-blur-sm">
+              <div className="flex justify-center mb-6">
+                <Loader2 className="w-12 h-12 text-purple-600 animate-spin" />
+              </div>
+              <p className="text-center text-gray-600">Loading...</p>
             </div>
-            <p className="text-center text-gray-600">Loading...</p>
           </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <VerifyEmailContent />
     </Suspense>
   );

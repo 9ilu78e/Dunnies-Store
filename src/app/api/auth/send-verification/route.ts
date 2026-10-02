@@ -1,37 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
-import { prisma } from '@/lib/prisma';
-
-// Store verification tokens temporarily (in production, use Redis or database)
-const verificationTokens = new Map<string, { email: string; expires: number }>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of verificationTokens.entries()) {
-    if (value.expires < now) {
-      verificationTokens.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
+import { NextRequest, NextResponse } from "next/server";
+import nodemailer from "nodemailer";
+import { createHash, randomBytes } from "node:crypto";
+import { prisma } from "@/lib/prisma";
 
 // Create email transporter
 const createTransporter = () => {
-  console.log('=== CREATING TRANSPORTER ===');
-  console.log('Host: smtp-relay.brevo.com');
-  console.log('Port: 587');
-  console.log('Secure: false');
-  
+  console.log("=== CREATING TRANSPORTER ===");
+  console.log("Host: smtp-relay.brevo.com");
+  console.log("Port: 587");
+  console.log("Secure: false");
+
   return nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
+    host: "smtp-relay.brevo.com",
     port: 587,
     secure: false,
     requireTLS: true,
     connectionTimeout: 10000,
     greetingTimeout: 5000,
     socketTimeout: 10000,
-    tls: {
-      rejectUnauthorized: false
-    },
     auth: {
       user: process.env.SMTP_USERNAME,
       pass: process.env.SMTP_PASSWORD,
@@ -41,30 +27,43 @@ const createTransporter = () => {
 
 // Generate verification token
 const generateVerificationToken = (): string => {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return randomBytes(32).toString("base64url");
 };
+
+const hashVerificationToken = (token: string) =>
+  createHash("sha256").update(token).digest("hex");
 
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
 
     if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    console.log('=== EMAIL VERIFICATION REQUEST ===');
+    console.log("=== EMAIL VERIFICATION REQUEST ===");
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
     }
 
-    if (!process.env.SMTP_USERNAME || !process.env.SMTP_PASSWORD || !process.env.SENDER_EMAIL) {
-      console.error('Email verification is unavailable because SMTP configuration is incomplete.');
+    if (
+      !process.env.SMTP_USERNAME ||
+      !process.env.SMTP_PASSWORD ||
+      !process.env.SENDER_EMAIL
+    ) {
+      console.error(
+        "Email verification is unavailable because SMTP configuration is incomplete."
+      );
       return NextResponse.json(
         {
-          error: 'Email login is not configured. Set SMTP_USERNAME, SMTP_PASSWORD, and SENDER_EMAIL in .env.local, then restart the app.',
+          error:
+            "Email login is not configured. Set SMTP_USERNAME, SMTP_PASSWORD, and SENDER_EMAIL in your Render service environment, then redeploy.",
         },
         { status: 503 }
       );
@@ -72,33 +71,33 @@ export async function POST(request: NextRequest) {
 
     // Generate verification token
     const token = generateVerificationToken();
-    const expires = Date.now() + 15 * 60 * 1000; // 15 minutes
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const frontendUrl = process.env.FRONTEND_URL || request.nextUrl.origin;
     const verificationLink = `${frontendUrl}/verify-email?token=${token}`;
 
-    // Store verification token
-    verificationTokens.set(token, { email, expires });
+    await prisma.emailLoginToken.deleteMany({
+      where: { expiresAt: { lte: new Date() } },
+    });
+    const storedToken = await prisma.emailLoginToken.create({
+      data: {
+        tokenHash: hashVerificationToken(token),
+        email,
+        expiresAt,
+      },
+    });
 
     // Send email
-    console.log('=== SENDING EMAIL ===');
+    console.log("=== SENDING EMAIL ===");
     const transporter = createTransporter();
-    
+
     // Verify connection
-    try {
-      await transporter.verify();
-      console.log('✅ SMTP connection verified successfully');
-    } catch (verifyError: any) {
-      console.error('❌ SMTP verification failed:', verifyError);
-      throw new Error('Email service is temporarily unavailable. Please try again later.');
-    }
-    
     const mailOptions = {
       from: {
-        name: 'Dunnis Stores',
+        name: "Dunnis Stores",
         address: process.env.SENDER_EMAIL,
       },
       to: email,
-      subject: 'Your Dunnis Stores sign-in link',
+      subject: "Your Dunnis Stores sign-in link",
       text: `Use this link to sign in to Dunnis Stores:\n\n${verificationLink}\n\nThis link expires in 15 minutes. If you didn't request it, you can ignore this email.`,
       html: `
         <!DOCTYPE html>
@@ -242,126 +241,137 @@ export async function POST(request: NextRequest) {
       `,
     };
 
-    console.log('Mail options prepared:');
-    console.log('Subject: Your Dunnis Stores sign-in link');
+    console.log("Mail options prepared:");
+    console.log("Subject: Your Dunnis Stores sign-in link");
 
     try {
+      await transporter.verify();
       const result = await transporter.sendMail(mailOptions);
-      console.log('✅ Email sent successfully!');
-      console.log('Message ID:', result.messageId);
-      console.log('Response:', result.response);
-      
-      return NextResponse.json({ 
-        message: 'Verification link sent successfully',
-        email 
+      console.log("Login link email sent:", result.messageId);
+      return NextResponse.json({
+        message: "Verification link sent successfully",
+        email,
       });
-    } catch (sendError: any) {
-      console.error('❌ Failed to send email:', sendError);
-      console.error('Error code:', sendError.code);
-      console.error('Error message:', sendError.message);
-      
-      return NextResponse.json({ 
-        error: 'Failed to send verification email. Please try again.' 
-      }, { status: 500 });
+    } catch (sendError) {
+      await prisma.emailLoginToken.delete({ where: { id: storedToken.id } });
+      console.error("Failed to send verification email:", sendError);
+      return NextResponse.json(
+        {
+          error:
+            "The email provider could not send the sign-in link. Check the SMTP settings and sender verification in Render.",
+        },
+        { status: 503 }
+      );
     }
-
-  } catch (error: any) {
-    console.error('Error sending verification email:', error);
-    return NextResponse.json({ 
-      error: 'Failed to send verification email. Please try again.' 
-    }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("Error sending verification email:", error);
+    const errorCode =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    if (errorCode === "P2021" || errorCode === "P2022") {
+      return NextResponse.json(
+        {
+          error:
+            "The sign-in database is missing required tables. Apply the latest database migrations, then try again.",
+        },
+        { status: 503 }
+      );
+    }
+    return NextResponse.json(
+      {
+        error:
+          "Unable to create the sign-in link because the database is unavailable. Please try again shortly.",
+      },
+      { status: 503 }
+    );
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const token = searchParams.get('token');
+    const token = searchParams.get("token");
 
     if (!token) {
-      return NextResponse.json({ error: 'Verification token is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Verification token is required" },
+        { status: 400 }
+      );
     }
 
-    // Get stored verification data
-    const verificationData = verificationTokens.get(token);
+    const tokenHash = hashVerificationToken(token);
+    const verificationData = await prisma.emailLoginToken.findUnique({
+      where: { tokenHash },
+    });
 
     if (!verificationData) {
-      return NextResponse.json({ error: 'Invalid or expired verification link' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid or expired verification link" },
+        { status: 400 }
+      );
     }
 
-    // Check if token has expired
-    if (Date.now() > verificationData.expires) {
-      verificationTokens.delete(token);
-      return NextResponse.json({ error: 'Verification link has expired' }, { status: 400 });
-    }
-
-    // Remove the "used" check - allow tokens to be used multiple times within expiry
-    // Delete token after successful verification
-    verificationTokens.delete(token);
-
-    // Find or create the verified user in PostgreSQL.
-    let user;
-    try {
-      user = await prisma.firebaseUser.upsert({
-        where: { email: verificationData.email },
-        update: {},
-        create: {
-            email: verificationData.email,
-            name: verificationData.email.split('@')[0],
-            provider: "email",
-        },
+    const consumedToken = await prisma.emailLoginToken.deleteMany({
+      where: {
+        id: verificationData.id,
+        expiresAt: { gt: new Date() },
+      },
+    });
+    if (consumedToken.count === 0) {
+      await prisma.emailLoginToken.deleteMany({
+        where: { id: verificationData.id },
       });
-
-      console.log('Email verification successful for:', verificationData.email);
-      console.log('User role from database:', user.role);
-      console.log('User UID:', user.uid);
-    } catch (dbError) {
-      const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
-      console.error('⚠️ Database connection failed, using fallback:', errorMessage);
-      
-      // Create fallback user data
-      user = {
-        uid: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        email: verificationData.email,
-        name: verificationData.email.split('@')[0],
-        photo: null,
-        provider: "email",
-        role: "user" // Default to user role for email verification
-      };
+      return NextResponse.json(
+        { error: "Verification link has expired" },
+        { status: 400 }
+      );
     }
+
+    const user = await prisma.firebaseUser.upsert({
+      where: { email: verificationData.email },
+      update: {},
+      create: {
+        email: verificationData.email,
+        name: verificationData.email.split("@")[0],
+        provider: "email",
+      },
+    });
 
     // Create response with user data and cookies
-    const response = NextResponse.json({ 
-      message: 'Email verified successfully',
+    const response = NextResponse.json({
+      message: "Email verified successfully",
       email: verificationData.email,
       verified: true,
-      user: user
+      user: user,
     });
 
     // Set email verification cookie
-    response.cookies.set('email_verified', verificationData.email, {
+    response.cookies.set("email_verified", verificationData.email, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
     });
 
     // Set user ID cookie
-    response.cookies.set('userId', user.uid, {
+    response.cookies.set("userId", user.uid, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
     });
 
     return response;
-
   } catch (error: any) {
-    console.error('Error verifying email:', error);
-    return NextResponse.json({ 
-      error: 'Failed to verify email. Please try again.' 
-    }, { status: 500 });
+    console.error("Error verifying email:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to verify email. Please try again.",
+      },
+      { status: 500 }
+    );
   }
 }

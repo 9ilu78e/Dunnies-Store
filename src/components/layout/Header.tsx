@@ -18,6 +18,7 @@ import {
   Gift,
   ShoppingCart,
   Package,
+  Landmark,
   Home,
   Info,
   Phone,
@@ -205,7 +206,7 @@ export default function Header() {
       {
         label: "Souvenirs",
         href: "/souvenirs",
-        icon: <Gift className="w-4 h-4" />,
+        icon: <Landmark className="w-4 h-4" />,
         children: souvenirCategories.map((cat) => ({
           label: cat.name,
           href: `/product?category=${cat.id}`,
@@ -684,7 +685,7 @@ export default function Header() {
                     className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
                   >
                     <span className="flex items-center space-x-3">
-                      <span className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+                      <span className="flex h-8 w-8 items-center justify-center text-purple-600">
                         {item.icon}
                       </span>
                       <span className="font-semibold text-gray-700">
@@ -722,7 +723,7 @@ export default function Header() {
                   className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
                   onClick={closeMobileMenu}
                 >
-                  <span className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+                  <span className="flex h-8 w-8 items-center justify-center text-purple-600">
                     {item.icon}
                   </span>
                   <span className="font-semibold text-gray-700">
@@ -741,7 +742,7 @@ export default function Header() {
               onClick={closeMobileMenu}
             >
               <div className="flex items-center space-x-3">
-                <span className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                <span className="flex h-8 w-8 items-center justify-center">
                   <Heart
                     className={`w-4 h-4 ${
                       wishlistCount
@@ -763,7 +764,7 @@ export default function Header() {
               className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200"
               onClick={closeMobileMenu}
             >
-              <span className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+              <span className="flex h-8 w-8 items-center justify-center text-blue-600">
                 <Package className="w-4 h-4" />
               </span>
               <span className="font-semibold text-gray-700">My Orders</span>

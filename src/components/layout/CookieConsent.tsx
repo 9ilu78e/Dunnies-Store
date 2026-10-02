@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Cookie } from "lucide-react";
 import Link from "next/link";
+import { showToast } from "@/components/ui/Toast";
 
 export default function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
@@ -15,13 +16,30 @@ export default function CookieConsent() {
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem("cookieConsent", "accepted");
-    setIsVisible(false);
+    try {
+      localStorage.setItem("cookieConsent", "accepted");
+      setIsVisible(false);
+      showToast("Cookie preferences saved.", "success");
+    } catch (error) {
+      console.error("Unable to save cookie preferences:", error);
+      showToast(
+        "Could not save cookie preferences. Please try again.",
+        "error"
+      );
+    }
   };
 
   const handleDecline = () => {
-    localStorage.setItem("cookieConsent", "declined");
-    setIsVisible(false);
+    try {
+      localStorage.setItem("cookieConsent", "declined");
+      setIsVisible(false);
+    } catch (error) {
+      console.error("Unable to save cookie preferences:", error);
+      showToast(
+        "Could not save cookie preferences. Please try again.",
+        "error"
+      );
+    }
   };
 
   if (!isVisible) return null;

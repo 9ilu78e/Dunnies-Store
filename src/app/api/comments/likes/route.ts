@@ -1,125 +1,112 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-interface LikeRequest {
-  userId: string;
-  commentId?: string;
-  replyId?: string;
-}
+import { unauthorizedResponse, verifyUserAuth } from "@/lib/authMiddleware";
 
 export async function POST(request: NextRequest) {
   try {
-    const body: LikeRequest = await request.json();
-    const { userId, commentId, replyId } = body;
+    const auth = await verifyUserAuth(request);
+    if (!auth.isAuthenticated || !auth.user) {
+      return unauthorizedResponse("You must be logged in to like comments");
+    }
+    if (auth.user.role === "admin") {
+      return NextResponse.json(
+        { error: "Admin users cannot like comments" },
+        { status: 403 }
+      );
+    }
 
-    if (!userId || (!commentId && !replyId)) {
+    const body = (await request.json()) as {
+      commentId?: string;
+      replyId?: string;
+    };
+    const { commentId, replyId } = body;
+    if ((!commentId && !replyId) || (commentId && replyId)) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Check if user exists and is logged in
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    const firebaseUser = await prisma.firebaseUser.findUnique({
+      where: { uid: auth.user.id },
     });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "User not found - Please login to like" },
-        { status: 401 }
-      );
+    const legacyUser = firebaseUser
+      ? null
+      : await prisma.user.findUnique({ where: { id: auth.user.id } });
+    if (!firebaseUser && !legacyUser) {
+      return unauthorizedResponse("Your account could not be found");
+    }
+    const identityFilter = firebaseUser
+      ? { firebaseUserUid: firebaseUser.uid }
+      : legacyUser
+      ? { userId: legacyUser.id }
+      : null;
+    if (!identityFilter) {
+      return unauthorizedResponse("Your account could not be found");
     }
 
     if (commentId) {
-      // Handle comment like - use findFirst for compound keys
-      const existingLike = await prisma.commentLike.findFirst({
-        where: {
-          userId,
-          commentId,
-          replyId: null,
-        },
+      const comment = await prisma.productComment.findUnique({
+        where: { id: commentId },
       });
-
-      if (existingLike) {
-        // Unlike
-        await prisma.commentLike.delete({
-          where: { id: existingLike.id },
-        });
-
-        const likeCount = await prisma.commentLike.count({
-          where: { commentId },
-        });
-
+      if (!comment) {
         return NextResponse.json(
-          { liked: false, likeCount },
-          { status: 200 }
+          { error: "Comment not found" },
+          { status: 404 }
         );
+      }
+      const existingLike = await prisma.commentLike.findFirst({
+        where: { ...identityFilter, commentId, replyId: null },
+      });
+      if (existingLike) {
+        await prisma.commentLike.delete({ where: { id: existingLike.id } });
       } else {
-        // Like
         await prisma.commentLike.create({
           data: {
-            userId,
+            userId: legacyUser?.id ?? null,
+            firebaseUserUid: firebaseUser?.uid ?? null,
             commentId,
           },
         });
-
-        const likeCount = await prisma.commentLike.count({
-          where: { commentId },
-        });
-
-        return NextResponse.json(
-          { liked: true, likeCount },
-          { status: 200 }
-        );
       }
-    } else if (replyId) {
-      // Handle reply like
-      const existingLike = await prisma.commentLike.findFirst({
-        where: {
-          userId,
-          replyId,
-          commentId: null,
-        },
+      const likeCount = await prisma.commentLike.count({
+        where: { commentId },
       });
-
+      return NextResponse.json({ liked: !existingLike, likeCount });
+    } else if (replyId) {
+      const reply = await prisma.commentReply.findUnique({
+        where: { id: replyId },
+      });
+      if (!reply) {
+        return NextResponse.json({ error: "Reply not found" }, { status: 404 });
+      }
+      const existingLike = await prisma.commentLike.findFirst({
+        where: { ...identityFilter, replyId, commentId: null },
+      });
       if (existingLike) {
-        // Unlike
-        await prisma.commentLike.delete({
-          where: { id: existingLike.id },
-        });
-
-        const likeCount = await prisma.commentLike.count({
-          where: { replyId },
-        });
-
-        return NextResponse.json(
-          { liked: false, likeCount },
-          { status: 200 }
-        );
+        await prisma.commentLike.delete({ where: { id: existingLike.id } });
       } else {
-        // Like
         await prisma.commentLike.create({
           data: {
-            userId,
+            userId: legacyUser?.id ?? null,
+            firebaseUserUid: firebaseUser?.uid ?? null,
             replyId,
           },
         });
-
-        const likeCount = await prisma.commentLike.count({
-          where: { replyId },
-        });
-
-        return NextResponse.json(
-          { liked: true, likeCount },
-          { status: 200 }
-        );
       }
+      const likeCount = await prisma.commentLike.count({ where: { replyId } });
+      return NextResponse.json({ liked: !existingLike, likeCount });
     }
 
-    return NextResponse.json({ liked: true, message: "Like recorded" }, { status: 200 });
+    return NextResponse.json(
+      { error: "Unable to process like" },
+      { status: 400 }
+    );
   } catch (error) {
-    console.error("Error liking comment:", error);
-    return NextResponse.json({ error: "Failed to like comment" }, { status: 500 });
+    console.error("[COMMENT_LIKE_POST]", error);
+    return NextResponse.json(
+      { error: "Failed to like comment" },
+      { status: 500 }
+    );
   }
 }

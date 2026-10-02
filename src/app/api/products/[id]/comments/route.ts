@@ -1,22 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyUserAuth, unauthorizedResponse } from "@/lib/authMiddleware";
+import { prisma } from "@/lib/prisma";
+import { unauthorizedResponse, verifyUserAuth } from "@/lib/authMiddleware";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
+    const auth = await verifyUserAuth(request);
+    const comments = await prisma.productComment.findMany({
+      where: { productId: id },
+      include: {
+        user: { select: { id: true, fullName: true } },
+        firebaseUser: { select: { uid: true, name: true } },
+        likes: { select: { userId: true, firebaseUserUid: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-    // For now, return empty comments without database
-    // In production, you'd implement proper comments with MongoDB
+    const formattedComments = comments.map((comment) => ({
+      id: comment.id,
+      text: comment.text,
+      rating: comment.rating,
+      createdAt: comment.createdAt,
+      user: comment.firebaseUser
+        ? { id: comment.firebaseUser.uid, fullName: comment.firebaseUser.name }
+        : comment.user,
+      likeCount: comment.likes.length,
+      isLiked:
+        !!auth.user &&
+        comment.likes.some(
+          (like) =>
+            like.firebaseUserUid === auth.user?.id ||
+            like.userId === auth.user?.id
+        ),
+    }));
+    const averageRating =
+      comments.length > 0
+        ? Math.round(
+            (comments.reduce((sum, comment) => sum + comment.rating, 0) /
+              comments.length) *
+              10
+          ) / 10
+        : 0;
+
     return NextResponse.json({
-      comments: [],
-      averageRating: 0,
-      totalComments: 0,
+      comments: formattedComments,
+      averageRating,
+      totalComments: comments.length,
     });
   } catch (error) {
-    console.error("Error fetching comments:", error);
+    console.error("[PRODUCT_COMMENTS_GET]", error);
     return NextResponse.json(
       { error: "Failed to fetch comments" },
       { status: 500 }
@@ -24,41 +58,100 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
-    // Verify user is authenticated
     const auth = await verifyUserAuth(request);
     if (!auth.isAuthenticated || !auth.user) {
-      console.log('Comment API: User not authenticated');
       return unauthorizedResponse("You must be logged in to comment");
+    }
+    if (auth.user.role === "admin") {
+      return NextResponse.json(
+        { error: "Admin users cannot comment on products" },
+        { status: 403 }
+      );
     }
 
     const { id } = await params;
-    const { content, rating } = await request.json();
+    const body = (await request.json()) as {
+      text?: unknown;
+      content?: unknown;
+      rating?: unknown;
+    };
+    const text =
+      typeof body.text === "string"
+        ? body.text.trim()
+        : typeof body.content === "string"
+        ? body.content.trim()
+        : "";
+    const rating = Number(body.rating ?? 5);
+    if (!text) {
+      return NextResponse.json(
+        { error: "Write a comment before posting" },
+        { status: 400 }
+      );
+    }
+    if (text.length > 2000) {
+      return NextResponse.json(
+        { error: "Comments must be 2,000 characters or fewer" },
+        { status: 400 }
+      );
+    }
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return NextResponse.json(
+        { error: "Rating must be between 1 and 5 stars" },
+        { status: 400 }
+      );
+    }
 
-    console.log('Comment API: User authenticated:', auth.user.email);
-    console.log('Comment data:', { content, rating });
+    const product = await prisma.product.findUnique({ where: { id } });
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
 
-    // For now, just return success without actual database operations
-    // In production, you'd implement proper comments with MongoDB
-    return NextResponse.json({
-      id: Date.now().toString(),
-      content,
-      rating,
-      user: {
-        id: auth.user.id,
-        fullName: auth.user.fullName,
-      },
-      createdAt: new Date().toISOString(),
-      likeCount: 0,
-      isLiked: false,
-      message: "Comment added successfully (temporary implementation)",
+    const firebaseUser = await prisma.firebaseUser.findUnique({
+      where: { uid: auth.user.id },
     });
+    const legacyUser = firebaseUser
+      ? null
+      : await prisma.user.findUnique({ where: { id: auth.user.id } });
+    if (!firebaseUser && !legacyUser) {
+      return unauthorizedResponse("Your account could not be found");
+    }
+
+    const comment = await prisma.productComment.create({
+      data: {
+        productId: id,
+        text,
+        rating,
+        userId: legacyUser?.id ?? null,
+        firebaseUserUid: firebaseUser?.uid ?? null,
+      },
+      include: {
+        user: { select: { id: true, fullName: true } },
+        firebaseUser: { select: { uid: true, name: true } },
+      },
+    });
+    return NextResponse.json(
+      {
+        comment: {
+          id: comment.id,
+          text: comment.text,
+          rating: comment.rating,
+          createdAt: comment.createdAt,
+          user: comment.firebaseUser
+            ? {
+                id: comment.firebaseUser.uid,
+                fullName: comment.firebaseUser.name,
+              }
+            : comment.user,
+          likeCount: 0,
+          isLiked: false,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error("Error adding comment:", error);
+    console.error("[PRODUCT_COMMENTS_POST]", error);
     return NextResponse.json(
       { error: "Failed to add comment" },
       { status: 500 }

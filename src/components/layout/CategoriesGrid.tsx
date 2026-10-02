@@ -121,7 +121,7 @@ export default function CategoriesGrid({ type }: { type: CategoryType }) {
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-5 lg:py-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
               {content.title}
             </h2>
             <p className="text-gray-600 text-xs sm:text-sm">
@@ -160,10 +160,10 @@ export default function CategoriesGrid({ type }: { type: CategoryType }) {
                 <Link
                   key={cat.id}
                   href={`/product?category=${cat.id}`}
-                  className="flex-none w-32 sm:w-36 snap-start group/card"
+                  className="flex-none w-36 sm:w-40 snap-start group/card"
                 >
                   <div className="relative overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-violet-300 hover:shadow-lg">
-                    <div className="relative h-32 w-full overflow-hidden bg-gray-200 sm:h-36">
+                    <div className="relative h-36 w-full overflow-hidden bg-gray-200 sm:h-40">
                       {cat.imageUrl ? (
                         <Image
                           src={cat.imageUrl}
@@ -182,14 +182,14 @@ export default function CategoriesGrid({ type }: { type: CategoryType }) {
 
                       <div className="absolute bottom-1.5 left-1.5 right-1.5">
                         <div className="rounded-md bg-white/95 px-1.5 py-0.5 shadow-sm backdrop-blur-sm">
-                          <span className="block truncate text-xs font-bold leading-4 text-gray-900">
+                          <span className="block truncate text-base font-bold leading-5 text-gray-900">
                             {cat.name}
                           </span>
-                          <div className="flex items-center justify-between leading-3">
-                            <span className="text-[6px] font-medium text-violet-600">
+                          <div className="flex items-center justify-between leading-4">
+                            <span className="text-xs font-medium text-violet-600">
                               {cat._count?.products || 0} items
                             </span>
-                            <ArrowRight className="h-2.5 w-2.5 text-violet-600 transition-transform group-hover/card:translate-x-1" />
+                            <ArrowRight className="h-3 w-3 text-violet-600 transition-transform group-hover/card:translate-x-1" />
                           </div>
                         </div>
                       </div>

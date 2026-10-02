@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Clock3, Flame } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 import ProductCard from "@/components/product/ProductCard";
@@ -35,6 +35,55 @@ function formatTime(milliseconds: number) {
   ].join(":");
 }
 
+function SharedSaleCountdown({
+  endsAt,
+  compact,
+  onExpired,
+}: {
+  endsAt: string;
+  compact: boolean;
+  onExpired: () => void;
+}) {
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    const endTime = new Date(endsAt).getTime();
+    const updateCountdown = () => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+      if (currentTime >= endTime) {
+        window.clearInterval(timer);
+        onExpired();
+      }
+    };
+    const timer = window.setInterval(updateCountdown, 1000);
+    updateCountdown();
+
+    return () => window.clearInterval(timer);
+  }, [endsAt, onExpired]);
+
+  return (
+    <div
+      className={`mb-4 flex items-center gap-2 rounded-xl border border-gray-200 bg-white text-gray-700 shadow-sm ${
+        compact ? "px-2.5 py-2 sm:px-3" : "px-3 py-2.5 sm:w-fit sm:px-4"
+      }`}
+    >
+      <Clock3 className="h-4 w-4 shrink-0 text-red-500" />
+      <span className="text-xs font-semibold sm:text-sm">
+        Shared sale ends in
+      </span>
+      <time
+        dateTime={endsAt}
+        className="font-mono text-sm font-bold tabular-nums text-red-600 sm:text-base"
+      >
+        {now === null
+          ? "--:--:--"
+          : formatTime(new Date(endsAt).getTime() - now)}
+      </time>
+    </div>
+  );
+}
+
 type FlashSalesProductsProps = {
   compact?: boolean;
   limit?: number;
@@ -45,7 +94,6 @@ export default function FlashSalesProducts({
   limit,
 }: FlashSalesProductsProps) {
   const [products, setProducts] = useState<FlashSaleProduct[]>([]);
-  const [now, setNow] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +106,6 @@ export default function FlashSalesProducts({
           throw new Error(data.error || "Unable to load flash sales");
         }
         setProducts(data.products || []);
-        setNow(Date.now());
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Unable to load flash sales"
@@ -69,8 +116,15 @@ export default function FlashSalesProducts({
     };
 
     void fetchFlashSales();
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+  }, []);
+
+  const removeExpiredProducts = useCallback(() => {
+    const currentTime = Date.now();
+    setProducts((current) =>
+      current.filter(
+        (product) => new Date(product.flashSaleEndsAt).getTime() > currentTime
+      )
+    );
   }, []);
 
   if (loading) {
@@ -89,7 +143,7 @@ export default function FlashSalesProducts({
   }
 
   const activeProducts = products.filter(
-    (product) => new Date(product.flashSaleEndsAt).getTime() > now
+    (product) => new Date(product.flashSaleEndsAt).getTime() > Date.now()
   );
 
   if (activeProducts.length === 0) {
@@ -128,28 +182,18 @@ export default function FlashSalesProducts({
         : earliest,
     null
   );
-
   return (
     <div>
       {sharedEndsAt && (
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-700 shadow-sm sm:w-fit sm:px-4">
-          <Clock3 className="h-4 w-4 shrink-0 text-red-500" />
-          <span className="text-xs font-semibold sm:text-sm">
-            Shared sale ends in
-          </span>
-          <time
-            dateTime={sharedEndsAt}
-            className="font-mono text-sm font-bold tabular-nums text-red-600 sm:text-base"
-          >
-            {formatTime(new Date(sharedEndsAt).getTime() - now)}
-          </time>
-        </div>
+        <SharedSaleCountdown
+          endsAt={sharedEndsAt}
+          compact={compact}
+          onExpired={removeExpiredProducts}
+        />
       )}
       <div
         className={`-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3 sm:gap-5 ${
-          compact
-            ? "compact-flash-sales-scroll"
-            : "flash-sales-scroll"
+          compact ? "compact-flash-sales-scroll" : "flash-sales-scroll"
         }`}
         aria-label="Flash sale products. Scroll horizontally to see more."
       >
@@ -179,7 +223,9 @@ export default function FlashSalesProducts({
                 discount={discount}
                 stockQuantity={product.stockQuantity}
                 href={product.href}
-                className={compact ? "rounded-xl" : "rounded-2xl sm:rounded-3xl"}
+                className={
+                  compact ? "rounded-xl" : "rounded-2xl sm:rounded-3xl"
+                }
               />
             </div>
           );

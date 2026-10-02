@@ -19,6 +19,7 @@ interface ProductProps {
   stockQuantity?: number;
   href?: string;
   className?: string;
+  priority?: boolean;
 }
 
 export default function ProductCard({
@@ -34,6 +35,7 @@ export default function ProductCard({
   stockQuantity,
   href = "#",
   className = "",
+  priority = false,
 }: ProductProps) {
   if (!image) {
     console.log(`[ProductCard] ${name}: No image provided!`);
@@ -80,6 +82,8 @@ export default function ProductCard({
               alt={name}
               width={400}
               height={300}
+              priority={priority}
+              sizes="(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 23vw"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               onError={(e) => {
                 // Image failed to load - fallback to placeholder
@@ -105,9 +109,7 @@ export default function ProductCard({
                   : "bg-red-600 text-white"
               }`}
             >
-              {stockQuantity > 0
-                ? `${stockQuantity} in stock`
-                : "Out of stock"}
+              {stockQuantity > 0 ? `${stockQuantity} in stock` : "Out of stock"}
             </span>
           )}
         </div>
@@ -138,7 +140,7 @@ export default function ProductCard({
         </div>
 
         <div className="p-2">
-          <span className="block line-clamp-2 text-[13px] leading-4 text-gray-700 transition-colors group-hover:text-purple-600">
+          <span className="block line-clamp-2 text-[15px] leading-5 text-gray-700 transition-colors group-hover:text-purple-600">
             {name}
           </span>
 

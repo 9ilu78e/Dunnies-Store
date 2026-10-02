@@ -7,12 +7,65 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const priority = searchParams.get("priority");
 
+    if (searchParams.get("summary") === "true") {
+      const where = priority ? { priority } : {};
+      const [products, ratings] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            stockQuantity: true,
+            imageUrl: true,
+            imageUrls: true,
+            flashSalePrice: true,
+            flashSaleEndsAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.productComment.groupBy({
+          by: ["productId"],
+          where: priority ? { product: { priority } } : undefined,
+          _avg: { rating: true },
+          _count: { id: true },
+        }),
+      ]);
+      const ratingByProduct = new Map(
+        ratings.map((rating) => [
+          rating.productId,
+          {
+            averageRating: rating._avg.rating ?? 0,
+            totalComments: rating._count.id,
+          },
+        ])
+      );
+
+      return NextResponse.json(
+        {
+          products: products.map((product) => ({
+            ...product,
+            imageUrl: product.imageUrls[0] || product.imageUrl || "",
+            averageRating: ratingByProduct.get(product.id)?.averageRating ?? 0,
+            totalComments: ratingByProduct.get(product.id)?.totalComments ?? 0,
+          })),
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
+      );
+    }
+
     const where: any = {};
     if (priority) where.priority = priority;
 
     const products = await prisma.product.findMany({
       where,
-      include: { 
+      include: {
         category: true,
         comments: true,
         likes: true,
@@ -32,17 +85,23 @@ export async function GET(request: NextRequest) {
 
     const productsWithRatings = products.map((product: any) => {
       const ratings = product.comments.map((c: any) => c.rating);
-      const averageRating = ratings.length > 0 
-        ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
-        : 0;
+      const averageRating =
+        ratings.length > 0
+          ? Math.round(
+              (ratings.reduce((a: number, b: number) => a + b, 0) /
+                ratings.length) *
+                10
+            ) / 10
+          : 0;
 
       // Map imageUrls array to image (first) and images (all)
       // Handle null imageUrl from existing products
-      const imageUrls = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
-        ? product.imageUrls
-        : (product.imageUrl && typeof product.imageUrl === 'string')
-        ? [product.imageUrl]
-        : [];
+      const imageUrls =
+        Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+          ? product.imageUrls
+          : product.imageUrl && typeof product.imageUrl === "string"
+          ? [product.imageUrl]
+          : [];
 
       return {
         ...product,
@@ -55,13 +114,16 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ products: productsWithRatings }, {
-      headers: {
-        'Cache-Control': 'no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+    return NextResponse.json(
+      { products: productsWithRatings },
+      {
+        headers: {
+          "Cache-Control": "no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       }
-    });
+    );
   } catch (error) {
     console.error("[PRODUCTS_GET]", error);
     return NextResponse.json(
@@ -93,10 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
     const parsedStockQuantity = Number(stockQuantity ?? 0);
-    if (
-      !Number.isSafeInteger(parsedStockQuantity) ||
-      parsedStockQuantity < 0
-    ) {
+    if (!Number.isSafeInteger(parsedStockQuantity) || parsedStockQuantity < 0) {
       return NextResponse.json(
         { error: "Stock quantity must be a non-negative whole number" },
         { status: 400 }
@@ -109,12 +168,16 @@ export async function POST(request: NextRequest) {
       price: parseFloat(price),
       stockQuantity: parsedStockQuantity,
     };
-    
+
     // Only include categoryId if it has a valid value
-    if (categoryId && String(categoryId).trim() && String(categoryId) !== "null") {
+    if (
+      categoryId &&
+      String(categoryId).trim() &&
+      String(categoryId) !== "null"
+    ) {
       productData.categoryId = categoryId;
     }
-    
+
     if (priority) productData.priority = priority;
 
     // Handle imageUrls array from frontend

@@ -121,7 +121,12 @@ function transformDatabaseProduct(dbProduct: any): ProductRecord {
     tag: isFlashSaleActive ? "Flash Sale" : dbProduct.priority || "New",
     category: dbProduct.category?.name || "Uncategorized",
     href: `/product/${dbProduct.id}`,
-    stockStatus: "in-stock" as const,
+    stockStatus:
+      dbProduct.stockQuantity <= 0
+        ? ("out-of-stock" as const)
+        : dbProduct.stockQuantity <= 5
+        ? ("low-stock" as const)
+        : ("in-stock" as const),
     highlights: ["Premium quality", "Fast delivery", "Customer approved"],
     specs: [
       { label: "SKU", value: dbProduct.id },

@@ -23,6 +23,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { getBaseUrl } from "@/utils/url";
 import { useAuth } from "@/hooks/useAuth";
 import { getWhatsAppLink } from "@/lib/whatsapp";
+import { showToast } from "@/components/ui/Toast";
 
 type ProductDetailProps = {
   product: ProductRecord;
@@ -47,13 +48,17 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [isClient, setIsClient] = useState(false);
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
   const [quantity, setQuantity] = useState(1);
+  const [availableStock, setAvailableStock] = useState(product.stockQuantity);
   const [copied, setCopied] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [averageRating, setAverageRating] = useState(0);
   const [newComment, setNewComment] = useState("");
   const [newRating, setNewRating] = useState(5);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [commentsLoadError, setCommentsLoadError] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState("");
+  const [commentNotice, setCommentNotice] = useState("");
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [loadingLikes, setLoadingLikes] = useState(false);
@@ -65,74 +70,63 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [animatingCommentId, setAnimatingCommentId] = useState<string | null>(
     null
   );
-  const [customerName, setCustomerName] = useState("");
-  const [showCustomerNameInput, setShowCustomerNameInput] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const redirectToLogin = () => {
+    sessionStorage.setItem(
+      "dunnis:returnTo",
+      `${window.location.pathname}${window.location.search}`
+    );
+    router.push("/login");
+  };
+
   useEffect(() => {
     const fetchComments = async () => {
       try {
         setLoadingComments(true);
-        const url = new URL(
-          `${getBaseUrl()}/api/products/${product.id}/comments`
+        const response = await fetch(
+          `${getBaseUrl()}/api/products/${product.id}/comments`,
+          { credentials: "same-origin", cache: "no-store" }
         );
-        if (user?.uid) {
-          url.searchParams.append("userId", user.uid);
+        if (!response.ok) {
+          throw new Error(
+            `Review request failed with status ${response.status}`
+          );
         }
-        const response = await fetch(url.toString());
-        if (response.ok) {
-          const data = await response.json();
-          setComments(data.comments || []);
-          setAverageRating(data.averageRating || 0);
-          setTotalComments(data.totalComments || 0);
+        const data = await response.json();
+        setComments(data.comments || []);
+        setAverageRating(data.averageRating || 0);
+        setTotalComments(data.totalComments || 0);
 
-          // Initialize commentLikes from the API response
-          const likesMap: Record<string, { count: number; isLiked: boolean }> =
-            {};
-          (data.comments || []).forEach((comment: any) => {
+        const likesMap: Record<string, { count: number; isLiked: boolean }> =
+          {};
+        (data.comments || []).forEach(
+          (comment: Comment & { likeCount?: number; isLiked?: boolean }) => {
             likesMap[comment.id] = {
               count: comment.likeCount || 0,
               isLiked: comment.isLiked || false,
             };
-          });
-          setCommentLikes(likesMap);
-        }
+          }
+        );
+        setCommentLikes(likesMap);
+        setCommentsLoadError("");
       } catch (error) {
         console.error("Error fetching comments:", error);
+        setCommentsLoadError(
+          "Reviews could not be loaded. Please refresh the page to try again."
+        );
       } finally {
         setLoadingComments(false);
       }
     };
 
-    if (isClient && user) {
+    if (isClient && !authLoading) {
       fetchComments();
     }
-  }, [product.id, user?.uid, isClient]);
-
-  useEffect(() => {
-    // Set customer name from auth context when user is available
-    if (user?.displayName) {
-      setCustomerName(user.displayName);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!isClient) return;
-
-    // Update customer name when visibility changes (tab comes back to focus)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && user?.displayName) {
-        setCustomerName(user.displayName);
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isClient, user?.displayName]);
+  }, [product.id, user?.uid, isClient, authLoading]);
 
   useEffect(() => {
     const fetchLikes = async () => {
@@ -174,7 +168,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     }
 
     if (!isAuthenticated || !user) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
 
@@ -188,7 +182,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       );
       if (response.status === 401) {
         // Token expired or invalid
-        router.push("/login");
+        redirectToLogin();
         return;
       }
       if (response.ok) {
@@ -207,7 +201,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   const handleToggleCommentLike = async (commentId: string) => {
     if (!isAuthenticated || !user) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
 
@@ -219,12 +213,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       const response = await fetch(`${getBaseUrl()}/api/comments/likes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.uid, commentId }),
+        credentials: "same-origin",
+        body: JSON.stringify({ commentId }),
       });
 
       if (response.status === 401) {
         // Token expired or invalid
-        router.push("/login");
+        redirectToLogin();
         return;
       }
 
@@ -247,55 +242,113 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   const wishlisted = isInWishlist(product.id);
 
+  const stockQuantity = availableStock ?? product.stockQuantity;
+  const isStockAvailable =
+    stockQuantity === undefined
+      ? product.stockStatus !== "out-of-stock"
+      : stockQuantity > 0;
   const stockLabel = useMemo(() => {
-    switch (product.stockStatus) {
-      case "in-stock":
-        return product.stockQuantity === undefined
-          ? "In stock"
-          : `${product.stockQuantity} in stock`;
-      case "low-stock":
-        return product.stockQuantity === undefined
-          ? "Low stock"
-          : `Only ${product.stockQuantity} left`;
-      default:
-        return "Currently unavailable";
+    if (!isStockAvailable) return "Out of stock";
+    if (stockQuantity === undefined) {
+      return product.stockStatus === "low-stock" ? "Low stock" : "In stock";
     }
-  }, [product.stockStatus]);
+    if (stockQuantity <= 5) return `Low stock · ${stockQuantity} left`;
+    return `In stock · ${stockQuantity} available`;
+  }, [isStockAvailable, product.stockStatus, stockQuantity]);
 
-  const handleAddToCart = () => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: selectedImage,
+  const fetchCurrentAvailability = async () => {
+    const response = await fetch("/api/cart/availability", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productIds: [product.id] }),
+      cache: "no-store",
     });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to check product stock");
+    }
+    const current = data.products.find(
+      (item: { id: string; stockQuantity: number; price: number }) =>
+        item.id === product.id
+    ) as { id: string; stockQuantity: number; price: number } | undefined;
+    return current;
   };
 
-  const handleOrderWhatsApp = () => {
-    // If not logged in or no customer name, show input modal
-    if (!isAuthenticated || !customerName.trim()) {
-      setShowCustomerNameInput(true);
+  const handleAddToCart = async () => {
+    try {
+      const current = await fetchCurrentAvailability();
+      if (!current || current.stockQuantity < 1) {
+        setAvailableStock(0);
+        showToast("This product is out of stock.", "warning");
+        return;
+      }
+      setAvailableStock(current.stockQuantity);
+      const added = addToCart(
+        {
+          id: product.id,
+          name: product.name,
+          price: current.price,
+          image: selectedImage,
+          stockQuantity: current.stockQuantity,
+        },
+        quantity
+      );
+      if (!added) {
+        showToast(
+          "Your cart quantity cannot exceed the available stock.",
+          "warning"
+        );
+        return;
+      }
+      showToast("Product added to your cart.", "success");
+    } catch (error) {
+      console.error("Unable to add product to cart:", error);
+      showToast("Could not verify stock. Please try again.", "error");
+    }
+  };
+
+  const handleOrderWhatsApp = async () => {
+    const whatsappWindow = window.open("about:blank", "_blank");
+    if (!whatsappWindow) {
+      showToast("Allow pop-ups to continue to WhatsApp.", "warning");
       return;
     }
+    try {
+      const current = await fetchCurrentAvailability();
+      if (!current || current.stockQuantity < quantity) {
+        setAvailableStock(current?.stockQuantity ?? 0);
+        whatsappWindow.close();
+        showToast(
+          "This product is no longer available in the requested quantity.",
+          "warning"
+        );
+        return;
+      }
+      setAvailableStock(current.stockQuantity);
+      const whatsappNumber = "09056453575";
+      const productLink =
+        typeof window !== "undefined"
+          ? `${window.location.origin}${product.href}`
+          : product.href;
 
-    const whatsappNumber =
-      process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2349056453575";
-    const productLink =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${product.href}`
-        : product.href;
+      const whatsappLink = getWhatsAppLink(whatsappNumber, {
+        productName: product.name,
+        productPrice: current.price,
+        productQuantity: quantity,
+        productImage: selectedImage,
+        productLink,
+        ...(isAuthenticated && user?.displayName
+          ? { customerName: user.displayName }
+          : {}),
+        whatsappNumber,
+      });
 
-    const whatsappLink = getWhatsAppLink(whatsappNumber, {
-      productName: product.name,
-      productPrice: product.price,
-      productQuantity: quantity,
-      productImage: selectedImage,
-      productLink,
-      customerName: customerName.trim() || "Customer",
-      whatsappNumber,
-    });
-
-    window.open(whatsappLink, "_blank");
+      whatsappWindow.location.href = whatsappLink;
+    } catch (error) {
+      console.error("Unable to verify WhatsApp order stock:", error);
+      whatsappWindow.close();
+      showToast("Could not verify stock. Please try again.", "error");
+    }
   };
 
   const handleWishlistToggle = () => {
@@ -330,7 +383,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     }
 
     if (!isAuthenticated || !user) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
 
@@ -345,8 +398,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
           body: JSON.stringify({
-            userId: user.uid,
             text: newComment,
             rating: newRating,
           }),
@@ -360,10 +413,17 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       }
 
       if (response.ok) {
-        const newCommentData = await response.json();
-        setComments([newCommentData, ...comments]);
+        const data = await response.json();
+        const newCommentData = data.comment as Comment;
+        setComments((current) => [newCommentData, ...current]);
+        setCommentLikes((current) => ({
+          ...current,
+          [newCommentData.id]: { count: 0, isLiked: false },
+        }));
         setNewComment("");
         setNewRating(5);
+        setCommentError("");
+        setCommentNotice("Your comment and rating have been posted.");
 
         const updatedComments = [newCommentData, ...comments];
         const avgRating =
@@ -379,9 +439,17 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             : 0;
         setAverageRating(avgRating);
         setTotalComments(updatedComments.length);
+      } else {
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          redirectToLogin();
+          return;
+        }
+        setCommentError(data.error || "Could not post your review.");
       }
     } catch (error) {
       console.error("Error posting comment:", error);
+      setCommentError("Could not post your review. Please try again.");
     } finally {
       setSubmittingComment(false);
     }
@@ -481,11 +549,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <span>{product.reviewsCount}+ reviews</span>
             <span>·</span>
             <span
-              className={
-                product.stockStatus === "out-of-stock"
-                  ? "text-red-500 font-semibold"
-                  : "text-green-600 font-semibold"
-              }
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                isStockAvailable
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-700"
+              }`}
             >
               {stockLabel}
             </span>
@@ -502,9 +570,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 {quantity}
               </span>
               <button
-                onClick={() => setQuantity((prev) => prev + 1)}
+                onClick={() =>
+                  setQuantity((prev) =>
+                    availableStock === undefined
+                      ? prev + 1
+                      : Math.min(prev + 1, availableStock)
+                  )
+                }
                 className="text-gray-600 px-0.5 sm:px-1 text-xs sm:text-sm md:text-base"
                 title="Increase quantity"
+                disabled={
+                  availableStock !== undefined && quantity >= availableStock
+                }
               >
                 +
               </button>
@@ -515,8 +592,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 md:gap-4 w-full">
               <button
                 onClick={handleAddToCart}
-                className="inline-flex flex-row items-center justify-center gap-2 rounded-full bg-purple-600 text-white px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold hover:bg-purple-700 transition"
-                title="Add this product to your cart"
+                disabled={!isStockAvailable}
+                className="inline-flex flex-row items-center justify-center gap-2 rounded-full bg-purple-600 text-white px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold hover:bg-purple-700 transition disabled:cursor-not-allowed disabled:bg-gray-400"
+                title={
+                  !isStockAvailable
+                    ? "This product is out of stock"
+                    : "Add this product to your cart"
+                }
               >
                 <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 shrink-0" />
                 <span className="shrink-0">Add to cart</span>
@@ -524,7 +606,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
               <button
                 onClick={handleOrderWhatsApp}
-                className="inline-flex flex-row items-center justify-center gap-2 rounded-full bg-green-600 text-white px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold hover:bg-green-700 transition"
+                disabled={!isStockAvailable}
+                className="inline-flex flex-row items-center justify-center gap-2 rounded-full bg-green-600 text-white px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold hover:bg-green-700 transition disabled:cursor-not-allowed disabled:bg-gray-400"
                 title="Order via WhatsApp"
               >
                 <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 shrink-0" />
@@ -606,7 +689,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         </div>
       </div>
 
-      <div className="rounded-3xl bg-white border border-gray-200 p-6 space-y-6">
+      <div className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="text-xs sm:text-sm font-semibold text-purple-600 uppercase tracking-widest">
@@ -616,16 +699,19 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               Reviews & comments
             </h2>
           </div>
-          <button className="inline-flex flex-row items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+          <button
+            onClick={handleCopyLink}
+            className="inline-flex flex-row items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+          >
             <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="shrink-0">Share feedback</span>
+            <span className="shrink-0">{copied ? "Copied" : "Share link"}</span>
           </button>
         </div>
 
         {isClient && !isAdmin ? (
           <form
             onSubmit={handleReviewSubmit}
-            className="rounded-2xl border border-gray-200 p-4 space-y-4"
+            className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 sm:p-5 space-y-4"
           >
             <div className="flex flex-wrap items-center gap-4">
               <p className="text-xs sm:text-sm text-gray-600">Your rating:</p>
@@ -634,12 +720,21 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setNewRating(value)}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        redirectToLogin();
+                        return;
+                      }
+                      setNewRating(value);
+                    }}
+                    aria-label={`Rate ${value} out of 5 stars`}
                     className="transition-colors"
                   >
                     <Star
-                      className={`w-5 h-5 ${
-                        newRating >= value ? "fill-current" : "fill-transparent"
+                      className={`w-6 h-6 ${
+                        newRating >= value
+                          ? "fill-amber-400 text-amber-400"
+                          : "fill-transparent text-gray-400"
                       }`}
                     />
                   </button>
@@ -649,17 +744,31 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder={
-                isAuthenticated
-                  ? "Share your experience..."
-                  : "Login to share your experience..."
-              }
-              className="w-full rounded-2xl border border-gray-200 p-4 focus:border-purple-500 focus:outline-none"
+              onFocus={() => {
+                if (!isAuthenticated && !authLoading) redirectToLogin();
+              }}
+              placeholder="Share your experience with this product..."
+              maxLength={2000}
+              className="w-full rounded-xl border border-gray-200 bg-white p-3 sm:p-4 text-sm leading-relaxed focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100"
               rows={3}
             />
+            <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+              <span>Your review will appear here as soon as it is posted.</span>
+              <span>{newComment.length}/2000</span>
+            </div>
+            {commentError && (
+              <p role="alert" className="text-sm text-red-600">
+                {commentError}
+              </p>
+            )}
+            {commentNotice && (
+              <p role="status" className="text-sm text-green-700">
+                {commentNotice}
+              </p>
+            )}
             <button
               type="submit"
-              disabled={submittingComment}
+              disabled={submittingComment || !newComment.trim()}
               className="inline-flex flex-row items-center gap-2 rounded-full bg-purple-600 text-white px-5 py-2.5 text-xs sm:text-sm font-semibold hover:bg-purple-700 transition disabled:opacity-50"
             >
               <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -671,7 +780,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         ) : null}
 
         <div className="space-y-4">
-          {loadingComments ? (
+          {commentsLoadError ? (
+            <p
+              role="alert"
+              className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+            >
+              {commentsLoadError}
+            </p>
+          ) : loadingComments ? (
             <div className="flex justify-center py-8">
               <Loader />
             </div>
@@ -700,7 +816,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               {comments.map((review: any) => (
                 <div
                   key={review.id}
-                  className="border border-gray-100 rounded-2xl p-4 flex gap-4"
+                  className="border border-gray-100 rounded-xl p-3 sm:p-4 flex gap-3 sm:gap-4"
                 >
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center shrink-0">
                     <span className="text-sm font-semibold text-purple-600">
@@ -726,6 +842,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     </p>
                     <button
                       onClick={() => handleToggleCommentLike(review.id)}
+                      aria-label={
+                        commentLikes[review.id]?.isLiked
+                          ? "Unlike this comment"
+                          : "Like this comment"
+                      }
                       className={`inline-flex flex-row items-center gap-1.5 text-xs mt-3 px-3 py-1.5 rounded-full transition font-medium ${
                         commentLikes[review.id]?.isLiked
                           ? "text-blue-600 bg-blue-50 hover:bg-blue-100"
@@ -752,54 +873,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           )}
         </div>
       </div>
-
-      {/* Customer Name Modal */}
-      {showCustomerNameInput && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
-              Your Name
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-600 mb-6">
-              Please enter your name to proceed with your order via WhatsApp.
-            </p>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Enter your full name"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 focus:outline-none mb-6"
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && customerName.trim()) {
-                  setShowCustomerNameInput(false);
-                  setTimeout(handleOrderWhatsApp, 100);
-                }
-              }}
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowCustomerNameInput(false);
-                  setCustomerName("");
-                }}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowCustomerNameInput(false);
-                  setTimeout(handleOrderWhatsApp, 100);
-                }}
-                disabled={!customerName.trim()}
-                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
