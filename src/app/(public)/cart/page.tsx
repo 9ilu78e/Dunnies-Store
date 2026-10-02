@@ -4,14 +4,65 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { showToast } from "@/components/ui/Toast";
 
 export default function CartPage() {
+  const router = useRouter();
+  const [inventoryError, setInventoryError] = useState("");
   const {
     items: cartItems,
     updateQuantity,
     removeFromCart,
     totalItems,
+    refreshInventory,
+    inventoryChecking,
   } = useCart();
+
+  useEffect(() => {
+    if (cartItems.length === 0) return;
+    void refreshInventory()
+      .then((unavailable) => {
+        if (unavailable.length > 0) {
+          showToast(
+            `${unavailable.join(", ")} ${
+              unavailable.length === 1 ? "is" : "are"
+            } out of stock and ${
+              unavailable.length === 1 ? "has" : "have"
+            } been removed from your cart.`,
+            "warning"
+          );
+        }
+        setInventoryError("");
+      })
+      .catch((error: unknown) => {
+        console.error("Unable to refresh cart inventory:", error);
+        setInventoryError(
+          "We could not verify stock right now. Please try again before checkout."
+        );
+      });
+  }, [totalItems]);
+
+  const proceedToCheckout = async () => {
+    setInventoryError("");
+    try {
+      const unavailable = await refreshInventory();
+      if (unavailable.length > 0) {
+        showToast(
+          "Out-of-stock items were removed. Please review your cart.",
+          "warning"
+        );
+        return;
+      }
+      router.push("/checkout");
+    } catch (error) {
+      console.error("Unable to verify cart before checkout:", error);
+      setInventoryError(
+        "We could not verify stock. Please try again before checkout."
+      );
+    }
+  };
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -93,6 +144,11 @@ export default function CartPage() {
                             updateQuantity(item.id, item.quantity + 1)
                           }
                           className="p-1 sm:p-2 hover:text-violet-600"
+                          disabled={
+                            item.stockQuantity !== undefined &&
+                            item.quantity >= item.stockQuantity
+                          }
+                          aria-label="Increase quantity"
                         >
                           <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
@@ -138,11 +194,26 @@ export default function CartPage() {
                   <span className="text-violet-600">{formatPrice(total)}</span>
                 </div>
               </div>
+              {inventoryError && (
+                <p role="alert" className="mb-4 text-sm text-red-700">
+                  {inventoryError}
+                </p>
+              )}
               <Link
                 href="/checkout"
-                className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-4 sm:py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:shadow-2xl hover:brightness-110 transition-all text-base"
+                onClick={(event) => {
+                  event.preventDefault();
+                  void proceedToCheckout();
+                }}
+                aria-disabled={inventoryChecking}
+                className={`w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-4 sm:py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:shadow-2xl hover:brightness-110 transition-all text-base ${
+                  inventoryChecking ? "pointer-events-none opacity-60" : ""
+                }`}
               >
-                Proceed to Checkout <ArrowRight className="w-5 h-5" />
+                {inventoryChecking
+                  ? "Checking stock..."
+                  : "Proceed to Checkout"}
+                {!inventoryChecking && <ArrowRight className="w-5 h-5" />}
               </Link>
             </div>
           </div>

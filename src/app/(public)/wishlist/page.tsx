@@ -4,22 +4,49 @@ import Link from "next/link";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCart } from "@/context/CartContext";
 import { Heart, ShoppingCart, Trash2 } from "lucide-react";
+import { showToast } from "@/components/ui/Toast";
 
 export default function WishlistPage() {
   const { items, removeFromWishlist, clearWishlist } = useWishlist();
   const { addToCart } = useCart();
 
-  const handleAddToCart = (itemId: number | string) => {
+  const handleAddToCart = async (itemId: number | string) => {
     const product = items.find((item) => item.id === itemId);
     if (!product) return;
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image:
-        product.image ||
-        "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=400&q=80",
-    });
+    try {
+      const response = await fetch("/api/cart/availability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds: [String(product.id)] }),
+        cache: "no-store",
+      });
+      const data = await response.json();
+      const stock = data.products?.find(
+        (entry: { id: string }) => entry.id === String(product.id)
+      );
+      if (!response.ok || !stock || stock.stockQuantity < 1) {
+        showToast("This item is out of stock and cannot be added.", "warning");
+        return;
+      }
+      if (
+        !addToCart({
+          id: product.id,
+          name: product.name,
+          price: stock.price,
+          image:
+            product.image ||
+            "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=400&q=80",
+          stockQuantity: stock.stockQuantity,
+        })
+      ) {
+        showToast("No more stock is available for your cart.", "warning");
+        return;
+      }
+      showToast("Item added to your cart.", "success");
+    } catch (error) {
+      console.error("Unable to verify wishlist item stock:", error);
+      showToast("Could not verify stock. Please try again.", "error");
+    }
   };
 
   if (items.length === 0) {
@@ -143,4 +170,3 @@ export default function WishlistPage() {
     </section>
   );
 }
-

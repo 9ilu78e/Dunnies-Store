@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import ProductList from "@/components/product/ProductList";
+import SignatureProductSelector from "@/components/layout/SignatureProductSelector";
 import { prisma } from "@/lib/prisma";
 
 async function fetchSignatureExperiences() {
@@ -27,6 +27,8 @@ async function fetchSignatureExperiences() {
           ? product.flashSalePrice ?? product.price
           : product.price,
         originalPrice: isFlashSaleActive ? product.price : undefined,
+        categoryId: product.categoryId || "",
+        categoryName: product.category?.name || "Experience",
         rating:
           product.comments.length > 0
             ? Math.round(
@@ -108,7 +110,7 @@ export default async function SignatureExperiencesPage() {
             </p>
           </div>
 
-          <ProductList products={signatureExperiences} cols={3} gap={8} />
+          <SignatureProductSelector products={signatureExperiences} />
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-gray-200 pt-6">
             <div className="text-sm text-gray-500">

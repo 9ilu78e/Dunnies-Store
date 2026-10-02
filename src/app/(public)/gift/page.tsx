@@ -54,13 +54,12 @@ const adaptProductRecord = (
     images: imageUrls,
     tag: tag ?? product.category ?? "Gift",
     category: product.category ?? "Gift",
-    href: `/product/${product.id}`,
-    stockStatus:
-      !product.stockQuantity
-        ? "out-of-stock"
-        : product.stockQuantity <= 5
-        ? "low-stock"
-        : "in-stock",
+    href: `/gift/${product.id}`,
+    stockStatus: !product.stockQuantity
+      ? "out-of-stock"
+      : product.stockQuantity <= 5
+      ? "low-stock"
+      : "in-stock",
     highlights: [],
     specs: [],
     reviews: [],

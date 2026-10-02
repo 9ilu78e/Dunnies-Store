@@ -23,6 +23,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { getBaseUrl } from "@/utils/url";
 import { useAuth } from "@/hooks/useAuth";
 import { getWhatsAppLink } from "@/lib/whatsapp";
+import { showToast } from "@/components/ui/Toast";
 
 type ProductDetailProps = {
   product: ProductRecord;
@@ -47,6 +48,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [isClient, setIsClient] = useState(false);
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
   const [quantity, setQuantity] = useState(1);
+  const [availableStock, setAvailableStock] = useState(product.stockQuantity);
   const [copied, setCopied] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [averageRating, setAverageRating] = useState(0);
@@ -68,8 +70,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [animatingCommentId, setAnimatingCommentId] = useState<string | null>(
     null
   );
-  const [customerName, setCustomerName] = useState("");
-  const [showCustomerNameInput, setShowCustomerNameInput] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -127,28 +127,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       fetchComments();
     }
   }, [product.id, user?.uid, isClient, authLoading]);
-
-  useEffect(() => {
-    // Set customer name from auth context when user is available
-    if (user?.displayName) {
-      setCustomerName(user.displayName);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!isClient) return;
-
-    // Update customer name when visibility changes (tab comes back to focus)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && user?.displayName) {
-        setCustomerName(user.displayName);
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isClient, user?.displayName]);
 
   useEffect(() => {
     const fetchLikes = async () => {
@@ -264,55 +242,113 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   const wishlisted = isInWishlist(product.id);
 
+  const stockQuantity = availableStock ?? product.stockQuantity;
+  const isStockAvailable =
+    stockQuantity === undefined
+      ? product.stockStatus !== "out-of-stock"
+      : stockQuantity > 0;
   const stockLabel = useMemo(() => {
-    switch (product.stockStatus) {
-      case "in-stock":
-        return product.stockQuantity === undefined
-          ? "In stock"
-          : `${product.stockQuantity} in stock`;
-      case "low-stock":
-        return product.stockQuantity === undefined
-          ? "Low stock"
-          : `Only ${product.stockQuantity} left`;
-      default:
-        return "Currently unavailable";
+    if (!isStockAvailable) return "Out of stock";
+    if (stockQuantity === undefined) {
+      return product.stockStatus === "low-stock" ? "Low stock" : "In stock";
     }
-  }, [product.stockStatus]);
+    if (stockQuantity <= 5) return `Low stock · ${stockQuantity} left`;
+    return `In stock · ${stockQuantity} available`;
+  }, [isStockAvailable, product.stockStatus, stockQuantity]);
 
-  const handleAddToCart = () => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: selectedImage,
+  const fetchCurrentAvailability = async () => {
+    const response = await fetch("/api/cart/availability", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productIds: [product.id] }),
+      cache: "no-store",
     });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to check product stock");
+    }
+    const current = data.products.find(
+      (item: { id: string; stockQuantity: number; price: number }) =>
+        item.id === product.id
+    ) as { id: string; stockQuantity: number; price: number } | undefined;
+    return current;
   };
 
-  const handleOrderWhatsApp = () => {
-    // If not logged in or no customer name, show input modal
-    if (!isAuthenticated || !customerName.trim()) {
-      setShowCustomerNameInput(true);
+  const handleAddToCart = async () => {
+    try {
+      const current = await fetchCurrentAvailability();
+      if (!current || current.stockQuantity < 1) {
+        setAvailableStock(0);
+        showToast("This product is out of stock.", "warning");
+        return;
+      }
+      setAvailableStock(current.stockQuantity);
+      const added = addToCart(
+        {
+          id: product.id,
+          name: product.name,
+          price: current.price,
+          image: selectedImage,
+          stockQuantity: current.stockQuantity,
+        },
+        quantity
+      );
+      if (!added) {
+        showToast(
+          "Your cart quantity cannot exceed the available stock.",
+          "warning"
+        );
+        return;
+      }
+      showToast("Product added to your cart.", "success");
+    } catch (error) {
+      console.error("Unable to add product to cart:", error);
+      showToast("Could not verify stock. Please try again.", "error");
+    }
+  };
+
+  const handleOrderWhatsApp = async () => {
+    const whatsappWindow = window.open("about:blank", "_blank");
+    if (!whatsappWindow) {
+      showToast("Allow pop-ups to continue to WhatsApp.", "warning");
       return;
     }
+    try {
+      const current = await fetchCurrentAvailability();
+      if (!current || current.stockQuantity < quantity) {
+        setAvailableStock(current?.stockQuantity ?? 0);
+        whatsappWindow.close();
+        showToast(
+          "This product is no longer available in the requested quantity.",
+          "warning"
+        );
+        return;
+      }
+      setAvailableStock(current.stockQuantity);
+      const whatsappNumber = "09056453575";
+      const productLink =
+        typeof window !== "undefined"
+          ? `${window.location.origin}${product.href}`
+          : product.href;
 
-    const whatsappNumber =
-      process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2349056453575";
-    const productLink =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${product.href}`
-        : product.href;
+      const whatsappLink = getWhatsAppLink(whatsappNumber, {
+        productName: product.name,
+        productPrice: current.price,
+        productQuantity: quantity,
+        productImage: selectedImage,
+        productLink,
+        ...(isAuthenticated && user?.displayName
+          ? { customerName: user.displayName }
+          : {}),
+        whatsappNumber,
+      });
 
-    const whatsappLink = getWhatsAppLink(whatsappNumber, {
-      productName: product.name,
-      productPrice: product.price,
-      productQuantity: quantity,
-      productImage: selectedImage,
-      productLink,
-      customerName: customerName.trim() || "Customer",
-      whatsappNumber,
-    });
-
-    window.open(whatsappLink, "_blank");
+      whatsappWindow.location.href = whatsappLink;
+    } catch (error) {
+      console.error("Unable to verify WhatsApp order stock:", error);
+      whatsappWindow.close();
+      showToast("Could not verify stock. Please try again.", "error");
+    }
   };
 
   const handleWishlistToggle = () => {
@@ -513,11 +549,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <span>{product.reviewsCount}+ reviews</span>
             <span>·</span>
             <span
-              className={
-                product.stockStatus === "out-of-stock"
-                  ? "text-red-500 font-semibold"
-                  : "text-green-600 font-semibold"
-              }
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                isStockAvailable
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-700"
+              }`}
             >
               {stockLabel}
             </span>
@@ -534,9 +570,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 {quantity}
               </span>
               <button
-                onClick={() => setQuantity((prev) => prev + 1)}
+                onClick={() =>
+                  setQuantity((prev) =>
+                    availableStock === undefined
+                      ? prev + 1
+                      : Math.min(prev + 1, availableStock)
+                  )
+                }
                 className="text-gray-600 px-0.5 sm:px-1 text-xs sm:text-sm md:text-base"
                 title="Increase quantity"
+                disabled={
+                  availableStock !== undefined && quantity >= availableStock
+                }
               >
                 +
               </button>
@@ -547,8 +592,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 md:gap-4 w-full">
               <button
                 onClick={handleAddToCart}
-                className="inline-flex flex-row items-center justify-center gap-2 rounded-full bg-purple-600 text-white px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold hover:bg-purple-700 transition"
-                title="Add this product to your cart"
+                disabled={!isStockAvailable}
+                className="inline-flex flex-row items-center justify-center gap-2 rounded-full bg-purple-600 text-white px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold hover:bg-purple-700 transition disabled:cursor-not-allowed disabled:bg-gray-400"
+                title={
+                  !isStockAvailable
+                    ? "This product is out of stock"
+                    : "Add this product to your cart"
+                }
               >
                 <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 shrink-0" />
                 <span className="shrink-0">Add to cart</span>
@@ -556,7 +606,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
               <button
                 onClick={handleOrderWhatsApp}
-                className="inline-flex flex-row items-center justify-center gap-2 rounded-full bg-green-600 text-white px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold hover:bg-green-700 transition"
+                disabled={!isStockAvailable}
+                className="inline-flex flex-row items-center justify-center gap-2 rounded-full bg-green-600 text-white px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold hover:bg-green-700 transition disabled:cursor-not-allowed disabled:bg-gray-400"
                 title="Order via WhatsApp"
               >
                 <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 shrink-0" />
@@ -822,54 +873,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           )}
         </div>
       </div>
-
-      {/* Customer Name Modal */}
-      {showCustomerNameInput && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
-              Your Name
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-600 mb-6">
-              Please enter your name to proceed with your order via WhatsApp.
-            </p>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Enter your full name"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 focus:outline-none mb-6"
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && customerName.trim()) {
-                  setShowCustomerNameInput(false);
-                  setTimeout(handleOrderWhatsApp, 100);
-                }
-              }}
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowCustomerNameInput(false);
-                  setCustomerName("");
-                }}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowCustomerNameInput(false);
-                  setTimeout(handleOrderWhatsApp, 100);
-                }}
-                disabled={!customerName.trim()}
-                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

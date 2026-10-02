@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ProductList from "@/components/product/ProductList";
+import ProductCard from "@/components/product/ProductCard";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
@@ -150,7 +150,29 @@ export default async function BestSellersPage() {
             </Link>
           </div>
 
-          <ProductList products={bestSellers} cols={4} gap={8} />
+          {bestSellers.length > 0 ? (
+            <div
+              className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 sm:gap-5"
+              aria-label="Best-selling products. Scroll horizontally to see more."
+            >
+              {bestSellers.map((product, index) => (
+                <div
+                  key={product.id}
+                  className="w-[72%] shrink-0 snap-start sm:w-[46%] lg:w-[31%] xl:w-[23%]"
+                >
+                  <ProductCard
+                    {...product}
+                    priority={index < 2}
+                    className="rounded-xl"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-8 text-center text-gray-600">
+              No products available yet.
+            </p>
+          )}
         </div>
       </div>
     </section>

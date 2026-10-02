@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Package,
   CreditCard,
@@ -13,15 +14,45 @@ import {
   MapPin,
   ArrowRight,
 } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { showToast } from "@/components/ui/Toast";
 
 export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [step, setStep] = useState<"form" | "success">("form");
+  const [inventoryError, setInventoryError] = useState("");
+  const router = useRouter();
+  const { items, refreshInventory, inventoryChecking, clearCart } = useCart();
 
-  const subtotal = 54500;
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
   const deliveryFee = 2500;
   const total = subtotal + deliveryFee;
   const formatPrice = (price: number) => `₦${price.toLocaleString()}`;
+
+  const placeOrder = async () => {
+    setInventoryError("");
+    try {
+      const unavailable = await refreshInventory();
+      if (unavailable.length > 0) {
+        setInventoryError(
+          "Some items went out of stock and were removed. Please review your cart."
+        );
+        showToast("Out-of-stock items were removed from your cart.", "warning");
+        router.push("/cart");
+        return;
+      }
+      clearCart();
+      setStep("success");
+    } catch (error) {
+      console.error("Unable to verify stock before order:", error);
+      setInventoryError(
+        "We could not check stock. Please try again before placing your order."
+      );
+    }
+  };
 
   const paymentMethods = [
     {
@@ -164,8 +195,10 @@ export default function CheckoutPage() {
                   Back to Cart
                 </Link>
                 <button
-                  onClick={() => setStep("success")}
-                  disabled={!paymentMethod}
+                  onClick={() => void placeOrder()}
+                  disabled={
+                    !paymentMethod || items.length === 0 || inventoryChecking
+                  }
                   className="flex-1 bg-linear-to-r from-violet-600 to-fuchsia-600 text-white py-4 rounded-2xl font-bold disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {paymentMethod === "pay-on-delivery"
@@ -174,6 +207,11 @@ export default function CheckoutPage() {
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
+              {inventoryError && (
+                <p role="alert" className="mt-4 text-sm text-red-700">
+                  {inventoryError}
+                </p>
+              )}
             </div>
           </div>
 
