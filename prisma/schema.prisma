@@ -128,6 +128,16 @@ model EmailLog {
   updatedAt DateTime @updatedAt
 }
 
+model EmailLoginToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  email     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
 model OrderItem {
   id        String @id @default(cuid())
   orderId   String

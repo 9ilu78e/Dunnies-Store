@@ -1,5 +1,4 @@
 import HeroSlider from "@/components/layout/HomeSlider";
-import FeaturesBar from "@/components/layout/FeaturesBar";
 import CategoriesGrid from "@/components/layout/CategoriesGrid";
 import FlashSalesProducts from "@/components/product/FlashSalesProducts";
 import CategoryShowcase from "@/components/layout/CategoryShowcase";
@@ -42,11 +41,10 @@ export default function HomePage() {
           <FlashSalesProducts limit={4} compact />
         </div>
       </section>
-      <FeaturesBar />
-      <CategoryShowcase />
       <FeaturedProducts />
       <CategoriesGrid type="gift" />
       <FeaturedGifts />
+      <CategoryShowcase />
       <CategoriesGrid type="souvenir" />
       <FeaturedSouvenirs />
       <SpotlightCollections />

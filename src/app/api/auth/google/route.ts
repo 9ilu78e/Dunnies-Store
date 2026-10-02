@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     // Verify the ID token
     const decodedToken = await getFirebaseAdminAuth().verifyIdToken(idToken);
-    
+
     if (!decodedToken) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
@@ -32,61 +32,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('=== GOOGLE LOGIN ATTEMPT ===');
-    console.log('UID:', uid);
-    console.log('Email:', email);
-    console.log('Name:', name);
+    console.log("=== GOOGLE LOGIN ATTEMPT ===");
+    console.log("UID:", uid);
+    console.log("Email:", email);
+    console.log("Name:", name);
 
-    // Check if this is a known admin email (fallback for when DB is down)
-    const knownAdminEmails = [
-      'toonm831@gmail.com',
-      // Add other admin emails here
-    ];
-    
-    const isAdminByEmail = knownAdminEmails.includes(email);
-    console.log('Is admin by email check:', isAdminByEmail);
-    console.log('Admin dashboard path: /dashboard');
-
-    let user;
-    try {
-      user = await prisma.firebaseUser.upsert({
-        where: { email },
-        update: {
-          uid,
-          name: name || undefined,
-          photo: picture || null,
-          provider: "firebase",
-        },
-        create: {
-          uid,
-          email,
-          name: name || email.split("@")[0],
-          photo: picture || null,
-          provider: "firebase",
-          role: isAdminByEmail ? "admin" : "user",
-        },
-      });
-
-      console.log('✅ Database operation successful');
-      console.log('Final user role from database:', user.role);
-    } catch (dbError) {
-      const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
-      console.error('❌ Database connection failed for Google auth, using fallback:', errorMessage);
-      
-      // Create fallback user data - use admin role if email matches known admin
-      const fallbackRole = isAdminByEmail ? 'admin' : 'user';
-      console.log('Using fallback user data with role:', fallbackRole, '(based on email check)');
-      
-      user = {
+    const user = await prisma.firebaseUser.upsert({
+      where: { email },
+      update: {
+        uid,
+        name: name || undefined,
+        photo: picture || null,
+        provider: "firebase",
+      },
+      create: {
         uid,
         email,
-        name,
-        photo: picture,
+        name: name || email.split("@")[0],
+        photo: picture || null,
         provider: "firebase",
-        role: fallbackRole
-      };
-      console.log('Final fallback user role:', user.role);
-    }
+      },
+    });
 
     const response = NextResponse.json({
       success: true,
@@ -96,8 +62,8 @@ export async function POST(request: NextRequest) {
         name: user.name,
         photo: user.photo,
         provider: user.provider,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
 
     response.cookies.set("auth_token", idToken, {
@@ -109,25 +75,57 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-
   } catch (error: any) {
     console.error("Firebase auth error:", error);
-    
-    if (error.code === 'auth/argument-error') {
+
+    if (
+      error instanceof Error &&
+      error.message.startsWith("Firebase Admin is not configured.")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Google sign-in is not configured on the server. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY in the Render service environment, then redeploy.",
+        },
+        { status: 503 }
+      );
+    }
+
+    if (error?.code === "app/invalid-credential") {
+      return NextResponse.json(
+        {
+          error:
+            "Google sign-in server credentials were rejected. Check that the Firebase service account belongs to the configured Firebase project.",
+        },
+        { status: 503 }
+      );
+    }
+
+    if (error?.code?.startsWith("P")) {
+      return NextResponse.json(
+        {
+          error:
+            "Google sign-in could not save your account. Check the production database connection and migrations.",
+        },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === "auth/argument-error") {
       return NextResponse.json(
         { error: "Invalid ID token format" },
         { status: 400 }
       );
     }
-    
-    if (error.code === 'auth/id-token-expired') {
+
+    if (error.code === "auth/id-token-expired") {
       return NextResponse.json(
         { error: "ID token has expired" },
         { status: 401 }
       );
     }
 
-    if (error.code === 'auth/id-token-revoked') {
+    if (error.code === "auth/id-token-revoked") {
       return NextResponse.json(
         { error: "ID token has been revoked" },
         { status: 401 }

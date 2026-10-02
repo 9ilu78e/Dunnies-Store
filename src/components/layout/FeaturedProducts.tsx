@@ -29,7 +29,7 @@ export default function FeaturedProducts() {
         const response = await fetch("/api/products");
         if (response.ok) {
           const data = await response.json();
-          setProducts((data.products || []).slice(0, 2));
+          setProducts(data.products || []);
         }
       } catch (error) {
         console.error("Failed to fetch products:", error);
@@ -66,11 +66,9 @@ export default function FeaturedProducts() {
         <div className="flex items-center justify-between mb-8 sm:mb-10 lg:mb-12">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              Featured Products
+              All Products
             </h2>
-            <p className="text-lg text-gray-600">
-              Handpicked items just for you
-            </p>
+            <p className="text-lg text-gray-600">Shop our full collection</p>
           </div>
           <Link
             href="/product"
@@ -88,7 +86,7 @@ export default function FeaturedProducts() {
             <p className="text-gray-600">No products available yet.</p>
           </div>
         ) : (
-          <ProductList products={formattedProducts} cols={2} gap={8} />
+          <ProductList products={formattedProducts} cols={4} gap={6} />
         )}
       </div>
     </section>
