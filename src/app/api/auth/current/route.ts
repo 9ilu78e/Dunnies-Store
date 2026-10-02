@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { adminAuth } from "@/lib/firebaseAdmin";
+import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
 
     if (authToken) {
       try {
-        const decodedToken = await adminAuth.verifyIdToken(authToken);
+        const decodedToken =
+          await getFirebaseAdminAuth().verifyIdToken(authToken);
         const user = await prisma.firebaseUser.findUnique({
           where: { uid: decodedToken.uid },
         });

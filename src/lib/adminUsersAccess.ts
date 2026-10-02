@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
-import { adminAuth } from "@/lib/firebaseAdmin";
+import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
 import { prisma } from "@/lib/prisma";
 
 export type AdminAccountSource = "user" | "firebaseUser";
@@ -17,7 +17,7 @@ export async function getAdminActor(
 
   if (authToken) {
     try {
-      const decoded = await adminAuth.verifyIdToken(authToken);
+      const decoded = await getFirebaseAdminAuth().verifyIdToken(authToken);
       const account = await prisma.firebaseUser.findUnique({
         where: { uid: decoded.uid },
         select: { id: true, role: true },
