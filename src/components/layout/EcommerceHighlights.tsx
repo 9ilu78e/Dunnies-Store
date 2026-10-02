@@ -36,8 +36,8 @@ const highlights = [
     cta: "Manage payments",
   },
   {
-    title: "24/7 Concierge",
-    description: "Live help for gift ideas, order edits, and product sourcing.",
+    title: "24/7 Customer Support",
+    description: "Help with gift ideas, order edits, and product sourcing.",
     icon: Headphones,
     href: "/help",
     accent: "bg-amber-100 text-amber-600",

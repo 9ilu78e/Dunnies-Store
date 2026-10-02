@@ -112,7 +112,7 @@ export default function ProductDetail({
       }
     };
 
-    if (isClient && user) {
+    if (isClient) {
       fetchComments();
     }
   }, [product.id, user?.uid, isClient]);

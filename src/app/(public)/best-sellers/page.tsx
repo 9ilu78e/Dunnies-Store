@@ -58,7 +58,7 @@ export default async function BestSellersPage() {
                 href="/signature-experiences"
                 className="inline-flex items-center gap-2 rounded-full bg-white/90 text-purple-700 px-6 py-3 text-sm font-semibold hover:bg-white"
               >
-                Concierge-curated sets
+                Signature-curated sets
               </Link>
             </div>
             <div className="text-sm text-purple-100">

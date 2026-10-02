@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyUserAuth, unauthorizedResponse } from "@/lib/authMiddleware";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -8,12 +9,46 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // For now, return empty comments without database
-    // In production, you'd implement proper comments with MongoDB
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const comments = await prisma.productComment.findMany({
+      where: { productId: id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        likes: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    const formattedComments = comments.map((comment) => ({
+      ...comment,
+      likeCount: comment.likes.length,
+      isLiked: userId
+        ? comment.likes.some((like) => like.userId === userId)
+        : false,
+      likes: undefined,
+    }));
+    const averageRating =
+      comments.length > 0
+        ? Math.round(
+            (comments.reduce((total, comment) => total + comment.rating, 0) /
+              comments.length) *
+              10
+          ) / 10
+        : 0;
+
     return NextResponse.json({
-      comments: [],
-      averageRating: 0,
-      totalComments: 0,
+      comments: formattedComments,
+      averageRating,
+      totalComments: comments.length,
     });
   } catch (error) {
     console.error("Error fetching comments:", error);

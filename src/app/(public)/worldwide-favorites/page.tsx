@@ -55,7 +55,7 @@ async function fetchWorldwideFavorites() {
 const journeyCards = [
   {
     title: "Same-day Lagos & Abuja",
-    detail: "Concierge riders are on standby for ultra-fast gifting.",
+    detail: "Local delivery partners are ready for ultra-fast gifting.",
   },
   {
     title: "72hr World Delivery",
@@ -123,7 +123,7 @@ export default async function WorldwideFavoritesPage() {
               href="/contact"
               className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 font-semibold hover:bg-white/10"
             >
-              Speak with concierge
+              Contact our team
             </Link>
           </div>
         </header>

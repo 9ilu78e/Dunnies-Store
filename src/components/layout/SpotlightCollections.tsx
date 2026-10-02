@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, Flame, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronDown, Flame } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 import ProductList from "@/components/product/ProductList";
 
@@ -126,12 +126,11 @@ export default function SpotlightCollections() {
 
             <div className="rounded-3xl bg-linear-to-br from-purple-700 via-purple-600 to-fuchsia-600 text-white p-6 sm:p-8 flex flex-col gap-6 shadow-2xl">
               <div className="inline-flex items-center gap-2 text-sm font-semibold text-purple-200 bg-white/10 rounded-full px-4 py-1 self-start">
-                <Sparkles className="w-4 h-4 text-purple-200" />
                 Signature experiences
               </div>
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-                  <h3 className="text-lg font-bold">Concierge curated</h3>
+                  <h3 className="text-lg font-bold">Signature picks</h3>
                   <ChevronDown
                     aria-hidden="true"
                     className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180"
@@ -166,7 +165,7 @@ export default function SpotlightCollections() {
                         href="/signature-experiences"
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white text-gray-900 font-semibold py-3 hover:bg-purple-50 transition"
                       >
-                        Explore concierge picks
+                        Explore signature picks
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </>
