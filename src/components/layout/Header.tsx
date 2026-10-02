@@ -776,6 +776,11 @@ export default function Header() {
       <LogoutModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
+        onLoggedOut={() => {
+          setUser(null);
+          setIsUserDropdownOpen(false);
+          setIsMobileMenuOpen(false);
+        }}
       />
     </>
   );

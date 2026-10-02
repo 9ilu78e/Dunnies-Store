@@ -268,6 +268,7 @@ export default function AdminLayout({
       <AdminLogoutModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
+        onLoggedOut={() => setUser(null)}
       />
     </div>
   );

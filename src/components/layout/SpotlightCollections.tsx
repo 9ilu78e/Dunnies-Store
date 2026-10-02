@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Flame, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronDown, Flame, Sparkles } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 import ProductList from "@/components/product/ProductList";
 
@@ -129,41 +129,54 @@ export default function SpotlightCollections() {
                 <Sparkles className="w-4 h-4 text-purple-200" />
                 Signature experiences
               </div>
-              <div>
-                <h3 className="text-lg font-bold">Concierge curated</h3>
-                <p className="text-purple-100 mt-2">
-                  For when you need the gift to feel personal, immersive, and
-                  far from basic. Each pick pairs premium packaging with a story
-                  to tell.
-                </p>
-              </div>
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                  <h3 className="text-lg font-bold">Concierge curated</h3>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180"
+                  />
+                </summary>
+                <div className="mt-3 space-y-5">
+                  <p className="text-purple-100">
+                    For when you need the gift to feel personal, immersive, and
+                    far from basic. Each pick pairs premium packaging with a
+                    story to tell.
+                  </p>
 
-              {!error && signatureHighlights.length > 0 ? (
-                <>
-                  <ul className="space-y-4">
-                    {signatureHighlights.map((product) => (
-                      <li
-                        key={product.id}
-                        className="bg-white/5 border border-white/10 rounded-2xl p-4"
+                  {!error && signatureHighlights.length > 0 ? (
+                    <>
+                      <ul className="space-y-3">
+                        {signatureHighlights.map((product) => (
+                          <li
+                            key={product.id}
+                            className="bg-white/5 border border-white/10 rounded-2xl p-4"
+                          >
+                            <Link
+                              href={product.href}
+                              className="text-base font-semibold hover:text-purple-100"
+                            >
+                              {product.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <Link
+                        href="/signature-experiences"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white text-gray-900 font-semibold py-3 hover:bg-purple-50 transition"
                       >
-                        <p className="text-base font-semibold">
-                          {product.name}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Link
-                    href="/signature-experiences"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-gray-900 font-semibold py-3 hover:bg-purple-50 transition"
-                  >
-                    Explore concierge picks
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </>
-              ) : (
-                <p className="text-purple-100">No catalog items available yet.</p>
-              )}
+                        Explore concierge picks
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </>
+                  ) : (
+                    <p className="text-purple-100">
+                      No catalog items available yet.
+                    </p>
+                  )}
+                </div>
+              </details>
             </div>
           </div>
         )}
