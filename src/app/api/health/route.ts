@@ -1,30 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const result = await Promise.race([
-      prisma.user.findFirst(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Connection timeout after 5 seconds')), 5000)
-      ),
-    ])
+    await prisma.$queryRaw`SELECT 1`;
 
     return NextResponse.json({
-      status: 'connected',
-      message: 'Database connection successful',
-      result,
-    })
+      status: "connected",
+      message: "Database connection successful",
+    });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    
+    console.error("[HEALTH_DATABASE_CHECK]", error);
     return NextResponse.json(
       {
-        status: 'error',
-        error: errorMessage,
-        hint: 'Check DATABASE_URL, confirm PostgreSQL is running, and apply Prisma migrations',
+        status: "error",
+        error: "Database connection failed",
+        hint: "Check DATABASE_URL and confirm the production database is reachable.",
       },
       { status: 500 }
-    )
+    );
   }
 }
