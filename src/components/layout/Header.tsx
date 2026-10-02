@@ -221,6 +221,11 @@ export default function Header() {
         })),
       },
       {
+        label: "Concierge",
+        href: "/signature-experiences",
+        icon: <Sparkles className="w-4 h-4" />,
+      },
+      {
         label: "About",
         href: "/about",
         icon: <Info className="w-4 h-4" />,

@@ -3,7 +3,7 @@ services:
     name: dunnies-store
     env: node
     buildCommand: npm install && npm run build
-    startCommand: npm run db:deploy && npm start
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production

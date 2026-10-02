@@ -23,9 +23,11 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { getBaseUrl } from "@/utils/url";
 import { useAuth } from "@/hooks/useAuth";
 import { getWhatsAppLink } from "@/lib/whatsapp";
+import type { CatalogItemType } from "@/context/CartContext";
 
 type ProductDetailProps = {
   product: ProductRecord;
+  itemType?: CatalogItemType;
 };
 
 type Comment = {
@@ -39,7 +41,10 @@ type Comment = {
   createdAt: string;
 };
 
-export default function ProductDetail({ product }: ProductDetailProps) {
+export default function ProductDetail({
+  product,
+  itemType = "product",
+}: ProductDetailProps) {
   const router = useRouter();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -265,6 +270,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const handleAddToCart = () => {
     addToCart({
       id: product.id,
+      itemType,
       name: product.name,
       price: product.price,
       image: selectedImage,

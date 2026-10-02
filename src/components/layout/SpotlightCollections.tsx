@@ -6,66 +6,60 @@ import { ArrowRight, Flame, Sparkles } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 import ProductList from "@/components/product/ProductList";
 
-interface Product {
+interface BestSeller {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
   stockQuantity: number;
-  imageUrl: string;
+  image: string;
   description: string;
-  averageRating: number;
-  totalComments: number;
-  flashSalePrice: number | null;
-  flashSaleEndsAt: string | null;
+  rating: number;
+  reviews: number;
+  tag: string;
+  href: string;
+  orderCount: number;
 }
 
 export default function SpotlightCollections() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [bestSellers, setBestSellers] = useState<BestSeller[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchBestSellers = async () => {
       try {
-        const response = await fetch("/api/products");
-        if (response.ok) {
-          const data = await response.json();
-          setProducts(data.products || []);
+        const response = await fetch("/api/best-sellers?limit=4", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
+          throw new Error(
+            data?.error || "Best sellers are temporarily unavailable."
+          );
         }
+
+        const data = await response.json();
+        setBestSellers(data.products || []);
       } catch (error) {
-        console.error("Failed to fetch products:", error);
+        console.error("Failed to fetch best sellers:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Best sellers are temporarily unavailable."
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchBestSellers();
   }, []);
 
-  const bestSellerCards = products.slice(0, 4).map((product) => {
-    const isFlashSaleActive =
-      product.flashSalePrice !== null &&
-      product.flashSaleEndsAt !== null &&
-      new Date(product.flashSaleEndsAt).getTime() > Date.now();
-    return {
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: isFlashSaleActive
-        ? product.flashSalePrice ?? product.price
-        : product.price,
-      originalPrice: isFlashSaleActive ? product.price : undefined,
-      image: product.imageUrl || "https://via.placeholder.com/400x400",
-      rating: product.averageRating ?? 0,
-      reviews: product.totalComments ?? 0,
-      stockQuantity: product.stockQuantity,
-      href: `/product/${product.id}`,
-    };
-  });
-
-  const signatureHighlights = products.slice(0, 3).map((product) => ({
+  const signatureHighlights = bestSellers.slice(0, 3).map((product) => ({
     id: product.id,
     name: product.name,
-    href: `/product/${product.id}`,
+    href: product.href,
   }));
 
   return (
@@ -80,8 +74,8 @@ export default function SpotlightCollections() {
             What&apos;s hot right now
           </h2>
           <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-            Crowd favorites meet our signature concierge picks. Hand off your
-            gifting decisions with confidence.
+            Products, gifts, and souvenirs ranked by distinct orders, with new
+            items included until their sales history grows.
           </p>
         </div>
 
@@ -105,12 +99,16 @@ export default function SpotlightCollections() {
                   a guaranteed hit.
                 </p>
               </div>
-              {bestSellerCards.length > 0 ? (
+              {error ? (
+                <p className="text-red-600" role="alert">
+                  {error}
+                </p>
+              ) : bestSellers.length > 0 ? (
                 <>
-                  <ProductList products={bestSellerCards} cols={4} gap={6} />
+                  <ProductList products={bestSellers} cols={4} gap={6} />
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <p className="text-sm text-gray-500">
-                      Updated daily based on verified reviews and repeat orders.
+                      Ranked by non-cancelled orders; newest items break ties.
                     </p>
                     <Link
                       href="/best-sellers"
@@ -122,7 +120,7 @@ export default function SpotlightCollections() {
                   </div>
                 </>
               ) : (
-                <p className="text-gray-600">No products available</p>
+                <p className="text-gray-600">No catalog items available yet.</p>
               )}
             </div>
 
@@ -140,7 +138,7 @@ export default function SpotlightCollections() {
                 </p>
               </div>
 
-              {signatureHighlights.length > 0 ? (
+              {!error && signatureHighlights.length > 0 ? (
                 <>
                   <ul className="space-y-4">
                     {signatureHighlights.map((product) => (
@@ -164,7 +162,7 @@ export default function SpotlightCollections() {
                   </Link>
                 </>
               ) : (
-                <p className="text-purple-100">No products available</p>
+                <p className="text-purple-100">No catalog items available yet.</p>
               )}
             </div>
           </div>

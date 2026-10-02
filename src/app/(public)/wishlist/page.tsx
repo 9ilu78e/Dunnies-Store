@@ -14,6 +14,11 @@ export default function WishlistPage() {
     if (!product) return;
     addToCart({
       id: product.id,
+      itemType: product.href?.startsWith("/gift/")
+        ? "gift"
+        : product.href?.startsWith("/souvenirs/")
+        ? "souvenir"
+        : "product",
       name: product.name,
       price: product.price,
       image:
@@ -143,4 +148,3 @@ export default function WishlistPage() {
     </section>
   );
 }
-

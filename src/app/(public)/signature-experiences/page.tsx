@@ -92,6 +92,34 @@ export default async function SignatureExperiencesPage() {
               </div>
             ))}
           </div>
+          <details className="relative mt-6 w-fit">
+            <summary className="cursor-pointer list-none rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 [&::-webkit-details-marker]:hidden">
+              Explore Concierge
+            </summary>
+            <nav
+              aria-label="Concierge pages"
+              className="absolute left-0 top-full z-10 mt-2 min-w-56 overflow-hidden rounded-2xl border border-purple-100 bg-white py-2 text-purple-900 shadow-xl"
+            >
+              <Link
+                href="/signature-experiences"
+                className="block px-4 py-2.5 text-sm font-medium hover:bg-purple-50"
+              >
+                Signature Experiences
+              </Link>
+              <Link
+                href="/worldwide-favorites"
+                className="block px-4 py-2.5 text-sm font-medium hover:bg-purple-50"
+              >
+                Worldwide Favorites
+              </Link>
+              <Link
+                href="/help"
+                className="block px-4 py-2.5 text-sm font-medium hover:bg-purple-50"
+              >
+                Help Center
+              </Link>
+            </nav>
+          </details>
         </header>
 
         <div className="rounded-3xl bg-white text-gray-900 p-6 sm:p-8 space-y-6 shadow-2xl">
