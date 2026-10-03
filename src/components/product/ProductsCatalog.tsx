@@ -293,6 +293,21 @@ export default function ProductsCatalog({
                       </span>
                     )}
                   </div>
+                  <span
+                    className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                      typeof product.stockQuantity !== "number"
+                        ? "bg-gray-100 text-gray-600"
+                        : product.stockQuantity > 0
+                        ? "bg-green-50 text-green-700"
+                        : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {typeof product.stockQuantity !== "number"
+                      ? "Stock unavailable"
+                      : product.stockQuantity > 0
+                      ? `${product.stockQuantity} in stock`
+                      : "Out of stock"}
+                  </span>
                 </div>
               </Link>
             ))}

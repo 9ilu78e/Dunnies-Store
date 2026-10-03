@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { getCurrentUser } from "@/services/authService";
 import { useWishlist } from "@/hooks/useWishlist";
+import { getCategories } from "@/lib/categoryClient";
 import LogoutModal from "./LogoutModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 import {
@@ -121,52 +122,23 @@ export default function Header() {
   useEffect(() => {
     let isSubscribed = true;
 
-    const fetchCategories = async () => {
-      try {
-        const productRes = await fetch(
-          `/api/categories?type=product&t=${Date.now()}`,
-          {
-            cache: "no-store",
-          }
-        );
-        if (productRes.ok && isSubscribed) {
-          const data = await productRes.json();
-          setCategories(data.categories || []);
-        }
-
-        const giftRes = await fetch(
-          `/api/categories?type=gift&t=${Date.now()}`,
-          {
-            cache: "no-store",
-          }
-        );
-        if (giftRes.ok && isSubscribed) {
-          const data = await giftRes.json();
-          setGiftCategories(data.categories || []);
-        }
-
-        const souvenirRes = await fetch(
-          `/api/categories?type=souvenir&t=${Date.now()}`,
-          {
-            cache: "no-store",
-          }
-        );
-        if (souvenirRes.ok && isSubscribed) {
-          const data = await souvenirRes.json();
-          setSouvenirCategories(data.categories || []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch categories:", err);
-      }
-    };
-
-    fetchCategories();
-
-    const interval = setInterval(fetchCategories, 30000);
+    void Promise.all([
+      getCategories("product"),
+      getCategories("gift"),
+      getCategories("souvenir"),
+    ])
+      .then(([products, gifts, souvenirs]) => {
+        if (!isSubscribed) return;
+        setCategories(products);
+        setGiftCategories(gifts);
+        setSouvenirCategories(souvenirs);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to fetch categories:", error);
+      });
 
     return () => {
       isSubscribed = false;
-      clearInterval(interval);
     };
   }, []);
 

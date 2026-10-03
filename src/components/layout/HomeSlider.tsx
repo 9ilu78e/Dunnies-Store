@@ -6,28 +6,28 @@ import Image from "next/image";
 
 const slides = [
   {
-    image: "/assets/hero-gifts.png",
-    alt: "Gift collection",
-    width: 1672,
-    height: 941,
+    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.47.jpeg",
+    alt: "Wedding gifts promotion",
   },
   {
-    image: "/assets/hero-souvenirs.png",
-    alt: "Souvenirs and keepsakes",
-    width: 1536,
-    height: 1024,
+    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.48.jpeg",
+    alt: "Birthday gifts promotion",
   },
   {
-    image: "/assets/hero-products.png",
-    alt: "Premium products",
-    width: 1672,
-    height: 941,
+    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.48 (1).jpeg",
+    alt: "Mother's Day gifts promotion",
   },
   {
-    image: "/assets/hero-bestsellers.png",
-    alt: "Bestselling products",
-    width: 1536,
-    height: 1024,
+    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.48 (2).jpeg",
+    alt: "Ramadan gifts promotion",
+  },
+  {
+    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.48 (3).jpeg",
+    alt: "Father's Day gifts promotion",
+  },
+  {
+    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.49.jpeg",
+    alt: "Eid gifts promotion",
   },
 ];
 
@@ -53,7 +53,7 @@ export default function HeroSlider() {
     <section className="px-4 py-5 sm:px-8 sm:py-6 lg:px-12 lg:py-8">
       <div
         className="relative mx-auto w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-purple-100 sm:rounded-3xl"
-        style={{ aspectRatio: `${slides[current].width} / ${slides[current].height}` }}
+        style={{ aspectRatio: "1280 / 853" }}
         role="region"
         aria-label="Hero promotions"
         tabIndex={0}
@@ -63,7 +63,9 @@ export default function HeroSlider() {
           <div
             key={slide.image}
             className={`absolute inset-0 transition-opacity duration-700 ease-in-out motion-reduce:transition-none ${
-              index === current ? "opacity-100" : "pointer-events-none opacity-0"
+              index === current
+                ? "opacity-100"
+                : "pointer-events-none opacity-0"
             }`}
             aria-hidden={index !== current}
           >

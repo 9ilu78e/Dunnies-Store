@@ -10,6 +10,7 @@ interface Souvenir {
   id: string;
   name: string;
   price: number;
+  stockQuantity: number;
   imageUrl: string;
   description: string;
   averageRating: number;
@@ -42,7 +43,8 @@ export default function FeaturedSouvenirs() {
     id: souvenir.id,
     name: souvenir.name,
     price: souvenir.price,
-    image: souvenir.imageUrl || "https://via.placeholder.com/400x400",
+    stockQuantity: souvenir.stockQuantity,
+    image: souvenir.imageUrl || undefined,
     description: souvenir.description,
     rating: souvenir.averageRating ?? 0,
     reviews: souvenir.totalComments ?? 0,

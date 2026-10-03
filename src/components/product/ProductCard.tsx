@@ -39,10 +39,10 @@ export default function ProductCard({
   className = "",
   priority = false,
 }: ProductProps) {
-  if (!image) {
-    console.log(`[ProductCard] ${name}: No image provided!`);
-  }
-  const displayImage = image || "";
+  const [imageFailed, setImageFailed] = useState(false);
+  const isUnavailablePlaceholder = image?.includes("via.placeholder.com");
+  const displayImage =
+    image && !imageFailed && !isUnavailablePlaceholder ? image : "";
   const normalizedRating = Math.round(Math.max(0, Math.min(5, rating)) * 2) / 2;
   const fullStars = Math.floor(normalizedRating);
   const hasHalfStar = normalizedRating - fullStars === 0.5;
@@ -87,12 +87,7 @@ export default function ProductCard({
               priority={priority}
               sizes="(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 23vw"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              onError={(e) => {
-                // Image failed to load - fallback to placeholder
-                const target = e.target as HTMLImageElement;
-                target.src =
-                  "https://via.placeholder.com/400x400?text=No+Image";
-              }}
+              onError={() => setImageFailed(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -108,17 +103,21 @@ export default function ProductCard({
               {orderCount} {orderCount === 1 ? "order" : "orders"}
             </span>
           )}
-          {typeof stockQuantity === "number" && (
-            <span
-              className={`absolute bottom-2 left-2 rounded-full px-2 py-1 text-[10px] font-semibold ${
-                stockQuantity > 0
-                  ? "bg-white/95 text-gray-700"
-                  : "bg-red-600 text-white"
-              }`}
-            >
-              {stockQuantity > 0 ? `${stockQuantity} in stock` : "Out of stock"}
-            </span>
-          )}
+          <span
+            className={`absolute bottom-2 left-2 rounded-full px-2 py-1 text-[10px] font-semibold ${
+              typeof stockQuantity !== "number"
+                ? "bg-gray-100 text-gray-600"
+                : stockQuantity > 0
+                ? "bg-white/95 text-gray-700"
+                : "bg-red-600 text-white"
+            }`}
+          >
+            {typeof stockQuantity !== "number"
+              ? "Stock unavailable"
+              : stockQuantity > 0
+              ? `${stockQuantity} in stock`
+              : "Out of stock"}
+          </span>
         </div>
 
         <div className="flex min-h-7 items-center gap-1.5 bg-amber-50 px-2 py-1">
