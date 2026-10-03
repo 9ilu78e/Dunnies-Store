@@ -10,6 +10,7 @@ interface Gift {
   id: string;
   name: string;
   price: number;
+  stockQuantity: number;
   imageUrl: string;
   description: string;
   averageRating: number;
@@ -42,7 +43,8 @@ export default function FeaturedGifts() {
     id: g.id,
     name: g.name,
     price: g.price,
-    image: g.imageUrl || "https://via.placeholder.com/400x400",
+    stockQuantity: g.stockQuantity,
+    image: g.imageUrl || undefined,
     description: g.description,
     rating: g.averageRating ?? 0,
     reviews: g.totalComments ?? 0,

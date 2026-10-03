@@ -5,16 +5,7 @@ import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  imageUrl?: string;
-  _count?: {
-    products: number;
-  };
-}
+import { getCategories, type Category } from "@/lib/categoryClient";
 
 export default function ProductCategoriesGrid() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -24,35 +15,21 @@ export default function ProductCategoriesGrid() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `/api/categories?type=product&t=${Date.now()}`,
-          {
-            cache: "no-store",
-            headers: {
-              "Cache-Control": "no-cache, no-store, must-revalidate",
-              Pragma: "no-cache",
-              Expires: "0",
-            },
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setCategories(data.categories || []);
-        }
-      } catch (error) {
-      } finally {
-        setLoading(false);
-      }
+    let isSubscribed = true;
+    void getCategories("product")
+      .then((loadedCategories) => {
+        if (isSubscribed) setCategories(loadedCategories);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to fetch product categories:", error);
+      })
+      .finally(() => {
+        if (isSubscribed) setLoading(false);
+      });
+
+    return () => {
+      isSubscribed = false;
     };
-
-    fetchCategories();
-
-    const interval = setInterval(fetchCategories, 15000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const checkScroll = () => {

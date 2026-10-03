@@ -113,6 +113,7 @@ async function fetchProductsByCategory(
               name: gift.name,
               description: gift.description || "",
               price: gift.price,
+              stockQuantity: gift.stockQuantity,
               imageUrl: gift.imageUrl || "",
               imageUrls:
                 gift.imageUrls && gift.imageUrls.length > 0
@@ -136,6 +137,7 @@ async function fetchProductsByCategory(
               name: souvenir.name,
               description: souvenir.description || "",
               price: souvenir.price,
+              stockQuantity: souvenir.stockQuantity,
               imageUrl: souvenir.imageUrl || "",
               imageUrls:
                 souvenir.imageUrls && souvenir.imageUrls.length > 0
@@ -169,6 +171,7 @@ async function fetchProductsByCategory(
             name: product.name,
             description: product.description || "",
             price: product.price,
+            stockQuantity: product.stockQuantity,
             imageUrl: product.imageUrl || "",
             imageUrls:
               product.imageUrls && product.imageUrls.length > 0
@@ -219,6 +222,7 @@ async function fetchProductsByCategory(
           name: product.name,
           description: product.description || "",
           price: product.price,
+          stockQuantity: product.stockQuantity,
           imageUrl: product.imageUrl || "",
           imageUrls:
             product.imageUrls && product.imageUrls.length > 0
@@ -241,6 +245,7 @@ async function fetchProductsByCategory(
             name: gift.name,
             description: gift.description || "",
             price: gift.price,
+            stockQuantity: gift.stockQuantity,
             imageUrl: gift.imageUrl || "",
             imageUrls:
               gift.imageUrls && gift.imageUrls.length > 0
@@ -261,6 +266,7 @@ async function fetchProductsByCategory(
             name: souvenir.name,
             description: souvenir.description || "",
             price: souvenir.price,
+            stockQuantity: souvenir.stockQuantity,
             imageUrl: souvenir.imageUrl || "",
             imageUrls:
               souvenir.imageUrls && souvenir.imageUrls.length > 0
