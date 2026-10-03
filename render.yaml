@@ -2,7 +2,7 @@ services:
   - type: web
     name: dunnies-store
     env: node
-    buildCommand: npm install && npm run db:deploy && npm run build
+    buildCommand: npm ci && npm run db:deploy && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
