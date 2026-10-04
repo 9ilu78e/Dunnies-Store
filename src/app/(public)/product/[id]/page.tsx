@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import ProductDetail from "@/components/product/ProductDetail";
 import ProductDetailWrapper from "@/components/product/ProductDetailWrapper";
 import {
@@ -31,6 +31,7 @@ async function getProductFromDatabase(id: string) {
     if (gift) {
       return {
         ...gift,
+        catalogItemType: "gift" as const,
         categoryId: null,
         category: null,
         priority: "normal",
@@ -146,6 +147,12 @@ export default async function ProductDetailPage({
   let product: ProductRecord | null = null;
 
   if (dbProduct) {
+    if (
+      "catalogItemType" in dbProduct &&
+      dbProduct.catalogItemType === "gift"
+    ) {
+      redirect(`/gift/${dbProduct.id}`);
+    }
     product = transformDatabaseProduct(dbProduct);
   } else {
     product = getLocalProductById(id);
