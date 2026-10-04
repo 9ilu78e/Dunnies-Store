@@ -25,7 +25,7 @@ function ProductsSkeleton() {
       {[0, 1, 2, 3].map((item) => (
         <div
           key={item}
-          className="w-[52%] shrink-0 animate-pulse sm:w-[30%] lg:w-[23%]"
+          className="w-[58%] shrink-0 animate-pulse sm:w-[30%] lg:w-[23%]"
         >
           <div className="aspect-[4/3] rounded-xl bg-gray-100" />
           <div className="mt-3 h-4 w-4/5 rounded bg-gray-100" />
@@ -120,7 +120,7 @@ export default function FeaturedProducts() {
               return (
                 <div
                   key={product.id}
-                  className="h-full w-[52%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
+                  className="h-full w-[58%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
                 >
                   <ProductCard
                     id={product.id}

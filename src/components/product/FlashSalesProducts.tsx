@@ -208,7 +208,7 @@ export default function FlashSalesProducts({
               key={product.id}
               className={`h-full shrink-0 snap-start ${
                 compact
-                  ? "w-[52%] sm:w-[30%] lg:w-[23%]"
+                  ? "w-[58%] sm:w-[30%] lg:w-[23%]"
                   : "w-[72%] sm:w-[46%] lg:w-[31%] xl:w-[23%]"
               }`}
             >
