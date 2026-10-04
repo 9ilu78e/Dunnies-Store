@@ -386,9 +386,7 @@ export default function AddProductModal({
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-1">
               {sizeVariants.length > 0
-                ? `Total stock across ${
-                    variantKind === "volume" ? "volumes" : "sizes"
-                  }`
+                ? "Total stock across options"
                 : "Number of products in stock *"}
             </label>
             <input

@@ -8,7 +8,6 @@ export type VariantKind = "size" | "volume" | "color" | "belt";
 
 export function getVariantChoiceKind(size: string): VariantKind {
   if (/^COLOR:/i.test(size)) return "color";
-  if (/^BELT:/i.test(size)) return "belt";
   if (/^\d+(?:\.\d+)?\s*ML$/i.test(size)) return "volume";
   return "size";
 }
@@ -20,7 +19,7 @@ export function getVariantKindLabel(kind: VariantKind): string {
     case "color":
       return "Color";
     case "belt":
-      return "Belt size";
+      return "Size";
     default:
       return "Size";
   }
@@ -29,7 +28,8 @@ export function getVariantKindLabel(kind: VariantKind): string {
 export function getVariantKind(variants: SizeVariant[]): VariantKind {
   if (variants.length === 0) return "size";
   const kinds = variants.map((variant) => {
-    return variant.kind ?? getVariantChoiceKind(variant.size);
+    const kind = variant.kind ?? getVariantChoiceKind(variant.size);
+    return kind === "belt" ? "size" : kind;
   });
   return kinds.every((kind) => kind === kinds[0]) ? kinds[0] : "size";
 }

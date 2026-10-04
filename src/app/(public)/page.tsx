@@ -19,14 +19,14 @@ export default function HomePage() {
       <HeroSlider />
       <CategoriesGrid type="product" />
       <section className="px-3 py-5 sm:px-6 sm:py-8">
-        <div className="mx-auto max-w-7xl rounded-3xl border-2 border-purple-400 bg-purple-700 p-3 shadow-md sm:p-5">
+        <div className="mx-auto max-w-7xl rounded-3xl border border-gray-100 bg-white p-3 sm:p-5">
           <header className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="flex items-center gap-2 text-lg font-bold text-white sm:text-xl">
-                <Flame className="h-5 w-5 text-amber-300" />
+              <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 sm:text-xl">
+                <Flame className="h-5 w-5 text-amber-500" />
                 Flash Sales
               </h2>
-              <p className="mt-0.5 text-xs text-purple-100 sm:text-sm">
+              <p className="mt-0.5 text-xs text-gray-600 sm:text-sm">
                 Limited-time prices on selected products
               </p>
             </div>

@@ -492,7 +492,7 @@ export default function ProductDetail({
       }
       if (isCustomizableGift && !giftContentsValid) {
         showToast(
-          "Choose an available product, quantity, and any required size for every gift item.",
+          "Choose an available product, quantity, and any required option for every gift item.",
           "warning"
         );
         return;
@@ -543,7 +543,7 @@ export default function ProductDetail({
     }
     if (isCustomizableGift && !giftContentsValid) {
       showToast(
-        "Choose an available product, quantity, and any required size for every gift item.",
+        "Choose an available product, quantity, and any required option for every gift item.",
         "warning"
       );
       return;

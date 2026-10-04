@@ -135,7 +135,7 @@ export default function ProductCard({
       if (availableItem.stockQuantity < 1) {
         if (stockQuantity && stockQuantity > 0 && computedHref !== "#") {
           showToast(
-            "Choose an available size or volume before adding this item.",
+            "Choose an available option before adding this item.",
             "warning"
           );
           router.push(computedHref);
@@ -176,14 +176,14 @@ export default function ProductCard({
 
   return (
     <div
-      className={`group relative flex h-full min-w-0 w-full flex-col ${className}`}
+      className={`group relative flex h-full min-w-0 w-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white ${className}`}
     >
       <Link
         href={computedHref === "#" ? "#" : computedHref}
         className="block"
         aria-label={`View ${name}`}
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-gray-100">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-white">
           {displayImage ? (
             <Image
               src={displayImage}
@@ -196,14 +196,14 @@ export default function ProductCard({
               onError={() => setImageFailed(true)}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gray-100">
+            <div className="flex h-full w-full items-center justify-center bg-white">
               <span className="text-sm font-medium text-gray-400">
                 No image
               </span>
             </div>
           )}
 
-          <div className="absolute left-2 top-2">
+          <div className="absolute left-2 top-2 z-10">
             {discountPercent > 0 && (
               <span className="rounded-full bg-purple-700 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
                 -{discountPercent}%
@@ -213,10 +213,10 @@ export default function ProductCard({
           <span
             className={`absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm ${
               typeof stockQuantity !== "number"
-                ? "bg-white/95 text-gray-600"
+                ? "border border-gray-200 bg-white text-gray-600"
                 : stockQuantity > 0
-                ? "bg-white/95 text-gray-700"
-                : "bg-red-600 text-white"
+                ? "border border-gray-200 bg-white text-gray-700"
+                : "border border-red-200 bg-white text-red-700"
             }`}
           >
             {typeof stockQuantity !== "number"
@@ -227,7 +227,7 @@ export default function ProductCard({
           </span>
         </div>
 
-        <div className="flex min-h-7 items-center gap-1.5 px-2 pt-2">
+        <div className="flex min-h-7 items-center gap-1.5 px-3 pt-2">
           <div
             className="flex items-center gap-px"
             aria-label={`${rating.toFixed(1)} out of 5 stars`}
@@ -250,8 +250,8 @@ export default function ProductCard({
           </span>
         </div>
 
-        <div className="rounded-b-2xl bg-gray-50 px-2 pb-3 pt-1">
-          <span className="block min-h-10 line-clamp-2 text-sm font-medium leading-5 text-gray-800 transition-colors group-hover:text-purple-700">
+        <div className="bg-white px-3 pb-3 pt-1">
+          <span className="line-clamp-2 block h-10 overflow-hidden text-sm font-medium leading-5 text-gray-800 transition-colors group-hover:text-purple-700">
             {name}
           </span>
 
@@ -276,7 +276,7 @@ export default function ProductCard({
             : `Add ${name} to wishlist`
         }
         aria-pressed={isWishlisted}
-        className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-gray-700 shadow-md transition hover:scale-105 hover:text-rose-600"
+        className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-gray-100 bg-white text-gray-700 shadow-sm transition hover:scale-105 hover:text-rose-600"
       >
         <Heart
           className={`h-5 w-5 ${
@@ -284,11 +284,11 @@ export default function ProductCard({
           }`}
         />
       </button>
-      <div className="grid grid-cols-2 gap-2 rounded-b-2xl bg-gray-50 px-2 pb-2 pt-1">
+      <div className="grid grid-cols-2 gap-2 bg-white px-3 pb-3 pt-1">
         <button
           type="button"
           onClick={handleWhatsAppOrder}
-          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-green-700 bg-white px-2 py-2 text-[11px] font-semibold text-green-800 transition hover:bg-green-50"
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-green-700 bg-white px-2 py-2.5 text-[11px] font-semibold text-green-800 transition hover:bg-green-50"
         >
           <MessageCircle className="h-4 w-4 shrink-0" />
           <span className="truncate">WhatsApp</span>
@@ -297,7 +297,7 @@ export default function ProductCard({
           type="button"
           onClick={handleAddToCart}
           disabled={addingToCart || stockQuantity === 0}
-          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-purple-700 px-2 py-2 text-[11px] font-semibold text-white transition hover:bg-purple-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-purple-700 bg-white px-2 py-2.5 text-[11px] font-semibold text-purple-800 transition hover:bg-purple-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
         >
           {addingToCart ? (
             <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />

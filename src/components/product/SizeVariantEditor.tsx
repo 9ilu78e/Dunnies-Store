@@ -17,7 +17,7 @@ const PERFUME_VOLUMES = [
   "150 ML",
   "200 ML",
 ];
-const CLOTHING_COLORS = [
+const COLORS = [
   "Black",
   "White",
   "Red",
@@ -27,7 +27,6 @@ const CLOTHING_COLORS = [
   "Brown",
   "Navy",
 ];
-const BELT_SIZES = ["28", "30", "32", "34", "36", "38", "40", "42", "44"];
 const UK_NUMERIC_SIZES = [
   "UK 6",
   "UK 8",
@@ -64,18 +63,12 @@ export default function SizeVariantEditor({
       ? `${customValue} ML`
       : variantKind === "color"
       ? `COLOR: ${customValue}`
-      : variantKind === "belt"
-      ? `BELT: ${customValue}`
       : customValue;
 
   const addPreset = (sizes: string[]) => {
     const additions = sizes
       .map((size) =>
-        variantKind === "color"
-          ? `COLOR: ${size.toUpperCase()}`
-          : variantKind === "belt"
-          ? `BELT: ${size}`
-          : size
+        variantKind === "color" ? `COLOR: ${size.toUpperCase()}` : size
       )
       .filter((size) => !existingSizes.has(size.toUpperCase()))
       .map((size) => ({ size, stockQuantity: 0, kind: variantKind }));
@@ -87,9 +80,6 @@ export default function SizeVariantEditor({
       variantKind === "volume" &&
       !/^\d+(?:\.\d+)?\s*(?:ML)?$/i.test(customValue)
     ) {
-      return;
-    }
-    if (variantKind === "belt" && !/^\d+(?:\.\d+)?$/.test(customValue)) {
       return;
     }
     const size = customOption;
@@ -121,7 +111,7 @@ export default function SizeVariantEditor({
               : "border-purple-200 bg-white text-purple-700 hover:bg-purple-50"
           }`}
         >
-          Standard size
+          Size
         </button>
         <button
           type="button"
@@ -134,7 +124,7 @@ export default function SizeVariantEditor({
           }`}
         >
           <Ruler className="h-3.5 w-3.5" />
-          Perfume volume (ml)
+          Volume (ml)
         </button>
         <button
           type="button"
@@ -146,19 +136,7 @@ export default function SizeVariantEditor({
               : "border-purple-200 bg-white text-purple-700 hover:bg-purple-50"
           }`}
         >
-          Clothing color
-        </button>
-        <button
-          type="button"
-          onClick={() => onVariantKindChange("belt")}
-          aria-pressed={variantKind === "belt"}
-          className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
-            variantKind === "belt"
-              ? "border-purple-600 bg-purple-600 text-white"
-              : "border-purple-200 bg-white text-purple-700 hover:bg-purple-50"
-          }`}
-        >
-          Belt size (in)
+          Color
         </button>
       </div>
 
@@ -175,7 +153,7 @@ export default function SizeVariantEditor({
             </button>
           ))
         ) : variantKind === "color" ? (
-          CLOTHING_COLORS.map((color) => (
+          COLORS.map((color) => (
             <button
               key={color}
               type="button"
@@ -183,17 +161,6 @@ export default function SizeVariantEditor({
               className="rounded-lg border border-purple-200 bg-white px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50"
             >
               + {color}
-            </button>
-          ))
-        ) : variantKind === "belt" ? (
-          BELT_SIZES.map((size) => (
-            <button
-              key={size}
-              type="button"
-              onClick={() => addPreset([size])}
-              className="rounded-lg border border-purple-200 bg-white px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50"
-            >
-              + {size} in
             </button>
           ))
         ) : (
@@ -231,8 +198,6 @@ export default function SizeVariantEditor({
               ? "Custom volume, e.g. 75 ml"
               : variantKind === "color"
               ? "Custom color, e.g. burgundy"
-              : variantKind === "belt"
-              ? "Custom belt size in inches, e.g. 36"
               : "Custom size, e.g. UK 7 or 32"
           }
           aria-label={
@@ -240,8 +205,6 @@ export default function SizeVariantEditor({
               ? "Custom volume in millilitres"
               : variantKind === "color"
               ? "Custom clothing color"
-              : variantKind === "belt"
-              ? "Custom belt size in inches"
               : "Custom size"
           }
           className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
@@ -253,8 +216,6 @@ export default function SizeVariantEditor({
             !customSize.trim() ||
             (variantKind === "volume" &&
               !/^\d+(?:\.\d+)?\s*(?:ML)?$/i.test(customSize.trim())) ||
-            (variantKind === "belt" &&
-              !/^\d+(?:\.\d+)?$/.test(customSize.trim())) ||
             existingSizes.has(customOption.toUpperCase())
           }
           className="inline-flex items-center gap-1 rounded-lg bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
