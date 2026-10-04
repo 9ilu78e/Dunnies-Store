@@ -215,8 +215,8 @@ export default function ProductCard({
               typeof stockQuantity !== "number"
                 ? "border border-gray-200 bg-white text-gray-600"
                 : stockQuantity > 0
-                ? "border border-gray-200 bg-white text-gray-700"
-                : "border border-red-200 bg-white text-red-700"
+                ? "border border-emerald-600 bg-emerald-600 text-white"
+                : "border border-red-600 bg-red-600 text-white"
             }`}
           >
             {typeof stockQuantity !== "number"
@@ -288,7 +288,7 @@ export default function ProductCard({
         <button
           type="button"
           onClick={handleWhatsAppOrder}
-          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-green-700 bg-white px-2 py-2.5 text-[11px] font-semibold text-green-800 transition hover:bg-green-50"
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-green-700 bg-green-700 px-2 py-2.5 text-[11px] font-semibold text-white transition hover:bg-green-800"
         >
           <MessageCircle className="h-4 w-4 shrink-0" />
           <span className="truncate">WhatsApp</span>
