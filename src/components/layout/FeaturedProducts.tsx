@@ -106,7 +106,7 @@ export default function FeaturedProducts() {
           </p>
         ) : (
           <div
-            className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 sm:gap-5"
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 sm:gap-6"
             aria-label="All products. Scroll horizontally to see more."
           >
             {products.map((product, index) => {

@@ -299,7 +299,7 @@ export default function ProductCard({
           onClick={handleAddToCart}
           disabled={addingToCart || stockQuantity === 0}
           aria-label={addingToCart ? "Adding to cart" : `Add ${name} to cart`}
-          className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-purple-700 bg-purple-700 px-2 text-[11px] font-semibold text-white transition hover:bg-purple-800 disabled:cursor-not-allowed disabled:border-purple-400 disabled:bg-purple-400 disabled:text-white disabled:opacity-70 sm:h-10 sm:rounded-xl sm:py-2"
+          className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-800 px-2 text-[11px] font-semibold text-white transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:border-slate-400 disabled:bg-slate-400 disabled:text-white disabled:opacity-70 sm:h-10 sm:rounded-xl sm:py-2"
         >
           {addingToCart ? (
             <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />

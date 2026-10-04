@@ -58,7 +58,7 @@ export default function SpotlightCollections() {
 
   return (
     <section className="py-8 sm:py-12">
-      <div className="mx-auto max-w-7xl space-y-8 px-2 sm:px-4">
+      <div className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6">
         <div className="flex flex-col gap-4 text-center">
           <p className="inline-flex items-center justify-center gap-2 text-xs font-semibold tracking-[0.3em] uppercase text-purple-500">
             <Flame className="w-4 h-4 text-amber-500" />
@@ -99,7 +99,7 @@ export default function SpotlightCollections() {
             ) : bestSellers.length > 0 ? (
               <>
                 <div
-                  className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3 scrollbar-hide sm:gap-5"
+                  className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 scrollbar-hide sm:gap-6"
                   aria-label="Best-selling products. Scroll horizontally to see more."
                 >
                   {bestSellers.map((product, index) => (

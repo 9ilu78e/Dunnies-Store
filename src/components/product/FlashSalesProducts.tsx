@@ -192,7 +192,7 @@ export default function FlashSalesProducts({
         />
       )}
       <div
-        className={`-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3 sm:gap-5 ${
+        className={`-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-3 sm:gap-6 ${
           compact ? "compact-flash-sales-scroll" : "flash-sales-scroll"
         }`}
         aria-label="Flash sale products. Scroll horizontally to see more."
