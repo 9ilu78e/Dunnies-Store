@@ -1,29 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
-
-// Create email transporter
-const createTransporter = () => {
-  console.log("=== CREATING TRANSPORTER ===");
-  console.log("Host: smtp-relay.brevo.com");
-  console.log("Port: 587");
-  console.log("Secure: false");
-
-  return nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    connectionTimeout: 10000,
-    greetingTimeout: 5000,
-    socketTimeout: 10000,
-    auth: {
-      user: process.env.SMTP_USERNAME,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  });
-};
+import { BrevoEmailError, sendBrevoEmail } from "@/lib/brevoEmail";
 
 // Generate verification token
 const generateVerificationToken = (): string => {
@@ -52,18 +30,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (
-      !process.env.SMTP_USERNAME ||
-      !process.env.SMTP_PASSWORD ||
-      !process.env.SENDER_EMAIL
-    ) {
+    if (!process.env.BREVO_API_KEY?.trim() || !process.env.SENDER_EMAIL?.trim()) {
       console.error(
-        "Email verification is unavailable because SMTP configuration is incomplete."
+        "Email verification is unavailable because Brevo API configuration is incomplete."
       );
       return NextResponse.json(
         {
           error:
-            "Email login is not configured. Set SMTP_USERNAME, SMTP_PASSWORD, and SENDER_EMAIL in your Render service environment, then redeploy.",
+            "Email login is not configured. Set BREVO_API_KEY and SENDER_EMAIL in your Render service environment, then redeploy.",
         },
         { status: 503 }
       );
@@ -88,15 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Send email
     console.log("=== SENDING EMAIL ===");
-    const transporter = createTransporter();
-
-    // Verify connection
     const mailOptions = {
-      from: {
-        name: "Dunnis Stores",
-        address: process.env.SENDER_EMAIL,
-      },
-      to: email,
       subject: "Your Dunnis Stores sign-in link",
       text: `Use this link to sign in to Dunnis Stores:\n\n${verificationLink}\n\nThis link expires in 15 minutes. If you didn't request it, you can ignore this email.`,
       html: `
@@ -175,31 +141,6 @@ export async function POST(request: NextRequest) {
                     </td>
                   </tr>
 
-                  <!-- Perks row -->
-                  <tr>
-                    <td style="padding:24px 24px 8px 24px;">
-                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                          <td align="center" width="33%" style="padding:8px; font-size:12px; color:#374151;">
-                            <div style="font-size:22px; margin-bottom:6px;">🚚</div>
-                            <strong>Fast Delivery</strong><br />
-                            <span style="color:#6b7280;">Right to your door</span>
-                          </td>
-                          <td align="center" width="33%" style="padding:8px; font-size:12px; color:#374151;">
-                            <div style="font-size:22px; margin-bottom:6px;">🔒</div>
-                            <strong>Secure Checkout</strong><br />
-                            <span style="color:#6b7280;">Safe &amp; protected</span>
-                          </td>
-                          <td align="center" width="33%" style="padding:8px; font-size:12px; color:#374151;">
-                            <div style="font-size:22px; margin-bottom:6px;">💬</div>
-                            <strong>Friendly Support</strong><br />
-                            <span style="color:#6b7280;">Here when you need us</span>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-
                   <!-- Fallback link -->
                   <tr>
                     <td style="padding:16px 32px 8px 32px;">
@@ -245,20 +186,29 @@ export async function POST(request: NextRequest) {
     console.log("Subject: Your Dunnis Stores sign-in link");
 
     try {
-      await transporter.verify();
-      const result = await transporter.sendMail(mailOptions);
-      console.log("Login link email sent:", result.messageId);
+      const messageId = await sendBrevoEmail({
+        to: email,
+        ...mailOptions,
+      });
+      console.log("Login link email sent through Brevo API:", messageId);
       return NextResponse.json({
         message: "Verification link sent successfully",
         email,
       });
     } catch (sendError) {
       await prisma.emailLoginToken.delete({ where: { id: storedToken.id } });
-      console.error("Failed to send verification email:", sendError);
+      if (sendError instanceof BrevoEmailError) {
+        console.error("Brevo rejected the sign-in email:", {
+          status: sendError.status,
+          code: sendError.providerCode,
+        });
+      } else {
+        console.error("Failed to send sign-in email through Brevo:", sendError);
+      }
       return NextResponse.json(
         {
           error:
-            "The email provider could not send the sign-in link. Check the SMTP settings and sender verification in Render.",
+            "The email provider could not send the sign-in link. Check BREVO_API_KEY and confirm SENDER_EMAIL is verified in Brevo.",
         },
         { status: 503 }
       );

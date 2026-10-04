@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Zap, Package, Leaf } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const collections = [
   {
@@ -110,48 +110,6 @@ export default function CategoryShowcase() {
           ))}
         </div>
 
-        {}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-6 sm:py-8 lg:py-12 border-t border-b border-slate-200">
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 mt-1">
-              <Zap className="w-5 h-5 text-slate-700" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-1">
-                Fast Delivery
-              </h4>
-              <p className="text-sm text-slate-600">
-                Quick, reliable shipping to your door
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 mt-1">
-              <Package className="w-5 h-5 text-slate-700" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-1">
-                Quality Assured
-              </h4>
-              <p className="text-sm text-slate-600">
-                Every item carefully vetted and checked
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 mt-1">
-              <Leaf className="w-5 h-5 text-slate-700" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-1">Sustainable</h4>
-              <p className="text-sm text-slate-600">
-                Eco-conscious choices for conscious buyers
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

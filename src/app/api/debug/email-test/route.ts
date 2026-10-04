@@ -1,54 +1,48 @@
-import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { NextResponse } from 'next/server';
+import { BrevoEmailError, sendBrevoEmail } from "@/lib/brevoEmail";
 
 export async function GET() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   try {
-    console.log('=== EMAIL TEST ===');
-    console.log('SMTP Username:', process.env.SMTP_USERNAME);
-    console.log('SMTP Password exists:', !!process.env.SMTP_PASSWORD);
-    console.log('Sender Email:', process.env.SENDER_EMAIL);
-    
-    const transporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      auth: {
-        user: process.env.SMTP_USERNAME,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
+    const senderEmail = process.env.SENDER_EMAIL?.trim();
+    if (!senderEmail) {
+      return NextResponse.json(
+        { error: "SENDER_EMAIL is not configured." },
+        { status: 503 }
+      );
+    }
 
-    // Test connection
-    await transporter.verify();
-    console.log('✅ SMTP connection verified!');
-
-    const testEmail = {
-      from: process.env.SENDER_EMAIL,
-      to: 'toonm831@gmail.com',
+    const messageId = await sendBrevoEmail({
+      to: senderEmail,
       subject: 'Test Email - Dunnis Stores',
       html: `
         <h1>Test Email</h1>
         <p>This is a test email from Dunnis Stores.</p>
         <p>If you receive this, email sending is working!</p>
       `,
-    };
-
-    const result = await transporter.sendMail(testEmail);
-    console.log('✅ Test email sent!');
-    console.log('Message ID:', result.messageId);
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Test email sent successfully!',
-      messageId: result.messageId
+      messageId
     });
 
-  } catch (error: any) {
-    console.error('❌ Email test failed:', error);
-    return NextResponse.json({ 
-      error: error.message,
-      details: error.toString()
-    }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof BrevoEmailError) {
+      console.error("Brevo email test failed:", {
+        status: error.status,
+        code: error.providerCode,
+      });
+    } else {
+      console.error("Brevo email test failed:", error);
+    }
+    return NextResponse.json(
+      { error: "Email test failed. Check the Brevo API configuration and verified sender." },
+      { status: 503 }
+    );
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { BrevoEmailError, sendBrevoEmail } from "@/lib/brevoEmail";
 
 // Store verification codes temporarily (in production, use Redis or database)
 const verificationCodes = new Map<string, { code: string; expires: number; email: string; verified?: boolean }>();
@@ -13,19 +13,6 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000);
-
-// Create email transporter
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: 'smtp-brevo.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USERNAME,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  });
-};
 
 // Generate 6-digit verification code
 const generateVerificationCode = (): string => {
@@ -46,6 +33,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
+    if (!process.env.BREVO_API_KEY?.trim() || !process.env.SENDER_EMAIL?.trim()) {
+      return NextResponse.json(
+        { error: 'Email verification is not configured. Set BREVO_API_KEY and SENDER_EMAIL.' },
+        { status: 503 }
+      );
+    }
+
     // Generate verification code
     const code = generateVerificationCode();
     const sessionId = Math.random().toString(36).substring(2, 15);
@@ -55,13 +49,7 @@ export async function POST(request: NextRequest) {
     verificationCodes.set(sessionId, { code, expires, email });
 
     // Send email
-    const transporter = createTransporter();
-    
-    const mailOptions = {
-      from: process.env.SENDER_EMAIL,
-      to: email,
-      subject: 'Verify Your Email - Dunnis Stores',
-      html: `
+    const html = `
         <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #8b5cf6; font-size: 24px; margin-bottom: 10px;">Dunnis Stores</h1>
@@ -81,10 +69,13 @@ export async function POST(request: NextRequest) {
             <p style="margin-top: 10px;">This is an automated message from Dunnis Stores.</p>
           </div>
         </div>
-      `,
-    };
+      `;
 
-    await transporter.sendMail(mailOptions);
+    await sendBrevoEmail({
+      to: email,
+      subject: 'Verify Your Email - Dunnis Stores',
+      html,
+    });
 
     return NextResponse.json({ 
       message: 'Verification code sent successfully',
@@ -92,7 +83,14 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error sending verification email:', error);
+    if (error instanceof BrevoEmailError) {
+      console.error("Brevo rejected the email verification message:", {
+        status: error.status,
+        code: error.providerCode,
+      });
+    } else {
+      console.error('Error sending verification email:', error);
+    }
     return NextResponse.json({ 
       error: 'Failed to send verification email. Please try again.' 
     }, { status: 500 });

@@ -54,12 +54,6 @@ export default async function BestSellersPage() {
               >
                 Explore global picks
               </Link>
-              <Link
-                href="/signature-experiences"
-                className="inline-flex items-center gap-2 rounded-full bg-white/90 text-purple-700 px-6 py-3 text-sm font-semibold hover:bg-white"
-              >
-                Signature-curated sets
-              </Link>
             </div>
             <div className="text-sm text-purple-100">
               Rankings use order history and exclude cancelled or refunded

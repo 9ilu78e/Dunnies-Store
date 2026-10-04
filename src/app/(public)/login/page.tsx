@@ -166,13 +166,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-            Welcome Back
-          </h1>
-          <p className="text-gray-600 text-xl">Sign in to continue</p>
-        </div>
-
         <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-8 backdrop-blur-sm">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">

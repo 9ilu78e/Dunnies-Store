@@ -69,12 +69,6 @@ const journeyCards = [
 
 const curatedCollections = [
   {
-    label: "City soirées",
-    description:
-      "Statement pieces and table accents curated for rooftop moments.",
-    href: "/signature-experiences",
-  },
-  {
     label: "Wellness rituals",
     description:
       "Artisan keepsakes and thoughtful self-care gifts from indie makers.",
@@ -171,7 +165,7 @@ export default async function WorldwideFavoritesPage() {
           <h3 className="text-2xl font-semibold">
             Need a direction? Start here.
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {curatedCollections.map((collection) => (
               <Link
                 key={collection.label}
