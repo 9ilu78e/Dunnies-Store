@@ -115,7 +115,7 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3 md:space-y-2 md:px-4 md:py-6">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -125,7 +125,7 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onNavClick}
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl transition ${
+              className={`flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-sm transition md:gap-3 md:px-3 md:py-2 md:text-base ${
                 isActive
                   ? "bg-white/15 text-white shadow-lg shadow-purple-900/30"
                   : "text-gray-300 hover:bg-white/5"
