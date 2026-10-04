@@ -94,6 +94,7 @@ export async function PUT(
         name: formData.get("name"),
         description: formData.get("description"),
         price: formData.get("price"),
+        deliveryFee: formData.get("deliveryFee"),
         imageUrl: formData.get("imageUrl"),
         categoryId: formData.get("categoryId"),
         stockQuantity: formData.get("stockQuantity"),
@@ -119,6 +120,7 @@ export async function PUT(
       imageUrls,
       images,
       sizeVariants,
+      deliveryFee,
     } = body;
 
     const updateData: Record<string, unknown> = {};
@@ -159,6 +161,20 @@ export async function PUT(
         );
       }
       updateData.price = parsedPrice;
+    }
+    if (
+      deliveryFee !== undefined &&
+      deliveryFee !== null &&
+      deliveryFee !== ""
+    ) {
+      const parsedDeliveryFee = Number(deliveryFee);
+      if (!Number.isFinite(parsedDeliveryFee) || parsedDeliveryFee < 0) {
+        return NextResponse.json(
+          { error: "Delivery fee must be a non-negative amount" },
+          { status: 400 }
+        );
+      }
+      updateData.deliveryFee = parsedDeliveryFee;
     }
     if (stockQuantity !== undefined && stockQuantity !== "") {
       const parsedStockQuantity = Number(stockQuantity);

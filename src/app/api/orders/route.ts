@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyUserAuth } from "@/lib/authMiddleware";
+import { formatOrderNumber } from "@/lib/orderNumber";
 import {
   sendEmail,
   generateOrderConfirmationEmail,
@@ -32,31 +34,140 @@ interface OrderItemInput {
 type CatalogItemType = "product" | "gift" | "souvenir";
 
 interface CreateOrderRequest {
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  deliveryAddress?: string;
+  paymentMethod?: string;
   items: OrderItemInput[];
-  total: number;
-  source: "site" | "whatsapp" | "other";
+  total?: number;
+  source?: "site" | "whatsapp" | "other";
   notes?: string;
+}
+
+function normalizePaymentMethod(value?: string): string {
+  const normalized = (value || "pay-on-delivery")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+
+  return ["pay-on-delivery", "pay-before-delivery"].includes(normalized)
+    ? normalized
+    : "pay-on-delivery";
+}
+
+function normalizeAddress(value?: string): string {
+  return (value || "").trim().replace(/\s+/g, " ");
+}
+
+async function ensureOrderUser(authUser: {
+  email: string;
+  fullName: string;
+  role?: string;
+  id: string;
+}) {
+  const normalizedEmail = authUser.email.trim();
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (existingUser) {
+    return existingUser;
+  }
+
+  return prisma.user.create({
+    data: {
+      email: normalizedEmail,
+      fullName: authUser.fullName || normalizedEmail.split("@")[0] || "Customer",
+      phone: null,
+      password: `${authUser.id}-firebase-order-user`,
+      role: authUser.role || "user",
+    },
+  });
+}
+
+async function createOrderNotifications(
+  orderId: string,
+  orderNumber: number,
+  customerName: string,
+  userAccountId?: string
+) {
+  const adminRecords = await Promise.all([
+    prisma.user.findMany({
+      where: { role: { equals: "admin", mode: "insensitive" } },
+      select: { id: true },
+    }),
+    prisma.firebaseUser.findMany({
+      where: { role: { equals: "admin", mode: "insensitive" } },
+      select: { uid: true },
+    }),
+  ]);
+
+  const adminAccountIds = new Set<string>([
+    ...adminRecords[0].map((admin) => admin.id),
+    ...adminRecords[1].map((admin) => admin.uid),
+  ]);
+
+  const notificationPayloads = Array.from(adminAccountIds).map((accountId) => ({
+    recipientRole: "admin" as const,
+    accountId,
+    orderId,
+    title: "New order received",
+    message: `New order #${formatOrderNumber(orderNumber)} from ${customerName} is waiting for review.`,
+    link: "/manage-orders",
+  }));
+
+  if (notificationPayloads.length > 0) {
+    await prisma.notification.createMany({
+      data: notificationPayloads,
+    });
+  }
+
+  if (userAccountId) {
+    await prisma.notification.create({
+      data: {
+        recipientRole: "user",
+        accountId: userAccountId,
+        orderId,
+        title: "Order placed",
+        message: `Your order #${formatOrderNumber(orderNumber)} was placed successfully and is pending confirmation.`,
+        link: `/orders?orderNumber=${formatOrderNumber(orderNumber)}#order-${formatOrderNumber(orderNumber)}`,
+      },
+    });
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyUserAuth(request);
+
+    if (!auth.isAuthenticated || !auth.user) {
+      return NextResponse.json(
+        { error: "You must be logged in before placing an order." },
+        { status: 401 }
+      );
+    }
+
     const body: CreateOrderRequest = await request.json();
 
-    const { customerName, customerEmail, customerPhone, items, source, notes } =
-      body;
+    const paymentMethod = normalizePaymentMethod(body.paymentMethod);
+    const deliveryAddress = normalizeAddress(body.deliveryAddress || body.notes);
+    const customerName = (body.customerName || auth.user.fullName || "").trim();
+    const customerEmail = (body.customerEmail || auth.user.email || "").trim();
+    const customerPhone = (body.customerPhone || "").trim();
+    const items = Array.isArray(body.items) ? body.items : [];
+    const source = body.source || "site";
+    const notes = body.notes || "";
 
     if (
       !customerName ||
       !customerEmail ||
       !customerPhone ||
-      !Array.isArray(items) ||
+      !deliveryAddress ||
       items.length === 0
     ) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: full name, phone, email, delivery address, and order items." },
         { status: 400 }
       );
     }
@@ -67,6 +178,7 @@ export async function POST(request: NextRequest) {
       itemId: item.itemId ?? item.productId,
     }));
     const validItemTypes: CatalogItemType[] = ["product", "gift", "souvenir"];
+
     if (
       normalizedItems.some(
         (item) =>
@@ -110,6 +222,7 @@ export async function POST(request: NextRequest) {
     const souvenirIds = normalizedItems
       .filter((item) => item.itemType === "souvenir")
       .map((item) => item.itemId!);
+
     const [gifts, souvenirs] = await Promise.all([
       prisma.gift.findMany({
         where: { id: { in: giftIds } },
@@ -117,6 +230,7 @@ export async function POST(request: NextRequest) {
           id: true,
           name: true,
           price: true,
+          deliveryFee: true,
           stockQuantity: true,
           sizeVariants: true,
           includedProducts: true,
@@ -131,6 +245,7 @@ export async function POST(request: NextRequest) {
           id: true,
           name: true,
           price: true,
+          deliveryFee: true,
           stockQuantity: true,
           sizeVariants: true,
           flashSalePrice: true,
@@ -138,6 +253,7 @@ export async function POST(request: NextRequest) {
         },
       }),
     ]);
+
     const configuredGiftProductIds = gifts.flatMap((gift) =>
       readGiftIncludedProducts(gift.includedProducts).map(
         (content) => content.productId
@@ -162,6 +278,7 @@ export async function POST(request: NextRequest) {
         id: true,
         name: true,
         price: true,
+        deliveryFee: true,
         stockQuantity: true,
         sizeVariants: true,
         imageUrl: true,
@@ -170,11 +287,13 @@ export async function POST(request: NextRequest) {
         flashSaleEndsAt: true,
       },
     });
+
     const catalogItems = {
       product: new Map(products.map((item) => [item.id, item])),
       gift: new Map(gifts.map((item) => [item.id, item])),
       souvenir: new Map(souvenirs.map((item) => [item.id, item])),
     };
+
     if (
       normalizedItems.some(
         (item) => !catalogItems[item.itemType].has(item.itemId!)
@@ -185,6 +304,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
     const requiredStock = new Map<
       string,
       { name: string; stockQuantity: number; quantity: number }
@@ -202,6 +322,7 @@ export async function POST(request: NextRequest) {
         quantity: (current?.quantity ?? 0) + quantity,
       });
     };
+
     const getCatalogPrice = (catalogItem: {
       price: number;
       flashSalePrice: number | null;
@@ -213,14 +334,26 @@ export async function POST(request: NextRequest) {
         ? catalogItem.flashSalePrice
         : catalogItem.price;
 
-    const itemsWithDetails = [];
+    const itemsWithDetails = [] as Array<{
+      itemType: CatalogItemType;
+      itemId: string;
+      name: string;
+      quantity: number;
+      price: number;
+      deliveryFee: number;
+      size?: string;
+      giftContents?: GiftContentSnapshot[];
+    }>;
+
     for (const item of normalizedItems) {
-      const catalogItem = catalogItems[item.itemType].get(item.itemId!)!;
+      const itemId = item.itemId!;
+      const catalogItem = catalogItems[item.itemType].get(itemId)!;
       const variants = readSizeVariants(catalogItem.sizeVariants);
       const selectedVariant = variants.find(
         (variant) =>
           variant.size.toUpperCase() === item.size?.trim().toUpperCase()
       );
+
       if (variants.length > 0 && !selectedVariant) {
         return NextResponse.json(
           { error: `Choose a valid size for ${catalogItem.name}.` },
@@ -233,6 +366,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+
       if (selectedVariant) item.size = selectedVariant.size;
       const itemStock =
         selectedVariant?.stockQuantity ?? catalogItem.stockQuantity;
@@ -245,6 +379,7 @@ export async function POST(request: NextRequest) {
 
       let giftContents: GiftContentSnapshot[] | undefined;
       let unitPrice = getCatalogPrice(catalogItem);
+
       if (item.itemType === "gift") {
         const gift = catalogItems.gift.get(item.itemId!)!;
         const requestedContents: GiftContentSelection[] =
@@ -252,9 +387,11 @@ export async function POST(request: NextRequest) {
           readGiftIncludedProducts(gift.includedProducts).map((content) => ({
             ...content,
           }));
+
         if (requestedContents.length > 0) {
           giftContents = [];
           unitPrice = gift.extraPrice;
+
           for (const content of requestedContents) {
             const bundledProduct = catalogItems.product.get(content.productId);
             if (!bundledProduct) {
@@ -309,7 +446,8 @@ export async function POST(request: NextRequest) {
       }
 
       itemsWithDetails.push({
-        ...item,
+        itemType: item.itemType ?? "product",
+        itemId,
         name: `${item.name || catalogItem.name}${
           item.size
             ? ` (${getVariantKindLabel(
@@ -317,7 +455,10 @@ export async function POST(request: NextRequest) {
               )} ${formatVariantChoice(item.size)})`
             : ""
         }`,
+        quantity: item.quantity,
         price: unitPrice,
+        deliveryFee: catalogItem.deliveryFee,
+        size: item.size,
         giftContents,
       });
     }
@@ -333,27 +474,47 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const deliveryFee = 2500;
+    const knownDeliveryFee = itemsWithDetails.reduce(
+      (sum, item) =>
+        sum + (item.deliveryFee > 0 ? item.deliveryFee * item.quantity : 0),
+      0
+    );
+    const deliveryFeePending = itemsWithDetails.some(
+      (item) => item.deliveryFee <= 0
+    );
+    const deliveryFee = deliveryFeePending ? null : knownDeliveryFee;
     const verifiedTotal =
       itemsWithDetails.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
-      ) + deliveryFee;
+      ) + knownDeliveryFee;
+
+    const orderUser = await ensureOrderUser({
+      email: customerEmail,
+      fullName: customerName,
+      role: auth.user.role,
+      id: auth.user.id,
+    });
 
     const order = await prisma.order.create({
       data: {
+        userId: orderUser.id,
         customerName,
         customerEmail,
         customerPhone,
+        deliveryAddress,
+        paymentMethod,
         total: verifiedTotal,
+        deliveryFee,
         source,
-        notes,
+        notes: notes || `Delivery address: ${deliveryAddress}\nPayment method: ${paymentMethod}`,
         orderItems: {
           create: itemsWithDetails.map((item) => ({
             productId: item.itemType === "product" ? item.itemId : null,
             giftId: item.itemType === "gift" ? item.itemId : null,
             souvenirId: item.itemType === "souvenir" ? item.itemId : null,
             quantity: item.quantity,
+            unitPrice: item.price,
             size: item.size ?? null,
             ...(item.giftContents
               ? {
@@ -363,22 +524,31 @@ export async function POST(request: NextRequest) {
           })),
         },
       },
-      include: {
-        orderItems: true,
-      },
+      include: { orderItems: true },
     });
+
+    await createOrderNotifications(
+      order.id,
+      order.orderNumber,
+      customerName,
+      auth.user.id
+    );
 
     try {
       const emailContent = generateOrderConfirmationEmail(
         customerName,
         itemsWithDetails,
         verifiedTotal,
-        source
+        source,
+        order.orderNumber,
+        paymentMethod,
+        deliveryAddress,
+        deliveryFee
       );
 
       await sendEmail({
         to: customerEmail,
-        subject: `Order Confirmation - Order #${order.id}`,
+        subject: `Order Confirmation - Order #${formatOrderNumber(order.orderNumber)}`,
         html: emailContent,
       });
     } catch (emailError) {
@@ -395,17 +565,23 @@ export async function POST(request: NextRequest) {
           itemsWithDetails,
           verifiedTotal,
           source,
-          order.id
+          order.orderNumber,
+          deliveryAddress,
+          paymentMethod,
+          "pending",
+          deliveryFee
         );
 
         await sendEmail({
           to: adminEmail,
-          subject: `[NEW ORDER] #${order.id} - ${customerName}`,
+          subject: `New Order Received - Order #${formatOrderNumber(order.orderNumber)}`,
           html: adminEmailContent,
         });
       } catch (emailError) {
         console.error("Failed to send admin notification:", emailError);
       }
+    } else {
+      console.error("Admin order email was not sent: ADMIN_EMAIL is not configured.");
     }
 
     return NextResponse.json(
@@ -423,11 +599,44 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await verifyUserAuth(request);
+
+    if (!auth.isAuthenticated || !auth.user) {
+      return NextResponse.json(
+        { error: "Authentication required." },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const source = searchParams.get("source");
     const status = searchParams.get("status");
+    const archived = searchParams.get("archived") === "true";
 
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
+
+    if (auth.user.role.toLowerCase() !== "admin") {
+      if (archived) {
+        return NextResponse.json(
+          { error: "Only admins can view archived orders." },
+          { status: 403 }
+        );
+      }
+
+      const orderUser = await prisma.user.findUnique({
+        where: { email: auth.user.email },
+        select: { id: true },
+      });
+
+      if (!orderUser) {
+        return NextResponse.json({ orders: [] });
+      }
+
+      where.userId = orderUser.id;
+      where.archivedAt = null;
+    } else {
+      where.archivedAt = archived ? { not: null } : null;
+    }
 
     if (source) {
       where.source = source;

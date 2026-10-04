@@ -42,6 +42,7 @@ export default function AddGiftModal({
     description: "",
     price: "",
     extraPrice: "0",
+    deliveryFee: "0",
     stockQuantity: "0",
     imageUrl: "",
     categoryId: "",
@@ -132,6 +133,7 @@ export default function AddGiftModal({
               description: gift.description || "",
               price: gift.price || "",
               extraPrice: String(gift.extraPrice ?? 0),
+              deliveryFee: String(gift.deliveryFee ?? 0),
               stockQuantity: String(gift.stockQuantity ?? 0),
               imageUrl: gift.imageUrl || "",
               categoryId: gift.categoryId || "",
@@ -280,6 +282,7 @@ export default function AddGiftModal({
         description: formData.description,
         price: parseFloat(formData.price),
         extraPrice: Math.max(0, Number(formData.extraPrice) || 0),
+        deliveryFee: Number(formData.deliveryFee),
         stockQuantity: Number(formData.stockQuantity),
         sizeVariants,
         includedProducts,
@@ -318,6 +321,7 @@ export default function AddGiftModal({
         description: "",
         price: "",
         extraPrice: "0",
+        deliveryFee: "0",
         stockQuantity: "0",
         imageUrl: "",
         categoryId: "",
@@ -422,12 +426,28 @@ export default function AddGiftModal({
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-gray-900">
-              Extra gift price (₦)
+              Packing and box fee (₦)
             </label>
             <input
               type="number"
               name="extraPrice"
               value={formData.extraPrice}
+              onChange={handleChange}
+              min="0"
+              step="0.01"
+              placeholder="0"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-gray-900">
+              Delivery fee (₦)
+            </label>
+            <input
+              type="number"
+              name="deliveryFee"
+              value={formData.deliveryFee}
               onChange={handleChange}
               min="0"
               step="0.01"

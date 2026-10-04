@@ -52,6 +52,11 @@ const navItems = [
     icon: ClipboardList,
   },
   {
+    label: "Order History",
+    href: "/order-history",
+    icon: ClipboardList,
+  },
+  {
     label: "Categories",
     href: "/manage-categories",
     icon: Tags,

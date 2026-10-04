@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Package,
@@ -14,27 +14,155 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { showToast } from "@/components/ui/Toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { summarizeDeliveryFees } from "@/lib/deliveryFees";
+
+type SavedAddress = {
+  id: string;
+  label: string;
+  recipient: string;
+  phone: string;
+  line1: string;
+  line2: string | null;
+  city: string;
+  region: string | null;
+  postalCode: string | null;
+  country: string;
+  isDefault: boolean;
+};
 
 export default function CheckoutPage() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [paymentMethod, setPaymentMethod] = useState("");
   const [step, setStep] = useState<"form" | "success">("form");
   const [inventoryError, setInventoryError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState("");
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [addressLoading, setAddressLoading] = useState(true);
   const [deliveryDetails, setDeliveryDetails] = useState({
     customerName: "",
     customerPhone: "",
     customerEmail: "",
     address: "",
   });
-  const { items, clearCart } = useCart();
+  const cartRefreshed = useRef(false);
+  const {
+    items,
+    clearCart,
+    refreshInventory,
+    inventoryChecking,
+  } = useCart();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      sessionStorage.setItem("dunnis:returnTo", "/checkout");
+      router.replace("/login");
+      setAddressLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const loadAccountDetails = async () => {
+      try {
+        const [accountResponse, addressesResponse] = await Promise.all([
+          fetch("/api/account", {
+            credentials: "same-origin",
+            cache: "no-store",
+          }),
+          fetch("/api/addresses", {
+            credentials: "same-origin",
+            cache: "no-store",
+          }),
+        ]);
+        const accountData = accountResponse.ok
+          ? await accountResponse.json()
+          : null;
+        const addressesData = addressesResponse.ok
+          ? await addressesResponse.json()
+          : null;
+        if (cancelled) return;
+        if (accountData?.user) {
+          setDeliveryDetails((current) => ({
+            ...current,
+            customerName: accountData.user.fullName || current.customerName,
+            customerPhone: accountData.user.phone || current.customerPhone,
+            customerEmail: accountData.user.email || current.customerEmail,
+          }));
+        }
+        const addresses = (addressesData?.addresses || []) as SavedAddress[];
+        setSavedAddresses(addresses);
+        const defaultAddress = addresses.find((address) => address.isDefault);
+        if (defaultAddress) {
+          setSelectedAddressId(defaultAddress.id);
+          setDeliveryDetails((current) => ({
+            ...current,
+            customerName: defaultAddress.recipient,
+            customerPhone: defaultAddress.phone,
+            address: formatSavedAddress(defaultAddress),
+          }));
+        }
+      } catch (error) {
+        console.error("Unable to load saved checkout details:", error);
+      } finally {
+        if (!cancelled) setAddressLoading(false);
+      }
+    };
+
+    void loadAccountDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (
+      authLoading ||
+      !isAuthenticated ||
+      items.length === 0 ||
+      cartRefreshed.current
+    ) {
+      return;
+    }
+
+    cartRefreshed.current = true;
+    void refreshInventory()
+      .then((unavailable) => {
+        if (unavailable.length > 0) {
+          setInventoryError(
+            "Unavailable items were removed from your cart. Please review your order."
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Unable to refresh checkout inventory:", error);
+        setInventoryError(
+          "We could not verify current prices and delivery fees. Please try again."
+        );
+      });
+  }, [authLoading, isAuthenticated, items.length, refreshInventory]);
+
+  const formatSavedAddress = (address: SavedAddress) =>
+    [
+      address.line1,
+      address.line2,
+      [address.city, address.region, address.postalCode, address.country]
+        .filter(Boolean)
+        .join(", "),
+    ]
+      .filter(Boolean)
+      .join("\n");
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const deliveryFee = 2500;
+  const { total: deliveryFee, pending: deliveryFeePending } =
+    summarizeDeliveryFees(items);
   const total = subtotal + deliveryFee;
   const formatPrice = (price: number) => `₦${price.toLocaleString()}`;
 
@@ -60,6 +188,8 @@ export default function CheckoutPage() {
           customerName: deliveryDetails.customerName.trim(),
           customerPhone: deliveryDetails.customerPhone.trim(),
           customerEmail: deliveryDetails.customerEmail.trim(),
+          deliveryAddress: deliveryDetails.address.trim(),
+          paymentMethod,
           items: items.map((item) => ({
             itemId: String(item.id),
             itemType: item.itemType,
@@ -79,14 +209,14 @@ export default function CheckoutPage() {
           })),
           total,
           source: "site",
-          notes: `Delivery address: ${deliveryDetails.address.trim()}\nPayment method: ${paymentMethod}`,
+          notes: "",
         }),
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "We could not place your order.");
       }
-      setOrderId(data.order.id);
+      setOrderId(String(data.order.orderNumber).padStart(6, "0"));
       clearCart();
       setStep("success");
     } catch (error) {
@@ -115,6 +245,16 @@ export default function CheckoutPage() {
       desc: "Cash or POS on delivery",
     },
   ];
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">
+          {authLoading ? "Loading checkout..." : "Redirecting to login..."}
+        </p>
+      </div>
+    );
+  }
 
   if (step === "success") {
     return (
@@ -205,11 +345,57 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div className="md:col-span-2 relative">
+                  {savedAddresses.length > 0 && (
+                    <div className="mb-3">
+                      <label
+                        htmlFor="saved-address"
+                        className="mb-2 block text-sm font-semibold text-gray-700"
+                      >
+                        Use a saved delivery address
+                      </label>
+                      <select
+                        id="saved-address"
+                        value={selectedAddressId}
+                        onChange={(event) => {
+                          const addressId = event.target.value;
+                          setSelectedAddressId(addressId);
+                          if (addressId === "custom") {
+                            setDeliveryDetails((current) => ({
+                              ...current,
+                              address: "",
+                            }));
+                            return;
+                          }
+                          const address = savedAddresses.find(
+                            (savedAddress) => savedAddress.id === addressId
+                          );
+                          if (!address) return;
+                          setDeliveryDetails((current) => ({
+                            ...current,
+                            customerName: address.recipient,
+                            customerPhone: address.phone,
+                            address: formatSavedAddress(address),
+                          }));
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 focus:border-violet-500 focus:outline-none"
+                      >
+                        <option value="custom">Enter a different address</option>
+                        {savedAddresses.map((address) => (
+                          <option key={address.id} value={address.id}>
+                            {address.label}
+                            {address.isDefault ? " (Default)" : ""} —{" "}
+                            {address.line1}, {address.city}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <MapPin className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
                   <textarea
                     rows={3}
                     placeholder="Delivery Address"
                     value={deliveryDetails.address}
+                    disabled={Boolean(selectedAddressId && selectedAddressId !== "custom")}
                     onChange={(event) =>
                       setDeliveryDetails((current) => ({
                         ...current,
@@ -217,8 +403,26 @@ export default function CheckoutPage() {
                       }))
                     }
                     required
-                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none resize-none"
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none resize-none disabled:bg-gray-100"
                   ></textarea>
+                  {addressLoading && (
+                    <p className="mt-2 text-xs text-gray-500">Loading your saved addresses...</p>
+                  )}
+                  {savedAddresses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAddressId("custom");
+                        setDeliveryDetails((current) => ({
+                          ...current,
+                          address: "",
+                        }));
+                      }}
+                      className="mt-2 text-sm font-semibold text-violet-700 hover:text-violet-900"
+                    >
+                      Change address for this order
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -276,7 +480,10 @@ export default function CheckoutPage() {
                 <button
                   onClick={() => void placeOrder()}
                   disabled={
-                    !paymentMethod || items.length === 0 || submitting
+                    !paymentMethod ||
+                    items.length === 0 ||
+                    submitting ||
+                    inventoryChecking
                   }
                   className="flex-1 bg-linear-to-r from-violet-600 to-fuchsia-600 text-white py-4 rounded-2xl font-bold disabled:opacity-50 flex items-center justify-center gap-2"
                 >
@@ -306,10 +513,14 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery</span>
-                  <strong>{formatPrice(deliveryFee)}</strong>
+                  <strong>
+                    {deliveryFeePending ? "Pending" : formatPrice(deliveryFee)}
+                  </strong>
                 </div>
                 <div className="border-t-2 pt-4 flex justify-between text-lg font-black">
-                  <span>Total</span>
+                  <span>
+                    Total{deliveryFeePending ? " (delivery pending)" : ""}
+                  </span>
                   <span className="text-violet-600">{formatPrice(total)}</span>
                 </div>
               </div>

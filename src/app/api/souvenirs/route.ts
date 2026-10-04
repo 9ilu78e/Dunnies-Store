@@ -100,9 +100,11 @@ export async function POST(request: NextRequest) {
       flashSalePrice,
       flashSaleEndsAt,
       sizeVariants,
+      deliveryFee,
     } = body;
 
     const parsedPrice = Number(price);
+    const parsedDeliveryFee = Number(deliveryFee ?? 0);
     const parsedStockQuantity = Number(stockQuantity ?? 0);
     const parsedFlashSalePrice =
       flashSalePrice === "" ||
@@ -142,10 +144,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!Number.isFinite(parsedDeliveryFee) || parsedDeliveryFee < 0) {
+      return NextResponse.json(
+        { error: "Delivery fee must be a non-negative amount" },
+        { status: 400 }
+      );
+    }
+
     const souvenirData: any = {
       name: name.trim(),
       description: typeof description === "string" ? description : "",
       price: parsedPrice,
+      deliveryFee: parsedDeliveryFee,
       stockQuantity: parsedStockQuantity,
       priority: typeof priority === "string" ? priority : "normal",
       flashSalePrice: parsedFlashSalePrice,

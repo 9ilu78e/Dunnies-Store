@@ -16,6 +16,7 @@ export type ProductRecord = {
   description: string;
   longDescription: string;
   price: number;
+  deliveryFee?: number;
   stockQuantity?: number;
   sizeVariants?: SizeVariant[];
   includedProducts?: GiftIncludedProduct[];

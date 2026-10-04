@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateAccountUser } from "@/lib/accountUser";
+import { verifyUserAuth } from "@/lib/authMiddleware";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,25 +48,50 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id") || request.cookies.get("userId")?.value;
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const auth = await verifyUserAuth(request);
+    if (!auth.isAuthenticated || !auth.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { firstName, lastName, phone, dateOfBirth, gender } = body;
+    const fullName = [body.firstName, body.lastName]
+      .filter((name): name is string => typeof name === "string")
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .join(" ");
+    if (!fullName || fullName.length > 120) {
+      return NextResponse.json({ error: "Enter a valid name." }, { status: 400 });
+    }
+    if (
+      body.phone !== undefined &&
+      body.phone !== null &&
+      (typeof body.phone !== "string" || body.phone.length > 40)
+    ) {
+      return NextResponse.json({ error: "Enter a valid phone number." }, { status: 400 });
+    }
 
-    const fullName = [firstName, lastName].filter(Boolean).join(" ");
+    const dateOfBirth =
+      typeof body.dateOfBirth === "string" && body.dateOfBirth
+        ? new Date(body.dateOfBirth)
+        : null;
+    if (dateOfBirth && Number.isNaN(dateOfBirth.getTime())) {
+      return NextResponse.json({ error: "Enter a valid date of birth." }, { status: 400 });
+    }
+    if (
+      body.gender !== undefined &&
+      !["Male", "Female", "Other", "Prefer not to say"].includes(body.gender)
+    ) {
+      return NextResponse.json({ error: "Choose a valid gender." }, { status: 400 });
+    }
 
+    const account = await getOrCreateAccountUser(auth.user);
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { id: account.id },
       data: {
-        fullName: fullName || undefined,
-        phone: phone || null,
+        fullName,
+        phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
+        dateOfBirth,
+        gender: body.gender || "Prefer not to say",
       },
       select: {
         id: true,
@@ -75,6 +102,10 @@ export async function PUT(request: NextRequest) {
         createdAt: true,
         updatedAt: true,
       },
+    });
+    await prisma.firebaseUser.updateMany({
+      where: { email: { equals: auth.user.email, mode: "insensitive" } },
+      data: { name: updatedUser.fullName },
     });
 
     return NextResponse.json(updatedUser);

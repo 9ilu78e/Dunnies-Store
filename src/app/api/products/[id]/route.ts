@@ -83,6 +83,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
         name: formData.get("name"),
         description: formData.get("description"),
         price: formData.get("price"),
+        deliveryFee: formData.get("deliveryFee"),
         imageUrl: formData.get("imageUrl"),
         categoryId: formData.get("categoryId"),
         priority: formData.get("priority"),
@@ -101,6 +102,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       imageUrls,
       categoryId,
       priority,
+      deliveryFee,
       stockQuantity,
       sizeVariants,
       images,
@@ -144,6 +146,20 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
     if (priority) updateData.priority = priority;
     if (!Number.isNaN(parsedPrice)) updateData.price = parsedPrice;
+    if (
+      deliveryFee !== undefined &&
+      deliveryFee !== null &&
+      deliveryFee !== ""
+    ) {
+      const parsedDeliveryFee = Number(deliveryFee);
+      if (!Number.isFinite(parsedDeliveryFee) || parsedDeliveryFee < 0) {
+        return NextResponse.json(
+          { error: "Delivery fee must be a non-negative amount" },
+          { status: 400 }
+        );
+      }
+      updateData.deliveryFee = parsedDeliveryFee;
+    }
     if (
       stockQuantity !== undefined &&
       stockQuantity !== null &&

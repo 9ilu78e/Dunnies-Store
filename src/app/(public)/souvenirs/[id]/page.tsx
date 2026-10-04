@@ -80,6 +80,7 @@ function transformDatabaseSouvenir(dbSouvenir: any): ProductRecord {
     name: dbSouvenir.name,
     description: dbSouvenir.description || "",
     longDescription: dbSouvenir.description || "",
+    deliveryFee: dbSouvenir.deliveryFee,
     price:
       dbSouvenir.flashSalePrice &&
       dbSouvenir.flashSaleEndsAt &&

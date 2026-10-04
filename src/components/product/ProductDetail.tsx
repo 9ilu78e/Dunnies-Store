@@ -98,6 +98,7 @@ export default function ProductDetail({
   const [availableStock, setAvailableStock] = useState(product.stockQuantity);
   const [copied, setCopied] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<ProductRecord[]>([]);
   const [averageRating, setAverageRating] = useState(0);
   const [newComment, setNewComment] = useState("");
   const [newRating, setNewRating] = useState(5);
@@ -251,6 +252,70 @@ export default function ProductDetail({
       fetchComments();
     }
   }, [product.id, user?.uid, isClient, authLoading]);
+
+  useEffect(() => {
+    if (!product.category) {
+      setRelatedProducts([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchRelatedProducts = async () => {
+      try {
+        const response = await fetch("/api/products", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const products = data.products || [];
+        const categoryName = product.category.trim().toLowerCase();
+
+        if (cancelled) return;
+
+        const matches = products
+          .filter((item: { id: string; category?: { name?: string } | string }) => {
+            const itemCategory =
+              typeof item.category === "string"
+                ? item.category
+                : item.category?.name || "";
+            return (
+              item.id !== product.id &&
+              itemCategory.trim().toLowerCase() === categoryName
+            );
+          })
+          .slice(0, 4)
+          .map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            price: Number(item.price || 0),
+            image: item.image || item.imageUrl || item.images?.[0] || "",
+            images: Array.isArray(item.images) && item.images.length > 0 ? item.images : [item.imageUrl || item.image || ""].filter(Boolean),
+            href: `/product/${item.id}`,
+            category: typeof item.category === "string" ? item.category : item.category?.name || "Uncategorized",
+            rating: Number(item.averageRating || 0),
+            reviewsCount: Number(item.totalComments || 0),
+            stockQuantity: Number(item.stockQuantity || 0),
+            originalPrice: item.originalPrice ?? item.price,
+            description: item.description || "",
+            longDescription: item.longDescription || item.description || "",
+            tag: item.priority || "New",
+            stockStatus: item.stockQuantity <= 0 ? "out-of-stock" : "in-stock",
+            highlights: ["Premium quality", "Fast delivery", "Customer approved"],
+            specs: [{ label: "Category", value: typeof item.category === "string" ? item.category : item.category?.name || "General" }],
+            reviews: [],
+          }));
+
+        setRelatedProducts(matches);
+      } catch (error) {
+        console.error("Error fetching related products:", error);
+      }
+    };
+
+    void fetchRelatedProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, [product.category, product.id]);
 
   useEffect(() => {
     const fetchLikes = async () => {
@@ -552,6 +617,7 @@ export default function ProductDetail({
         itemType: CatalogItemType;
         stockQuantity: number;
         price: number;
+        deliveryFee: number;
         size?: string;
         giftContents?: GiftContentSnapshot[];
       }) =>
@@ -564,6 +630,7 @@ export default function ProductDetail({
           itemType: CatalogItemType;
           stockQuantity: number;
           price: number;
+          deliveryFee: number;
           size?: string;
           giftContents?: GiftContentSnapshot[];
         }
@@ -600,6 +667,7 @@ export default function ProductDetail({
           itemType,
           name: product.name,
           price: current.price,
+          deliveryFee: current.deliveryFee,
           image: selectedImage,
           stockQuantity: current.stockQuantity,
           ...(selectedSize ? { size: selectedSize } : {}),
@@ -893,6 +961,26 @@ export default function ProductDetail({
               </p>
             )}
           </div>
+
+          <dl className="space-y-2 rounded-xl border border-gray-200 bg-white p-4 text-sm">
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-gray-600">Delivery fee</dt>
+              <dd className="font-semibold text-gray-900">
+                {typeof product.deliveryFee === "number" &&
+                product.deliveryFee > 0
+                  ? `₦${product.deliveryFee.toLocaleString()}`
+                  : "Pending"}
+              </dd>
+            </div>
+            {isCustomizableGift && (
+              <div className="flex items-center justify-between gap-4 border-t border-gray-100 pt-2">
+                <dt className="text-gray-600">Packing and box fee</dt>
+                <dd className="font-semibold text-gray-900">
+                  ₦{(product.extraPrice ?? 0).toLocaleString()}
+                </dd>
+              </div>
+            )}
+          </dl>
 
           {isCustomizableGift && (
             <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
@@ -1410,6 +1498,60 @@ export default function ProductDetail({
           )}
         </div>
       </div>
+
+      {relatedProducts.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-purple-600">
+                Discover more
+              </p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                You may also like
+              </h2>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {relatedProducts.map((relatedProduct) => (
+              <Link
+                key={relatedProduct.id}
+                href={relatedProduct.href}
+                className="group rounded-2xl border border-gray-200 bg-gray-50 p-3 transition hover:-translate-y-0.5 hover:border-purple-200 hover:shadow-md"
+              >
+                <div className="relative mb-3 aspect-square overflow-hidden rounded-xl bg-white">
+                  {relatedProduct.images?.[0] ? (
+                    <Image
+                      src={relatedProduct.images[0]}
+                      alt={relatedProduct.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 25vw"
+                      className="object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-gray-100 text-xs text-gray-500">
+                      No image
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <p className="line-clamp-2 text-sm font-semibold text-gray-900">
+                    {relatedProduct.name}
+                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-purple-600">
+                      ₦{Number(relatedProduct.price).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+                      {relatedProduct.category}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-3">

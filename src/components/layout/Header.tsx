@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { getCurrentUser } from "@/services/authService";
-import { useWishlist } from "@/hooks/useWishlist";
 import { getCategories } from "@/lib/categoryClient";
 import LogoutModal from "./LogoutModal";
 import UserAvatar from "@/components/ui/UserAvatar";
+import NotificationBell from "@/components/notification/NotificationBell";
 import {
   Menu,
   X,
@@ -24,6 +24,7 @@ import {
   Info,
   Phone,
   Search,
+  Bell,
   Globe,
   HelpCircle,
   Flame,
@@ -62,13 +63,13 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [giftCategories, setGiftCategories] = useState<Category[]>([]);
   const [souvenirCategories, setSouvenirCategories] = useState<Category[]>([]);
   const pathname = usePathname();
   const router = useRouter();
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { items: wishlistItems } = useWishlist();
 
   const { totalItems } = useCart();
 
@@ -147,7 +148,6 @@ export default function Header() {
     return user.displayName || user.email?.split("@")[0] || "User";
   }, [user]);
   const profileHref = getProfileDestination(user);
-  const wishlistCount = wishlistItems.length;
 
   const navItems = useMemo(
     () => [
@@ -302,7 +302,15 @@ export default function Header() {
             </div>
 
             {/* Right Side Icons */}
-            <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+            <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
+              {user && (
+                <div className="lg:hidden">
+                  <NotificationBell
+                    role="user"
+                    onUnreadCountChange={setUnreadNotificationCount}
+                  />
+                </div>
+              )}
               {/* Enhanced Profile Dropdown */}
               <div className="relative hidden lg:block">
                 <button
@@ -326,11 +334,11 @@ export default function Header() {
                     <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></div>
                   </div>
                   <div className="hidden xl:block text-left">
-                    <p className="text-[10px] text-gray-500 font-medium">
-                      Hello, {greetingName}
-                    </p>
                     <p className="text-xs font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
                       My Account
+                    </p>
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      Hello, {greetingName}
                     </p>
                   </div>
                   <ChevronDown
@@ -348,35 +356,6 @@ export default function Header() {
                       : "opacity-0 invisible -translate-y-2 pointer-events-none"
                   }`}
                 >
-                  {/* Dropdown Header */}
-                  <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-2.5 text-white">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-9 h-9 rounded-full border-2 border-white/50 bg-white/20 flex items-center justify-center overflow-hidden">
-                        {user ? (
-                          <UserAvatar
-                            src={user.photoURL}
-                            alt={user.displayName || user.email || "User"}
-                            width={36}
-                            height={36}
-                            className="object-cover"
-                          />
-                        ) : (
-                          <User className="w-4 h-4 text-white" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-xs truncate">
-                          Hello, {greetingName}!
-                        </p>
-                        {user?.email && (
-                          <p className="text-[10px] text-purple-100 truncate">
-                            {user.email}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Dropdown Content */}
                   <div className="py-1.5">
                     {user ? (
@@ -400,6 +379,24 @@ export default function Header() {
                             <Package className="w-3.5 h-3.5 text-blue-600" />
                           </div>
                           <p className="font-medium text-sm">My Orders</p>
+                        </Link>
+                        <Link
+                          href="/notifications"
+                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                            <Bell className="w-3.5 h-3.5 text-amber-600" />
+                          </div>
+                          <p className="font-medium text-sm">Notifications</p>
+                          {unreadNotificationCount > 0 && (
+                            <span
+                              aria-label={`${unreadNotificationCount} unread notifications`}
+                              className="ml-auto min-w-5 rounded-full bg-red-600 px-1.5 py-0.5 text-center text-[11px] font-bold leading-4 text-white"
+                            >
+                              {unreadNotificationCount}
+                            </span>
+                          )}
                         </Link>
                         <Link
                           href="/wishlist"
@@ -429,13 +426,13 @@ export default function Header() {
                       <>
                         <Link
                           href="/login"
-                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          className="flex items-center space-x-2.5 bg-purple-600 px-3 py-2 text-white transition-all group hover:bg-purple-700"
                           onClick={() => setIsUserDropdownOpen(false)}
                         >
-                          <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                            <User className="w-3.5 h-3.5 text-purple-600" />
+                          <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center transition-colors group-hover:bg-white/30">
+                            <User className="w-3.5 h-3.5 text-white" />
                           </div>
-                          <p className="font-medium text-sm">Login</p>
+                          <p className="font-medium text-sm text-white">Login</p>
                         </Link>
                         <hr className="my-1.5 border-gray-100" />
                         <Link
@@ -464,28 +461,7 @@ export default function Header() {
                 </div>
               </div>
 
-              {/* Wishlist Icon */}
-              <Link
-                href="/wishlist"
-                className="relative p-2.5 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200 group"
-                onClick={() => setIsUserDropdownOpen(false)}
-              >
-                <Heart
-                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                    wishlistItems.length
-                      ? "text-red-500 fill-red-500"
-                      : "text-gray-700"
-                  } group-hover:text-red-500 group-hover:fill-red-500 transition-all duration-200 group-hover:scale-110`}
-                />
-                {wishlistItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg animate-pulse">
-                    {wishlistItems.length}
-                  </span>
-                )}
-              </Link>
-
-              {/* Cart Icon */}
-              <Link
+              {/* Cart Icon */}              <Link
                 href="/cart"
                 className="relative p-2.5 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group"
                 onClick={() => setIsUserDropdownOpen(false)}
@@ -611,7 +587,7 @@ export default function Header() {
               )}
             </div>
             <div>
-              <p className="font-semibold text-base">Hello, {greetingName}!</p>
+              <p className="font-semibold text-base">Your account</p>
               {user ? (
                 <div className="flex flex-col gap-2 mt-2 text-sm">
                   <Link
@@ -636,7 +612,7 @@ export default function Header() {
                   <Link
                     href="/login"
                     onClick={closeMobileMenu}
-                    className="text-white font-medium bg-white/20 hover:bg-white/30 rounded-full px-4 py-1 transition backdrop-blur-sm"
+                    className="text-white font-medium bg-purple-700 hover:bg-purple-800 rounded-full px-4 py-1 transition"
                   >
                     Login
                   </Link>
@@ -710,26 +686,13 @@ export default function Header() {
           <div className="pt-4 mt-4 border-t border-gray-200 space-y-2">
             <Link
               href="/wishlist"
-              className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200"
+              className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200"
               onClick={closeMobileMenu}
             >
-              <div className="flex items-center space-x-3">
-                <span className="flex h-8 w-8 items-center justify-center">
-                  <Heart
-                    className={`w-4 h-4 ${
-                      wishlistCount
-                        ? "text-red-500 fill-red-500"
-                        : "text-red-600"
-                    }`}
-                  />
-                </span>
-                <span className="font-semibold text-gray-700">Wishlist</span>
-              </div>
-              {wishlistCount > 0 && (
-                <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold">
-                  {wishlistCount}
-                </span>
-              )}
+              <span className="flex h-8 w-8 items-center justify-center text-red-600">
+                <Heart className="w-4 h-4" />
+              </span>
+              <span className="font-semibold text-gray-700">Wishlist</span>
             </Link>
             <Link
               href="/orders"

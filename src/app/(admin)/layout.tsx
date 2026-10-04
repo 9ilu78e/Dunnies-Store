@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, Search, Bell, User } from "lucide-react";
+import { Menu, Search, User } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import AdminLogoutModal from "@/components/layout/AdminLogoutModal";
+import NotificationBell from "@/components/notification/NotificationBell";
 import { getCurrentUser } from "@/services/authService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
@@ -229,10 +230,7 @@ export default function AdminLayout({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
-            <button className="relative p-1.5 sm:p-2 text-purple-600 hover:text-purple-700 hover:bg-purple-100 rounded-full transition shrink-0">
-              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBell role="admin" />
             <button
               onClick={() => setShowLogoutModal(true)}
               className="flex items-center gap-1 sm:gap-2 rounded-full border border-purple-100 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-white/80 hover:bg-white/90 transition shrink-0"
