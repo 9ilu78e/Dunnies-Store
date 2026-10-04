@@ -22,7 +22,7 @@ export const uploadImage = async (file: File, folder = 'dunnies-store'): Promise
     const result = await cloudinary.uploader.upload(dataURI, {
       folder,
       resource_type: 'auto',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
       transformation: [{ quality: 'auto:good', fetch_format: 'auto' }],
     });
 

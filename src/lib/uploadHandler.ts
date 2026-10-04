@@ -7,6 +7,7 @@ const imageExtensions: Record<string, string> = {
   "image/png": "png",
   "image/gif": "gif",
   "image/webp": "webp",
+  "image/avif": "avif",
 };
 
 export async function saveUploadedFile(
@@ -16,7 +17,7 @@ export async function saveUploadedFile(
   try {
     const extension = imageExtensions[file.type];
     if (!extension) {
-      throw new Error("Only JPEG, PNG, GIF, and WebP images are supported");
+      throw new Error("Only JPEG, PNG, GIF, WebP, and AVIF images are supported");
     }
     if (file.size > 10 * 1024 * 1024) {
       throw new Error("File size must be less than 10MB");

@@ -57,8 +57,8 @@ export default function SpotlightCollections() {
   }, []);
 
   return (
-    <section className="py-16 bg-linear-to-b from-purple-50 via-white to-purple-50/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+    <section className="py-8 sm:py-12">
+      <div className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6">
         <div className="flex flex-col gap-4 text-center">
           <p className="inline-flex items-center justify-center gap-2 text-xs font-semibold tracking-[0.3em] uppercase text-purple-500">
             <Flame className="w-4 h-4 text-amber-500" />
@@ -78,62 +78,55 @@ export default function SpotlightCollections() {
             <Loader text="Loading spotlight collections..." />
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-8">
-            <div className="rounded-3xl bg-white/95 backdrop-blur border border-purple-100 shadow-lg p-6 sm:p-8 space-y-6">
-              <div className="flex flex-col gap-2">
-                <div className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600 bg-amber-50 rounded-full px-4 py-1 self-start">
-                  <Flame className="w-4 h-4" />
-                  Best sellers
-                </div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  Loved by thousands
-                </h3>
-                <p className="text-gray-600">
-                  These products ship out the fastest—perfect for when you need
-                  a guaranteed hit.
-                </p>
+          <div className="space-y-5">
+            <div className="flex flex-col gap-2">
+              <div className="inline-flex items-center gap-2 self-start text-sm font-semibold text-amber-600">
+                <Flame className="h-4 w-4" />
+                Best sellers
               </div>
-              {error ? (
-                <p className="text-red-600" role="alert">
-                  {error}
-                </p>
-              ) : bestSellers.length > 0 ? (
-                <>
-                  <div
-                    className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3 scrollbar-hide sm:gap-5"
-                    aria-label="Best-selling products. Scroll horizontally to see more."
-                  >
-                    {bestSellers.map((product, index) => (
-                      <div
-                        key={product.id}
-                        className="h-full w-[44%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
-                      >
-                        <ProductCard
-                          {...product}
-                          priority={index < 2}
-                          className="rounded-xl"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <p className="text-sm text-gray-500">
-                      Ranked by non-cancelled orders; newest items break ties.
-                    </p>
-                    <Link
-                      href="/best-sellers"
-                      className="inline-flex items-center gap-2 text-purple-600 font-semibold hover:text-purple-700"
-                    >
-                      Shop all best sellers
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </>
-              ) : (
-                <p className="text-gray-600">No catalog items available yet.</p>
-              )}
+              <h3 className="text-lg font-bold text-gray-900">
+                Loved by thousands
+              </h3>
+              <p className="text-gray-600">
+                These products ship out the fastest—perfect for when you need a
+                guaranteed hit.
+              </p>
             </div>
-
+            {error ? (
+              <p className="text-red-600" role="alert">
+                {error}
+              </p>
+            ) : bestSellers.length > 0 ? (
+              <>
+                <div
+                  className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 scrollbar-hide sm:gap-6"
+                  aria-label="Best-selling products. Scroll horizontally to see more."
+                >
+                  {bestSellers.map((product, index) => (
+                    <div
+                      key={product.id}
+                      className="h-full w-[64%] shrink-0 snap-start sm:w-[31%] lg:w-[23%]"
+                    >
+                      <ProductCard {...product} priority={index < 2} />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-gray-500">
+                    Ranked by non-cancelled orders; newest items break ties.
+                  </p>
+                  <Link
+                    href="/best-sellers"
+                    className="inline-flex items-center gap-2 font-semibold text-purple-600 hover:text-purple-700"
+                  >
+                    Shop all best sellers
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <p className="text-gray-600">No catalog items available yet.</p>
+            )}
           </div>
         )}
       </div>

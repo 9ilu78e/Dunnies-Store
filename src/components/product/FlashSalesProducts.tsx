@@ -192,7 +192,7 @@ export default function FlashSalesProducts({
         />
       )}
       <div
-        className={`-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3 sm:gap-5 ${
+        className={`-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-3 scrollbar-hide sm:gap-6 ${
           compact ? "compact-flash-sales-scroll" : "flash-sales-scroll"
         }`}
         aria-label="Flash sale products. Scroll horizontally to see more."
@@ -208,7 +208,7 @@ export default function FlashSalesProducts({
               key={product.id}
               className={`h-full shrink-0 snap-start ${
                 compact
-                  ? "w-[44%] sm:w-[30%] lg:w-[23%]"
+                  ? "w-[64%] sm:w-[30%] lg:w-[23%]"
                   : "w-[72%] sm:w-[46%] lg:w-[31%] xl:w-[23%]"
               }`}
             >

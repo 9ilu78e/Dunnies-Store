@@ -61,6 +61,8 @@ export async function GET(
       contentType = 'image/gif';
     } else if (filepath.endsWith('.webp')) {
       contentType = 'image/webp';
+    } else if (filepath.endsWith('.avif')) {
+      contentType = 'image/avif';
     }
 
     const response = new NextResponse(fileBuffer);

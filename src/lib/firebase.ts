@@ -35,7 +35,7 @@ if (typeof window !== 'undefined' && hasFirebaseConfig) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   googleProvider = new GoogleAuthProvider();
-  if (firebaseConfig.measurementId) {
+  if (process.env.NODE_ENV === 'production' && firebaseConfig.measurementId) {
     void isSupported()
       .then((supported) => {
         if (supported && app) analytics = getAnalytics(app);

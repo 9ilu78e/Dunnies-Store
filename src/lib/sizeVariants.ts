@@ -1,7 +1,68 @@
 export type SizeVariant = {
   size: string;
   stockQuantity: number;
+  kind?: VariantKind;
 };
+
+export type VariantKind = "size" | "volume" | "color" | "belt";
+
+export function getVariantChoiceKind(size: string): VariantKind {
+  if (/^COLOR:/i.test(size)) return "color";
+  if (/^\d+(?:\.\d+)?\s*ML$/i.test(size)) return "volume";
+  return "size";
+}
+
+export function getVariantKindLabel(kind: VariantKind): string {
+  switch (kind) {
+    case "volume":
+      return "Volume";
+    case "color":
+      return "Color";
+    case "belt":
+      return "Size";
+    default:
+      return "Size";
+  }
+}
+
+export function getVariantKind(variants: SizeVariant[]): VariantKind {
+  if (variants.length === 0) return "size";
+  const kinds = variants.map((variant) => {
+    const kind = variant.kind ?? getVariantChoiceKind(variant.size);
+    return kind === "belt" ? "size" : kind;
+  });
+  return kinds.every((kind) => kind === kinds[0]) ? kinds[0] : "size";
+}
+
+export function formatVariantChoice(size: string): string {
+  if (/^COLOR:/i.test(size)) {
+    return size.replace(/^COLOR:\s*/i, "");
+  }
+  if (/^BELT:/i.test(size)) {
+    return `${size.replace(/^BELT:\s*/i, "")} in`;
+  }
+  return /^\d+(?:\.\d+)?\s*ML$/i.test(size) ? size.toLowerCase() : size;
+}
+
+export function convertVariantKind(
+  variants: SizeVariant[],
+  kind: VariantKind
+): SizeVariant[] {
+  return variants.map((variant) => {
+    const currentLabel = formatVariantChoice(variant.size);
+    const label =
+      kind === "volume"
+        ? /^\d+(?:\.\d+)?(?:\s*ML)?$/i.test(currentLabel)
+          ? `${currentLabel.replace(/\s*ML$/i, "").trim()} ML`
+          : currentLabel
+        : kind === "color"
+        ? `COLOR: ${currentLabel.trim().toUpperCase()}`
+        : kind === "belt"
+        ? `BELT: ${currentLabel.replace(/\s*IN$/i, "").trim()}`
+        : currentLabel.replace(/\s*(?:ML|IN)$/i, "").trim();
+    return { ...variant, size: label, kind };
+  });
+}
 
 export type SizeVariantsValidation =
   | { valid: true; variants: SizeVariant[] }
@@ -57,7 +118,15 @@ export function validateSizeVariants(value: unknown): SizeVariantsValidation {
     }
 
     seenSizes.add(size);
-    variants.push({ size, stockQuantity });
+    const kind =
+      "kind" in item &&
+      (item.kind === "size" ||
+        item.kind === "volume" ||
+        item.kind === "color" ||
+        item.kind === "belt")
+        ? item.kind
+        : undefined;
+    variants.push({ size, stockQuantity, ...(kind ? { kind } : {}) });
   }
 
   return { valid: true, variants };
@@ -81,7 +150,17 @@ export function readSizeVariants(value: unknown): SizeVariant[] {
     }
 
     const size = item.size.trim().toUpperCase();
-    return size ? [{ size, stockQuantity: item.stockQuantity }] : [];
+    const kind =
+      "kind" in item &&
+      (item.kind === "size" ||
+        item.kind === "volume" ||
+        item.kind === "color" ||
+        item.kind === "belt")
+        ? item.kind
+        : undefined;
+    return size
+      ? [{ size, stockQuantity: item.stockQuantity, ...(kind ? { kind } : {}) }]
+      : [];
   });
 }
 

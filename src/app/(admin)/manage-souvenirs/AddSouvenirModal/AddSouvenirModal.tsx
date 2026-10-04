@@ -5,9 +5,12 @@ import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import SizeVariantEditor from "@/components/product/SizeVariantEditor";
 import {
+  convertVariantKind,
+  getVariantKind,
   readSizeVariants,
   totalVariantStock,
   type SizeVariant,
+  type VariantKind,
 } from "@/lib/sizeVariants";
 
 const toDateTimeLocal = (value: string | Date) => {
@@ -43,6 +46,7 @@ export default function AddSouvenirModal({
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
+  const [variantKind, setVariantKind] = useState<VariantKind>("size");
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -80,6 +84,7 @@ export default function AddSouvenirModal({
               souvenir.sizeVariants
             );
             setSizeVariants(souvenirSizeVariants);
+            setVariantKind(getVariantKind(souvenirSizeVariants));
             if (souvenirSizeVariants.length > 0) {
               setFormData((prev) => ({
                 ...prev,
@@ -187,11 +192,14 @@ export default function AddSouvenirModal({
             body: uploadFormData,
           });
 
+          const uploadData: { error?: string; url?: string } =
+            await uploadResponse.json();
           if (!uploadResponse.ok) {
-            throw new Error("Failed to upload image");
+            throw new Error(uploadData.error || "Failed to upload image");
           }
-
-          const uploadData = await uploadResponse.json();
+          if (typeof uploadData.url !== "string" || !uploadData.url) {
+            throw new Error("Image upload did not return a URL");
+          }
           uploadedImageUrls.push(uploadData.url);
         }
       }
@@ -254,6 +262,7 @@ export default function AddSouvenirModal({
       setImages([]);
       setImagePreviews([]);
       setSizeVariants([]);
+      setVariantKind("size");
 
       showToast(
         souvenirId
@@ -337,6 +346,19 @@ export default function AddSouvenirModal({
           <div>
             <SizeVariantEditor
               variants={sizeVariants}
+              variantKind={variantKind}
+              onVariantKindChange={(kind) => {
+                setVariantKind(kind);
+                const convertedVariants = convertVariantKind(
+                  sizeVariants,
+                  kind
+                );
+                setSizeVariants(convertedVariants);
+                setFormData((prev) => ({
+                  ...prev,
+                  stockQuantity: String(totalVariantStock(convertedVariants)),
+                }));
+              }}
               onChange={(variants) => {
                 setSizeVariants(variants);
                 setFormData((prev) => ({
@@ -353,7 +375,7 @@ export default function AddSouvenirModal({
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-1">
               {sizeVariants.length > 0
-                ? "Total stock across sizes"
+                ? "Total stock across options"
                 : "Number of souvenirs in stock *"}
             </label>
             <input
@@ -401,7 +423,7 @@ export default function AddSouvenirModal({
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
               onChange={handleImageSelect}
               className="hidden"
             />

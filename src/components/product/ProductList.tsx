@@ -31,7 +31,7 @@ export default function ProductList({
     gap === 4
       ? "gap-3 sm:gap-4"
       : gap === 8
-      ? "gap-4 sm:gap-6"
+      ? "gap-5 sm:gap-6"
       : "gap-4 sm:gap-5";
 
   const gridCols = {

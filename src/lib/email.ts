@@ -1,3 +1,9 @@
+import {
+  formatVariantChoice,
+  getVariantChoiceKind,
+  getVariantKindLabel,
+} from "@/lib/sizeVariants";
+
 export interface EmailOptions {
   to: string;
   subject: string;
@@ -20,7 +26,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
         email: options.to,
@@ -55,13 +61,21 @@ export function generateOrderConfirmationEmail(
             ? `<ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12px;">${item.giftContents
                 .map(
                   (content) =>
-                    `<li>${content.name}${content.size ? ` · Size ${content.size}` : ""} × ${content.quantity}</li>`
+                    `<li>${content.name}${
+                      content.size
+                        ? ` · ${getVariantKindLabel(
+                            getVariantChoiceKind(content.size)
+                          )} ${formatVariantChoice(content.size)}`
+                        : ""
+                    } × ${content.quantity}</li>`
                 )
                 .join("")}</ul>`
             : ""
         }
       </td>
-      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
+        item.quantity
+      }</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₦${item.price.toLocaleString()}</td>
     </tr>
   `
@@ -110,7 +124,13 @@ export function generateOrderConfirmationEmail(
           </div>
           
           <p style="margin-top: 20px; color: #666;">
-            <strong>Order Source:</strong> ${source === "whatsapp" ? "WhatsApp" : source === "site" ? "Website" : source}
+            <strong>Order Source:</strong> ${
+              source === "whatsapp"
+                ? "WhatsApp"
+                : source === "site"
+                ? "Website"
+                : source
+            }
           </p>
           
           <p style="margin-top: 20px;">We'll keep you updated on your order status. If you have any questions, please don't hesitate to reach out.</p>
@@ -144,13 +164,21 @@ export function generateAdminOrderNotificationEmail(
             ? `<ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12px;">${item.giftContents
                 .map(
                   (content) =>
-                    `<li>${content.name}${content.size ? ` · Size ${content.size}` : ""} × ${content.quantity}</li>`
+                    `<li>${content.name}${
+                      content.size
+                        ? ` · ${getVariantKindLabel(
+                            getVariantChoiceKind(content.size)
+                          )} ${formatVariantChoice(content.size)}`
+                        : ""
+                    } × ${content.quantity}</li>`
                 )
                 .join("")}</ul>`
             : ""
         }
       </td>
-      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
+        item.quantity
+      }</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₦${item.price.toLocaleString()}</td>
     </tr>
   `
@@ -185,7 +213,9 @@ export function generateAdminOrderNotificationEmail(
           <p><strong>Name:</strong> ${customerName}</p>
           <p><strong>Email:</strong> ${customerEmail}</p>
           <p><strong>Phone:</strong> ${customerPhone}</p>
-          <p><strong>Source:</strong> <span class="badge ${source === "whatsapp" ? "badge-whatsapp" : "badge-site"}">${source.toUpperCase()}</span></p>
+          <p><strong>Source:</strong> <span class="badge ${
+            source === "whatsapp" ? "badge-whatsapp" : "badge-site"
+          }">${source.toUpperCase()}</span></p>
         </div>
         
         <h3>Order Items</h3>
@@ -207,7 +237,9 @@ export function generateAdminOrderNotificationEmail(
         </div>
         
         <p style="margin-top: 30px; text-align: center;">
-          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/manage-orders" style="background: #a855f7; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">View in Admin Panel</a>
+          <a href="${
+            process.env.NEXTAUTH_URL || "http://localhost:3000"
+          }/admin/manage-orders" style="background: #a855f7; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">View in Admin Panel</a>
         </p>
       </div>
     </body>
@@ -242,7 +274,10 @@ export function generateUserUpdateEmail(
           <p>Hello ${customerName},</p>
           
           <div style="margin-top: 20px; line-height: 1.6;">
-            ${message.split("\n").map((line) => `<p>${line}</p>`).join("")}
+            ${message
+              .split("\n")
+              .map((line) => `<p>${line}</p>`)
+              .join("")}
           </div>
           
           <p style="margin-top: 30px;">Best regards,<br>Dunnis Stores Team</p>

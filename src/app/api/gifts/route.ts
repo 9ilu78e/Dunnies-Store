@@ -102,9 +102,11 @@ export async function POST(request: NextRequest) {
       flashSaleEndsAt,
       sizeVariants,
       includedProducts,
+      extraPrice,
     } = body;
 
     const parsedPrice = Number(price);
+    const parsedExtraPrice = Number(extraPrice ?? 0);
     const parsedStockQuantity = Number(stockQuantity ?? 0);
     const parsedFlashSalePrice =
       flashSalePrice === "" ||
@@ -119,15 +121,16 @@ export async function POST(request: NextRequest) {
     if (
       typeof name !== "string" ||
       !name.trim() ||
-      !Number.isFinite(parsedPrice) ||
-      parsedPrice <= 0 ||
+      (includedProducts === undefined &&
+        (!Number.isFinite(parsedPrice) || parsedPrice <= 0)) ||
+      !Number.isFinite(parsedExtraPrice) ||
+      parsedExtraPrice < 0 ||
       !Number.isSafeInteger(parsedStockQuantity) ||
       parsedStockQuantity < 0 ||
       (parsedFlashSalePrice === null && !!flashSaleEndsAt) ||
       (parsedFlashSalePrice !== null &&
         (!Number.isFinite(parsedFlashSalePrice) ||
           parsedFlashSalePrice <= 0 ||
-          parsedFlashSalePrice >= parsedPrice ||
           !parsedFlashSaleEndsAt ||
           Number.isNaN(parsedFlashSaleEndsAt.getTime()) ||
           parsedFlashSaleEndsAt.getTime() <= Date.now())) ||
@@ -148,6 +151,7 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       description: typeof description === "string" ? description : "",
       price: parsedPrice,
+      extraPrice: parsedExtraPrice,
       stockQuantity: parsedStockQuantity,
       priority: typeof priority === "string" ? priority : "normal",
       flashSalePrice: parsedFlashSalePrice,
@@ -160,7 +164,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
       const matchingProducts = await prisma.product.count({
-        where: { id: { in: validation.contents.map((item) => item.productId) } },
+        where: {
+          id: { in: validation.contents.map((item) => item.productId) },
+        },
       });
       if (matchingProducts !== validation.contents.length) {
         return NextResponse.json(
@@ -169,6 +175,35 @@ export async function POST(request: NextRequest) {
         );
       }
       giftData.includedProducts = validation.contents;
+      const products = await prisma.product.findMany({
+        where: {
+          id: { in: validation.contents.map((item) => item.productId) },
+        },
+        select: { id: true, price: true },
+      });
+      const includedPrice = validation.contents.reduce((total, content) => {
+        const product = products.find((item) => item.id === content.productId);
+        return total + (product?.price ?? 0) * content.quantity;
+      }, 0);
+      giftData.price = includedPrice + parsedExtraPrice;
+      if (giftData.price <= 0) {
+        return NextResponse.json(
+          { error: "Gift price must be greater than zero" },
+          { status: 400 }
+        );
+      }
+    }
+    if (
+      parsedFlashSalePrice !== null &&
+      parsedFlashSalePrice >= giftData.price
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Flash sale price must be greater than zero and less than the gift price",
+        },
+        { status: 400 }
+      );
     }
 
     if (sizeVariants !== undefined) {

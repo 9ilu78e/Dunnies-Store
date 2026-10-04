@@ -131,7 +131,6 @@ function transformDatabaseProduct(dbProduct: any): ProductRecord {
         : ("in-stock" as const),
     highlights: ["Premium quality", "Fast delivery", "Customer approved"],
     specs: [
-      { label: "SKU", value: dbProduct.id },
       { label: "Category", value: dbProduct.category?.name || "General" },
     ],
     reviews: [],

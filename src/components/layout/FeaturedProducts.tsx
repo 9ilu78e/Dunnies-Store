@@ -25,7 +25,7 @@ function ProductsSkeleton() {
       {[0, 1, 2, 3].map((item) => (
         <div
           key={item}
-          className="w-[44%] shrink-0 animate-pulse sm:w-[30%] lg:w-[23%]"
+          className="w-[64%] shrink-0 animate-pulse sm:w-[30%] lg:w-[23%]"
         >
           <div className="aspect-[4/3] rounded-xl bg-gray-100" />
           <div className="mt-3 h-4 w-4/5 rounded bg-gray-100" />
@@ -106,7 +106,7 @@ export default function FeaturedProducts() {
           </p>
         ) : (
           <div
-            className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 sm:gap-5"
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 sm:gap-6"
             aria-label="All products. Scroll horizontally to see more."
           >
             {products.map((product, index) => {
@@ -120,7 +120,7 @@ export default function FeaturedProducts() {
               return (
                 <div
                   key={product.id}
-                  className="h-full w-[44%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
+                  className="h-full w-[64%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
                 >
                   <ProductCard
                     id={product.id}

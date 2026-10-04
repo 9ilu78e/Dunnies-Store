@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { ShoppingCart, Download, Plus, Eye } from "lucide-react";
 import Loader from "@/components/ui/Loader";
+import {
+  formatVariantChoice,
+  getVariantChoiceKind,
+  getVariantKindLabel,
+} from "@/lib/sizeVariants";
 
 interface Order {
   id: string;
@@ -176,34 +181,41 @@ export default function ManageOrders() {
                           item.gift?.name ||
                           item.souvenir?.name ||
                           "Store item"}
-                        {item.size ? ` · Size ${item.size}` : ""} · Qty{" "}
-                        {item.quantity}
-                        {item.giftContents &&
-                          item.giftContents.length > 0 && (
-                            <ul className="ml-5 mt-1 list-disc space-y-1 text-xs text-gray-600">
-                              {item.giftContents.map((content) => (
-                                <li
-                                  key={`${content.productId}:${content.size ?? ""}`}
-                                >
-                                  {content.name}
-                                  {content.size
-                                    ? ` · Size ${content.size}`
-                                    : ""}{" "}
-                                  × {content.quantity}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                          {order.notes && (
-                            <div className="mt-4 border-t border-gray-100 pt-3">
-                              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Delivery and payment
-                              </p>
-                              <p className="whitespace-pre-wrap text-sm text-gray-700">
-                                {order.notes}
-                              </p>
-                            </div>
-                          )}
+                        {item.size
+                          ? ` · ${getVariantKindLabel(
+                              getVariantChoiceKind(item.size)
+                            )} ${formatVariantChoice(item.size)}`
+                          : ""}{" "}
+                        · Qty {item.quantity}
+                        {item.giftContents && item.giftContents.length > 0 && (
+                          <ul className="ml-5 mt-1 list-disc space-y-1 text-xs text-gray-600">
+                            {item.giftContents.map((content) => (
+                              <li
+                                key={`${content.productId}:${
+                                  content.size ?? ""
+                                }`}
+                              >
+                                {content.name}
+                                {content.size
+                                  ? ` · ${getVariantKindLabel(
+                                      getVariantChoiceKind(content.size)
+                                    )} ${formatVariantChoice(content.size)}`
+                                  : ""}{" "}
+                                × {content.quantity}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {order.notes && (
+                          <div className="mt-4 border-t border-gray-100 pt-3">
+                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Delivery and payment
+                            </p>
+                            <p className="whitespace-pre-wrap text-sm text-gray-700">
+                              {order.notes}
+                            </p>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
