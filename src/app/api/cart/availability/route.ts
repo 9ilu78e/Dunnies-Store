@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
           id: true,
           name: true,
           price: true,
+          deliveryFee: true,
           stockQuantity: true,
           sizeVariants: true,
           imageUrl: true,
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest) {
         select: {
           id: true,
           price: true,
+          deliveryFee: true,
           stockQuantity: true,
           sizeVariants: true,
           includedProducts: true,
@@ -99,6 +101,7 @@ export async function POST(request: NextRequest) {
         select: {
           id: true,
           price: true,
+          deliveryFee: true,
           stockQuantity: true,
           sizeVariants: true,
           flashSalePrice: true,
@@ -225,6 +228,7 @@ export async function POST(request: NextRequest) {
           ...(selectedSize ? { size: selectedSize } : {}),
           stockQuantity: availableStock,
           price: itemPrice,
+          deliveryFee: item.deliveryFee,
           ...(item.itemType === "gift" && selectedGiftContents.length > 0
             ? { giftContents: normalizedGiftContents }
             : {}),
@@ -236,6 +240,7 @@ export async function POST(request: NextRequest) {
       products: inventory.map((product) => ({
         id: product.id,
         stockQuantity: product.stockQuantity,
+        deliveryFee: product.deliveryFee,
         price:
           product.flashSalePrice !== null &&
           product.flashSaleEndsAt !== null &&

@@ -29,7 +29,13 @@ export default function WishlistPage() {
       });
       const data = await response.json();
       const stock = data.items?.find(
-        (entry: { id: string; itemType: string }) =>
+        (entry: {
+          id: string;
+          itemType: string;
+          stockQuantity: number;
+          price: number;
+          deliveryFee: number;
+        }) =>
           entry.id === String(product.id) && entry.itemType === itemType
       );
       if (!response.ok || !stock || stock.stockQuantity < 1) {
@@ -42,6 +48,7 @@ export default function WishlistPage() {
           itemType,
           name: product.name,
           price: stock.price,
+          deliveryFee: stock.deliveryFee,
           image:
             product.image ||
             "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=400&q=80",

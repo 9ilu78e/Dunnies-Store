@@ -7,6 +7,7 @@ import Loader from "@/components/ui/Loader";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ProductCategoriesGrid from "@/components/layout/ProductCategoriesGrid";
 import { getCurrentUser } from "@/services/authService";
+import { showToast } from "@/components/ui/Toast";
 import {
   ShoppingBag,
   Heart,
@@ -20,6 +21,7 @@ import {
   Gift,
   ArrowRight,
   Sparkles,
+  X,
 } from "lucide-react";
 
 type CurrentUser = {
@@ -28,6 +30,30 @@ type CurrentUser = {
   displayName: string | null;
   photoURL: string | null;
   role?: string;
+};
+
+type DeliveryDetailsForm = {
+  label: string;
+  recipient: string;
+  phone: string;
+  line1: string;
+  line2: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
+};
+
+const EMPTY_DELIVERY_DETAILS: DeliveryDetailsForm = {
+  label: "Home",
+  recipient: "",
+  phone: "",
+  line1: "",
+  line2: "",
+  city: "",
+  region: "",
+  postalCode: "",
+  country: "Nigeria",
 };
 
 const essentialLinks = [
@@ -53,8 +79,8 @@ const essentialLinks = [
     accent: "text-green-600 bg-green-100",
   },
   {
-    title: "Addresses",
-    description: "Save home, office, and gift delivery spots.",
+    title: "Delivery Details",
+    description: "Save where and how your orders should be delivered.",
     href: "/addresses",
     icon: MapPin,
     accent: "text-blue-600 bg-blue-100",
@@ -117,6 +143,12 @@ export default function UsersInterfacePage() {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deliveryDetails, setDeliveryDetails] = useState<DeliveryDetailsForm>(
+    EMPTY_DELIVERY_DETAILS
+  );
+  const [showDeliveryPrompt, setShowDeliveryPrompt] = useState(false);
+  const [savingDeliveryDetails, setSavingDeliveryDetails] = useState(false);
+  const [deliveryDetailsError, setDeliveryDetailsError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -139,6 +171,52 @@ export default function UsersInterfacePage() {
         }
 
         setUser(currentUser);
+        try {
+          const [addressesResponse, accountResponse] = await Promise.all([
+            fetch("/api/addresses", {
+              credentials: "same-origin",
+              cache: "no-store",
+            }),
+            fetch("/api/account", {
+              credentials: "same-origin",
+              cache: "no-store",
+            }),
+          ]);
+
+          if (!isMounted) return;
+          if (!addressesResponse.ok) {
+            throw new Error("Unable to check your saved delivery details.");
+          }
+
+          const addressesData = await addressesResponse.json();
+          const addresses = Array.isArray(addressesData.addresses)
+            ? addressesData.addresses
+            : [];
+          if (addresses.length === 0) {
+            const accountData = accountResponse.ok
+              ? await accountResponse.json()
+              : null;
+            const profile = accountData?.user;
+            setDeliveryDetails((current) => ({
+              ...current,
+              recipient:
+                profile?.fullName || currentUser.displayName || current.recipient,
+              phone: profile?.phone || current.phone,
+            }));
+            const promptKey = `dunnis:delivery-details-prompt:${currentUser.uid}`;
+            if (sessionStorage.getItem(promptKey) !== "shown") {
+              sessionStorage.setItem(promptKey, "shown");
+              setShowDeliveryPrompt(true);
+            }
+          }
+        } catch (addressError) {
+          if (!isMounted) return;
+          console.error("Unable to check saved delivery details:", addressError);
+          showToast(
+            "We could not check your saved delivery details. You can add them from your profile.",
+            "error"
+          );
+        }
       } catch (error) {
         if (isMounted) {
           router.replace("/login?from=users-interface");
@@ -156,6 +234,36 @@ export default function UsersInterfacePage() {
       isMounted = false;
     };
   }, [router]);
+
+  const saveDeliveryDetails = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+    setSavingDeliveryDetails(true);
+    setDeliveryDetailsError("");
+    try {
+      const response = await fetch("/api/addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ ...deliveryDetails, isDefault: true }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to save your delivery details.");
+      }
+      setShowDeliveryPrompt(false);
+      showToast("Your delivery details have been saved to your profile.", "success");
+    } catch (error) {
+      setDeliveryDetailsError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save your delivery details."
+      );
+    } finally {
+      setSavingDeliveryDetails(false);
+    }
+  };
 
   const greetingName = useMemo(() => {
     if (!user) return "Guest";
@@ -177,6 +285,113 @@ export default function UsersInterfacePage() {
   return (
     <section className="bg-linear-to-b from-purple-50 via-white to-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-10">
+        {showDeliveryPrompt && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+            role="presentation"
+          >
+            <section
+              aria-labelledby="delivery-details-title"
+              aria-modal="true"
+              className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8"
+              role="dialog"
+            >
+              <button
+                type="button"
+                aria-label="Close delivery details prompt"
+                onClick={() => setShowDeliveryPrompt(false)}
+                className="absolute right-5 top-5 rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <p className="text-sm font-semibold uppercase tracking-widest text-purple-600">
+                Set up your profile
+              </p>
+              <h2
+                id="delivery-details-title"
+                className="mt-2 text-2xl font-bold text-gray-900"
+              >
+                Add your delivery details
+              </h2>
+              <p className="mt-2 pr-8 text-sm text-gray-600">
+                Save your delivery information to your profile so it is ready
+                automatically next time you check out.
+              </p>
+              <form
+                onSubmit={saveDeliveryDetails}
+                className="mt-6 grid gap-3 sm:grid-cols-2"
+              >
+                {(
+                  [
+                    ["label", "Label (Home, Office)", true],
+                    ["recipient", "Recipient name", true],
+                    ["phone", "Phone number", true],
+                    ["line1", "Street address", true],
+                    ["line2", "Apartment, suite, landmark (optional)", false],
+                    ["city", "City", true],
+                    ["region", "State / region (optional)", false],
+                    ["postalCode", "Postal code (optional)", false],
+                    ["country", "Country", true],
+                  ] as const
+                ).map(([key, placeholder, required]) => (
+                  <input
+                    key={key}
+                    aria-label={placeholder}
+                    autoComplete={
+                      key === "line1"
+                        ? "street-address"
+                        : key === "recipient"
+                        ? "name"
+                        : key === "phone"
+                        ? "tel"
+                        : key === "city"
+                        ? "address-level2"
+                        : key === "region"
+                        ? "address-level1"
+                        : key === "postalCode"
+                        ? "postal-code"
+                        : "off"
+                    }
+                    required={required}
+                    value={deliveryDetails[key]}
+                    onChange={(event) =>
+                      setDeliveryDetails((current) => ({
+                        ...current,
+                        [key]: event.target.value,
+                      }))
+                    }
+                    placeholder={placeholder}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-purple-500 sm:first-of-type:col-span-2"
+                  />
+                ))}
+                {deliveryDetailsError && (
+                  <p
+                    role="alert"
+                    className="rounded-xl bg-red-50 p-3 text-sm text-red-700 sm:col-span-2"
+                  >
+                    {deliveryDetailsError}
+                  </p>
+                )}
+                <div className="flex flex-col-reverse gap-3 pt-2 sm:col-span-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeliveryPrompt(false)}
+                    className="rounded-full border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+                  >
+                    Add later
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingDeliveryDetails}
+                    className="rounded-full bg-purple-600 px-5 py-3 font-semibold text-white transition hover:bg-purple-700 disabled:opacity-60"
+                  >
+                    {savingDeliveryDetails ? "Saving..." : "Save delivery details"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>
+        )}
         <div className="rounded-2xl sm:rounded-3xl bg-linear-to-r from-purple-700 via-purple-600 to-fuchsia-600 p-4 sm:p-6 lg:p-8 text-white relative overflow-hidden shadow-2xl">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
             <div className="flex items-start sm:items-center gap-3 sm:gap-4">

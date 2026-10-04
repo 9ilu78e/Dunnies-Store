@@ -103,10 +103,12 @@ export async function POST(request: NextRequest) {
       sizeVariants,
       includedProducts,
       extraPrice,
+      deliveryFee,
     } = body;
 
     const parsedPrice = Number(price);
     const parsedExtraPrice = Number(extraPrice ?? 0);
+    const parsedDeliveryFee = Number(deliveryFee ?? 0);
     const parsedStockQuantity = Number(stockQuantity ?? 0);
     const parsedFlashSalePrice =
       flashSalePrice === "" ||
@@ -147,11 +149,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!Number.isFinite(parsedDeliveryFee) || parsedDeliveryFee < 0) {
+      return NextResponse.json(
+        { error: "Delivery fee must be a non-negative amount" },
+        { status: 400 }
+      );
+    }
+
     const giftData: any = {
       name: name.trim(),
       description: typeof description === "string" ? description : "",
       price: parsedPrice,
       extraPrice: parsedExtraPrice,
+      deliveryFee: parsedDeliveryFee,
       stockQuantity: parsedStockQuantity,
       priority: typeof priority === "string" ? priority : "normal",
       flashSalePrice: parsedFlashSalePrice,

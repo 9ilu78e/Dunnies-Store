@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             price: true,
+            deliveryFee: true,
             stockQuantity: true,
             imageUrl: true,
             imageUrls: true,
@@ -145,13 +146,22 @@ export async function POST(request: NextRequest) {
       imageUrls,
       categoryId,
       priority,
+      deliveryFee,
       stockQuantity,
       sizeVariants,
     } = body;
+    const parsedDeliveryFee = Number(deliveryFee ?? 0);
 
     if (!name || !description || !price) {
       return NextResponse.json(
         { error: "Name, description, and price are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!Number.isFinite(parsedDeliveryFee) || parsedDeliveryFee < 0) {
+      return NextResponse.json(
+        { error: "Delivery fee must be a non-negative amount" },
         { status: 400 }
       );
     }
@@ -168,6 +178,7 @@ export async function POST(request: NextRequest) {
       name,
       description,
       price: parseFloat(price),
+      deliveryFee: parsedDeliveryFee,
       stockQuantity: parsedStockQuantity,
     };
 

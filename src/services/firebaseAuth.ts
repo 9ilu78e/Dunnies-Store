@@ -1,4 +1,8 @@
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import {
+  getAuth,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 import { app } from "@/lib/firebase";
 
 export interface FirebaseUser {
@@ -80,4 +84,12 @@ export const signOutFirebase = async () => {
   }
 
   if (logoutError) throw logoutError;
+};
+
+export const sendFirebasePasswordReset = async (email: string) => {
+  if (!app) {
+    throw new Error("Firebase sign-in is not configured.");
+  }
+
+  await sendPasswordResetEmail(getAuth(app), email);
 };

@@ -36,6 +36,7 @@ export default function AddSouvenirModal({
     name: "",
     description: "",
     price: "",
+    deliveryFee: "0",
     stockQuantity: "0",
     imageUrl: "",
     categoryId: "",
@@ -69,6 +70,7 @@ export default function AddSouvenirModal({
               name: souvenir.name || "",
               description: souvenir.description || "",
               price: souvenir.price || "",
+              deliveryFee: String(souvenir.deliveryFee ?? 0),
               stockQuantity: String(souvenir.stockQuantity ?? 0),
               imageUrl: souvenir.imageUrl || "",
               categoryId: souvenir.categoryId || "",
@@ -214,6 +216,7 @@ export default function AddSouvenirModal({
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
+        deliveryFee: Number(formData.deliveryFee),
         stockQuantity: Number(formData.stockQuantity),
         sizeVariants,
         imageUrl: allImageUrls[0] || "",
@@ -252,6 +255,7 @@ export default function AddSouvenirModal({
         name: "",
         description: "",
         price: "",
+        deliveryFee: "0",
         stockQuantity: "0",
         imageUrl: "",
         categoryId: "",
@@ -339,6 +343,22 @@ export default function AddSouvenirModal({
               placeholder="0.00"
               step="0.01"
               required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">
+              Delivery fee (₦)
+            </label>
+            <input
+              type="number"
+              name="deliveryFee"
+              value={formData.deliveryFee}
+              onChange={handleChange}
+              min="0"
+              step="0.01"
+              placeholder="0"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
             />
           </div>

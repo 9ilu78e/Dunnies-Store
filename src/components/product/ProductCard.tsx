@@ -128,6 +128,7 @@ export default function ProductCard({
         | {
             stockQuantity: number;
             price: number;
+            deliveryFee: number;
             giftContents?: Parameters<typeof addToCart>[0]["giftContents"];
           }
         | undefined;
@@ -152,6 +153,7 @@ export default function ProductCard({
         itemType,
         name,
         price: availableItem.price,
+        deliveryFee: availableItem.deliveryFee,
         image: image || "",
         stockQuantity: availableItem.stockQuantity,
         ...(availableItem.giftContents?.length

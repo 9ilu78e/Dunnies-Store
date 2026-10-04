@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/components/ui/Toast";
 import { giftContentsKey } from "@/lib/giftContents";
+import { useAuth } from "@/hooks/useAuth";
+import { summarizeDeliveryFees } from "@/lib/deliveryFees";
 import {
   formatVariantChoice,
   getVariantChoiceKind,
@@ -16,6 +18,7 @@ import {
 
 export default function CartPage() {
   const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [inventoryError, setInventoryError] = useState("");
   const {
     items: cartItems,
@@ -51,6 +54,13 @@ export default function CartPage() {
   }, [totalItems]);
 
   const proceedToCheckout = async () => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      sessionStorage.setItem("dunnis:returnTo", "/checkout");
+      router.push("/login");
+      return;
+    }
+
     setInventoryError("");
     try {
       const unavailable = await refreshInventory();
@@ -74,7 +84,8 @@ export default function CartPage() {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const deliveryFee = 2500;
+  const { total: deliveryFee, pending: deliveryFeePending } =
+    summarizeDeliveryFees(cartItems);
   const total = subtotal + deliveryFee;
   const formatPrice = (price: number) => `₦${price.toLocaleString()}`;
 
@@ -238,11 +249,13 @@ export default function CartPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-700">Delivery</span>
                   <strong className="text-gray-900">
-                    {formatPrice(deliveryFee)}
+                    {deliveryFeePending ? "Pending" : formatPrice(deliveryFee)}
                   </strong>
                 </div>
                 <div className="border-t-2 pt-4 flex justify-between text-lg font-black">
-                  <span>Total</span>
+                  <span>
+                    Total{deliveryFeePending ? " (delivery pending)" : ""}
+                  </span>
                   <span className="text-violet-600">{formatPrice(total)}</span>
                 </div>
               </div>
@@ -257,15 +270,21 @@ export default function CartPage() {
                   event.preventDefault();
                   void proceedToCheckout();
                 }}
-                aria-disabled={inventoryChecking}
+                aria-disabled={inventoryChecking || authLoading}
                 className={`w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-4 sm:py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:shadow-2xl hover:brightness-110 transition-all text-base ${
-                  inventoryChecking ? "pointer-events-none opacity-60" : ""
+                  inventoryChecking || authLoading
+                    ? "pointer-events-none opacity-60"
+                    : ""
                 }`}
               >
-                {inventoryChecking
+                {authLoading
+                  ? "Checking account..."
+                  : inventoryChecking
                   ? "Checking stock..."
                   : "Proceed to Checkout"}
-                {!inventoryChecking && <ArrowRight className="w-5 h-5" />}
+                {!inventoryChecking && !authLoading && (
+                  <ArrowRight className="w-5 h-5" />
+                )}
               </Link>
             </div>
           </div>

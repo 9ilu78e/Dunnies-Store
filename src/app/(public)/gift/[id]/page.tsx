@@ -103,6 +103,7 @@ function transformDatabaseGift(dbGift: any): ProductRecord {
     name: dbGift.name,
     description: dbGift.description || "",
     longDescription: dbGift.description || "",
+    deliveryFee: dbGift.deliveryFee,
     price: readGiftIncludedProducts(dbGift.includedProducts).length
       ? dbGift.includedProductPrice
       : dbGift.flashSalePrice &&

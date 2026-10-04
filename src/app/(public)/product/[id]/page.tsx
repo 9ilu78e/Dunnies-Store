@@ -114,6 +114,7 @@ function transformDatabaseProduct(dbProduct: any): ProductRecord {
     description: dbProduct.description || "",
     longDescription: dbProduct.description || "",
     price: isFlashSaleActive ? dbProduct.flashSalePrice : dbProduct.price,
+    deliveryFee: dbProduct.deliveryFee,
     stockQuantity: dbProduct.stockQuantity,
     sizeVariants: readSizeVariants(dbProduct.sizeVariants),
     originalPrice: isFlashSaleActive ? dbProduct.price : undefined,

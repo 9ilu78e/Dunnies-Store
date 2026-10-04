@@ -20,6 +20,7 @@ type CartItem = {
   quantity: number;
   image: string;
   stockQuantity?: number;
+  deliveryFee?: number;
   size?: string;
   giftContents?: GiftContentSnapshot[];
 };
@@ -198,6 +199,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         {
           stockQuantity: number;
           price: number;
+          deliveryFee: number;
           itemType: CatalogItemType;
           size?: string;
           giftContents?: GiftContentSnapshot[];
@@ -209,6 +211,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             itemType: CatalogItemType;
             stockQuantity: number;
             price: number;
+            deliveryFee: number;
             size?: string;
             giftContents?: GiftContentSnapshot[];
           }) => [
@@ -232,6 +235,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             quantity: Math.min(item.quantity, available.stockQuantity),
             stockQuantity: available.stockQuantity,
             price: available.price,
+            deliveryFee: available.deliveryFee,
             ...(available.giftContents
               ? { giftContents: available.giftContents }
               : {}),
