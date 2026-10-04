@@ -52,8 +52,7 @@ export default function HeroSlider() {
   return (
     <section className="px-4 py-5 sm:px-8 sm:py-6 lg:px-12 lg:py-8">
       <div
-        className="relative mx-auto w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-purple-100 sm:rounded-3xl"
-        style={{ aspectRatio: "1280 / 853" }}
+        className="relative mx-auto aspect-[1280/853] w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-purple-100 sm:rounded-3xl lg:aspect-[3.5/1]"
         role="region"
         aria-label="Hero promotions"
         tabIndex={0}
@@ -74,7 +73,7 @@ export default function HeroSlider() {
               alt={slide.alt}
               fill
               sizes="(max-width: 1280px) 100vw, 1152px"
-              className="object-contain"
+              className="object-contain lg:object-cover"
               draggable={false}
               priority={index === 0}
             />

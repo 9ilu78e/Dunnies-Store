@@ -9,6 +9,10 @@ services:
         value: production
       - key: DATABASE_URL
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SENDER_EMAIL
+        sync: false
     disk:
       - name: uploads
         mountPath: /opt/render/project/.uploads

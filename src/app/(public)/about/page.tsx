@@ -21,12 +21,6 @@ const values = [
       "We carefully select and curate only premium quality products that meet our high standards and your expectations.",
   },
   {
-    icon: Target,
-    title: "Fast Delivery",
-    description:
-      "Your time matters to us. We ensure swift and reliable delivery across Nigeria, getting your orders to you when you need them.",
-  },
-  {
     icon: Users,
     title: "Community Focus",
     description:
@@ -93,7 +87,7 @@ export default function AboutPage() {
           <h2 className="text-2xl font-black text-gray-900 text-center mb-12">
             Our Core Values
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {values.map((value, index) => (
               <div
                 key={index}
