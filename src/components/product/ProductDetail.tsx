@@ -962,10 +962,10 @@ export default function ProductDetail({
             )}
           </div>
 
-          <dl className="space-y-2 rounded-xl border border-gray-200 bg-white p-4 text-sm">
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-gray-600">Delivery fee</dt>
-              <dd className="font-semibold text-gray-900">
+          <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            <div className="flex items-center gap-1">
+              <dt>Delivery:</dt>
+              <dd className="font-medium text-gray-700">
                 {typeof product.deliveryFee === "number" &&
                 product.deliveryFee > 0
                   ? `₦${product.deliveryFee.toLocaleString()}`
@@ -973,9 +973,9 @@ export default function ProductDetail({
               </dd>
             </div>
             {isCustomizableGift && (
-              <div className="flex items-center justify-between gap-4 border-t border-gray-100 pt-2">
-                <dt className="text-gray-600">Packing and box fee</dt>
-                <dd className="font-semibold text-gray-900">
+              <div className="flex items-center gap-1">
+                <dt>Packing &amp; box:</dt>
+                <dd className="font-medium text-gray-700">
                   ₦{(product.extraPrice ?? 0).toLocaleString()}
                 </dd>
               </div>
