@@ -5,9 +5,12 @@ import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import SizeVariantEditor from "@/components/product/SizeVariantEditor";
 import {
+  convertVariantKind,
+  getVariantKind,
   readSizeVariants,
   totalVariantStock,
   type SizeVariant,
+  type VariantKind,
 } from "@/lib/sizeVariants";
 
 interface AddProductModalProps {
@@ -36,6 +39,7 @@ export default function AddProductModal({
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
+  const [variantKind, setVariantKind] = useState<VariantKind>("size");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
@@ -66,6 +70,13 @@ export default function AddProductModal({
             });
             const productSizeVariants = readSizeVariants(product.sizeVariants);
             setSizeVariants(productSizeVariants);
+            setVariantKind(
+              productSizeVariants.length > 0
+                ? getVariantKind(productSizeVariants)
+                : /\b(perfume|fragrance|cologne|eau de)\b/i.test(product.name)
+                ? "volume"
+                : "size"
+            );
             if (productSizeVariants.length > 0) {
               setFormData((prev) => ({
                 ...prev,
@@ -98,6 +109,27 @@ export default function AddProductModal({
     >
   ) => {
     const { name, value } = e.target;
+    if (sizeVariants.length === 0) {
+      if (
+        name === "name" &&
+        /\b(perfume|fragrance|cologne|eau de)\b/i.test(value)
+      ) {
+        setVariantKind("volume");
+      } else if (name === "name") {
+        setVariantKind("size");
+      } else if (name === "categoryId") {
+        const categoryName = categories.find(
+          (category) => category.id === value
+        )?.name;
+        if (categoryName) {
+          setVariantKind(
+            /\b(perfume|fragrance|cologne)\b/i.test(categoryName)
+              ? "volume"
+              : "size"
+          );
+        }
+      }
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -172,11 +204,14 @@ export default function AddProductModal({
             body: uploadFormData,
           });
 
+          const uploadData: { error?: string; url?: string } =
+            await uploadResponse.json();
           if (!uploadResponse.ok) {
-            throw new Error("Failed to upload image");
+            throw new Error(uploadData.error || "Failed to upload image");
           }
-
-          const uploadData = await uploadResponse.json();
+          if (typeof uploadData.url !== "string" || !uploadData.url) {
+            throw new Error("Image upload did not return a URL");
+          }
           uploadedImageUrls.push(uploadData.url);
         }
       }
@@ -229,6 +264,7 @@ export default function AddProductModal({
       setImages([]);
       setImagePreviews([]);
       setSizeVariants([]);
+      setVariantKind("size");
 
       showToast(
         productId
@@ -321,6 +357,19 @@ export default function AddProductModal({
           <div>
             <SizeVariantEditor
               variants={sizeVariants}
+              variantKind={variantKind}
+              onVariantKindChange={(kind) => {
+                setVariantKind(kind);
+                const convertedVariants = convertVariantKind(
+                  sizeVariants,
+                  kind
+                );
+                setSizeVariants(convertedVariants);
+                setFormData((prev) => ({
+                  ...prev,
+                  stockQuantity: String(totalVariantStock(convertedVariants)),
+                }));
+              }}
               onChange={(variants) => {
                 setSizeVariants(variants);
                 setFormData((prev) => ({
@@ -337,7 +386,9 @@ export default function AddProductModal({
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-1">
               {sizeVariants.length > 0
-                ? "Total stock across sizes"
+                ? `Total stock across ${
+                    variantKind === "volume" ? "volumes" : "sizes"
+                  }`
                 : "Number of products in stock *"}
             </label>
             <input
@@ -385,7 +436,7 @@ export default function AddProductModal({
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
               onChange={handleImageSelect}
               className="hidden"
             />

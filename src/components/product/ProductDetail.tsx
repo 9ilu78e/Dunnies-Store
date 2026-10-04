@@ -30,7 +30,13 @@ import type {
   GiftContentSnapshot,
 } from "@/lib/giftContents";
 import { giftContentsKey } from "@/lib/giftContents";
-import { readSizeVariants } from "@/lib/sizeVariants";
+import {
+  formatVariantChoice,
+  getVariantChoiceKind,
+  getVariantKindLabel,
+  getVariantKind,
+  readSizeVariants,
+} from "@/lib/sizeVariants";
 
 type ProductDetailProps = {
   product: ProductRecord;
@@ -123,14 +129,18 @@ export default function ProductDetail({
         const response = await fetch("/api/products", { cache: "no-store" });
         const data = await response.json();
         if (!response.ok) {
-          throw new Error(data.error || "Could not load products for this gift");
+          throw new Error(
+            data.error || "Could not load products for this gift"
+          );
         }
         if (!cancelled) {
           setAvailableGiftProducts(
-            (data.products || []).map((availableProduct: AvailableGiftProduct) => ({
-              ...availableProduct,
-              sizeVariants: readSizeVariants(availableProduct.sizeVariants),
-            }))
+            (data.products || []).map(
+              (availableProduct: AvailableGiftProduct) => ({
+                ...availableProduct,
+                sizeVariants: readSizeVariants(availableProduct.sizeVariants),
+              })
+            )
           );
         }
       } catch (loadError) {
@@ -319,6 +329,8 @@ export default function ProductDetail({
   const wishlisted = isInWishlist(product.id);
 
   const sizeVariants = product.sizeVariants ?? [];
+  const variantKind = getVariantKind(sizeVariants);
+  const variantName = getVariantKindLabel(variantKind).toLowerCase();
   const selectedVariant = sizeVariants.find(
     (variant) => variant.size.toUpperCase() === selectedSize.toUpperCase()
   );
@@ -384,19 +396,19 @@ export default function ProductDetail({
       : isCustomizableGift
       ? Math.min(baseItemStock ?? 0, giftBundleStock)
       : baseItemStock;
-  const isStockAvailable =
-    isCustomizableGift
-      ? Boolean(
-          giftContentsValid &&
-            (stockQuantity === undefined || stockQuantity > 0)
-        )
-      : sizeVariants.length > 0
-      ? Boolean(selectedSize && selectedVariant && (stockQuantity ?? 0) > 0)
-      : stockQuantity === undefined
-      ? product.stockStatus !== "out-of-stock"
-      : stockQuantity > 0;
+  const isStockAvailable = isCustomizableGift
+    ? Boolean(
+        giftContentsValid && (stockQuantity === undefined || stockQuantity > 0)
+      )
+    : sizeVariants.length > 0
+    ? Boolean(selectedSize && selectedVariant && (stockQuantity ?? 0) > 0)
+    : stockQuantity === undefined
+    ? product.stockStatus !== "out-of-stock"
+    : stockQuantity > 0;
   const stockLabel = useMemo(() => {
-    if (sizeVariants.length > 0 && !selectedSize) return "Choose a size";
+    if (sizeVariants.length > 0 && !selectedSize) {
+      return `Choose a ${variantName}`;
+    }
     if (isCustomizableGift && giftProductsLoading) return "Loading gift items";
     if (isCustomizableGift && !giftContentsValid) {
       return "Choose available gift items";
@@ -415,6 +427,7 @@ export default function ProductDetail({
     giftProductsLoading,
     selectedSize,
     sizeVariants.length,
+    variantName,
     stockQuantity,
   ]);
 
@@ -472,7 +485,7 @@ export default function ProductDetail({
     try {
       if (sizeVariants.length > 0 && !selectedSize) {
         showToast(
-          "Choose a size before adding this item to your cart.",
+          `Choose a ${variantName} before adding this item to your cart.`,
           "warning"
         );
         return;
@@ -522,7 +535,10 @@ export default function ProductDetail({
 
   const handleOrderWhatsApp = async () => {
     if (sizeVariants.length > 0 && !selectedSize) {
-      showToast("Choose a size before placing your order.", "warning");
+      showToast(
+        `Choose a ${variantName} before placing your order.`,
+        "warning"
+      );
       return;
     }
     if (isCustomizableGift && !giftContentsValid) {
@@ -557,15 +573,23 @@ export default function ProductDetail({
 
       const whatsappLink = getWhatsAppLink(whatsappNumber, {
         productName: selectedSize
-          ? `${product.name} (Size ${selectedSize})`
+          ? `${product.name} (${getVariantKindLabel(
+              variantKind
+            )} ${formatVariantChoice(selectedSize)})`
           : product.name,
         ...(isCustomizableGift
           ? {
-              productName: `${product.name}\nGift contents:\n${selectedGiftProductDetails
+              productName: `${
+                product.name
+              }\nGift contents:\n${selectedGiftProductDetails
                 .map(
                   (content) =>
                     `- ${content.product?.name || "Product"}${
-                      content.size ? ` (Size ${content.size})` : ""
+                      content.size
+                        ? ` (${getVariantKindLabel(
+                            getVariantChoiceKind(content.size)
+                          )} ${formatVariantChoice(content.size)})`
+                        : ""
                     } × ${content.quantity}`
                 )
                 .join("\n")}`,
@@ -866,7 +890,9 @@ export default function ProductDetail({
                             );
                             setSelectedGiftContents((current) =>
                               current.map((item, itemIndex) =>
-                                itemIndex === index ? { ...item, quantity } : item
+                                itemIndex === index
+                                  ? { ...item, quantity }
+                                  : item
                               )
                             );
                             setAvailableStock(
@@ -916,17 +942,24 @@ export default function ProductDetail({
                                   product.stockQuantity
                               );
                             }}
-                            aria-label={`Gift item ${index + 1} size`}
+                            aria-label={`Gift item ${
+                              index + 1
+                            } ${getVariantKind(content.productSizes)}`}
                             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none sm:col-span-3"
                           >
-                            <option value="">Choose item size</option>
+                            <option value="">
+                              Choose{" "}
+                              {getVariantKindLabel(
+                                getVariantKind(content.productSizes)
+                              ).toLowerCase()}
+                            </option>
                             {content.productSizes.map((variant) => (
                               <option
                                 key={variant.size}
                                 value={variant.size}
                                 disabled={variant.stockQuantity === 0}
                               >
-                                {variant.size}
+                                {formatVariantChoice(variant.size)}
                                 {variant.stockQuantity === 0
                                   ? " (sold out)"
                                   : ""}
@@ -1004,7 +1037,7 @@ export default function ProductDetail({
           {sizeVariants.length > 0 && (
             <fieldset className="space-y-2">
               <legend className="text-sm font-semibold text-gray-900">
-                Choose a size
+                Choose a {variantName}
               </legend>
               <div className="flex flex-wrap gap-2">
                 {sizeVariants.map((variant) => {
@@ -1028,7 +1061,7 @@ export default function ProductDetail({
                           : "border-gray-300 bg-white text-gray-800 hover:border-purple-400"
                       } disabled:cursor-not-allowed disabled:opacity-40`}
                     >
-                      {variant.size}
+                      {formatVariantChoice(variant.size)}
                       <span className="mt-0.5 block text-[10px] font-normal">
                         {isAvailable
                           ? `${variant.stockQuantity} in stock`

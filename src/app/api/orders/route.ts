@@ -6,7 +6,12 @@ import {
   generateOrderConfirmationEmail,
   generateAdminOrderNotificationEmail,
 } from "@/lib/email";
-import { readSizeVariants } from "@/lib/sizeVariants";
+import {
+  formatVariantChoice,
+  getVariantChoiceKind,
+  getVariantKindLabel,
+  readSizeVariants,
+} from "@/lib/sizeVariants";
 import {
   readGiftIncludedProducts,
   type GiftContentSelection,
@@ -40,14 +45,8 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateOrderRequest = await request.json();
 
-    const {
-      customerName,
-      customerEmail,
-      customerPhone,
-      items,
-      source,
-      notes,
-    } = body;
+    const { customerName, customerEmail, customerPhone, items, source, notes } =
+      body;
 
     if (
       !customerName ||
@@ -234,7 +233,8 @@ export async function POST(request: NextRequest) {
         );
       }
       if (selectedVariant) item.size = selectedVariant.size;
-      const itemStock = selectedVariant?.stockQuantity ?? catalogItem.stockQuantity;
+      const itemStock =
+        selectedVariant?.stockQuantity ?? catalogItem.stockQuantity;
       addStockRequirement(
         `${item.itemType}:${item.itemId}:${item.size ?? ""}`,
         catalogItem.name,
@@ -300,9 +300,7 @@ export async function POST(request: NextRequest) {
               ...(bundledSize ? { size: bundledSize } : {}),
               price: productPrice,
               image:
-                bundledProduct.imageUrls[0] ||
-                bundledProduct.imageUrl ||
-                "",
+                bundledProduct.imageUrls[0] || bundledProduct.imageUrl || "",
             });
           }
           item.giftContents = requestedContents;
@@ -312,7 +310,11 @@ export async function POST(request: NextRequest) {
       itemsWithDetails.push({
         ...item,
         name: `${item.name || catalogItem.name}${
-          item.size ? ` (Size ${item.size})` : ""
+          item.size
+            ? ` (${getVariantKindLabel(
+                getVariantChoiceKind(item.size)
+              )} ${formatVariantChoice(item.size)})`
+            : ""
         }`,
         price: unitPrice,
         giftContents,
@@ -354,8 +356,7 @@ export async function POST(request: NextRequest) {
             size: item.size ?? null,
             ...(item.giftContents
               ? {
-                  giftContents:
-                    item.giftContents as Prisma.InputJsonValue,
+                  giftContents: item.giftContents as Prisma.InputJsonValue,
                 }
               : {}),
           })),

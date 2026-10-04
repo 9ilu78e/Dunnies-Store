@@ -48,7 +48,7 @@ export default function FeaturedGifts() {
     description: g.description,
     rating: g.averageRating ?? 0,
     reviews: g.totalComments ?? 0,
-    href: `/product/${g.id}`,
+    href: `/gift/${g.id}`,
   }));
 
   return (

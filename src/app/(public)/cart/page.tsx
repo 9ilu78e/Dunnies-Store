@@ -8,6 +8,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/components/ui/Toast";
 import { giftContentsKey } from "@/lib/giftContents";
+import {
+  formatVariantChoice,
+  getVariantChoiceKind,
+  getVariantKindLabel,
+} from "@/lib/sizeVariants";
 
 export default function CartPage() {
   const router = useRouter();
@@ -103,7 +108,9 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-6">
             {cartItems.map((item) => (
               <div
-                key={`${item.itemType}:${item.id}:${item.size ?? ""}:${giftContentsKey(item.giftContents)}`}
+                key={`${item.itemType}:${item.id}:${
+                  item.size ?? ""
+                }:${giftContentsKey(item.giftContents)}`}
                 className="bg-white rounded-3xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all"
               >
                 <div className="flex flex-col sm:flex-row sm:gap-6">
@@ -124,7 +131,10 @@ export default function CartPage() {
                     </h3>
                     {item.size && (
                       <p className="mb-2 text-sm text-gray-600">
-                        Size: <span className="font-semibold">{item.size}</span>
+                        {getVariantKindLabel(getVariantChoiceKind(item.size))}{" "}
+                        <span className="font-semibold">
+                          {formatVariantChoice(item.size)}
+                        </span>
                       </p>
                     )}
                     {item.giftContents && item.giftContents.length > 0 && (
@@ -134,8 +144,12 @@ export default function CartPage() {
                             key={`${content.productId}:${content.size ?? ""}`}
                           >
                             {content.name}
-                            {content.size ? ` · Size ${content.size}` : ""} ×{" "}
-                            {content.quantity}
+                            {content.size
+                              ? ` · ${getVariantKindLabel(
+                                  getVariantChoiceKind(content.size)
+                                )} ${formatVariantChoice(content.size)}`
+                              : ""}{" "}
+                            × {content.quantity}
                           </li>
                         ))}
                       </ul>

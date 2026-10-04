@@ -7,6 +7,7 @@ const supportedImageTypes = new Set([
   "image/png",
   "image/gif",
   "image/webp",
+  "image/avif",
 ]);
 
 export async function POST(request: NextRequest) {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     if (!supportedImageTypes.has(file.type)) {
       return NextResponse.json(
-        { error: "Only JPEG, PNG, GIF, and WebP images are supported" },
+        { error: "Only JPEG, PNG, GIF, WebP, and AVIF images are supported" },
         { status: 400 }
       );
     }

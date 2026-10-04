@@ -5,9 +5,12 @@ import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import SizeVariantEditor from "@/components/product/SizeVariantEditor";
 import {
+  convertVariantKind,
+  getVariantKind,
   readSizeVariants,
   totalVariantStock,
   type SizeVariant,
+  type VariantKind,
 } from "@/lib/sizeVariants";
 import GiftContentsEditor from "@/components/product/GiftContentsEditor";
 import {
@@ -48,6 +51,7 @@ export default function AddGiftModal({
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
+  const [variantKind, setVariantKind] = useState<VariantKind>("size");
   const [includedProducts, setIncludedProducts] = useState<
     GiftIncludedProduct[]
   >([]);
@@ -86,6 +90,7 @@ export default function AddGiftModal({
             });
             const giftSizeVariants = readSizeVariants(gift.sizeVariants);
             setSizeVariants(giftSizeVariants);
+            setVariantKind(getVariantKind(giftSizeVariants));
             setIncludedProducts(
               readGiftIncludedProducts(gift.includedProducts)
             );
@@ -196,11 +201,14 @@ export default function AddGiftModal({
             body: uploadFormData,
           });
 
+          const uploadData: { error?: string; url?: string } =
+            await uploadResponse.json();
           if (!uploadResponse.ok) {
-            throw new Error("Failed to upload image");
+            throw new Error(uploadData.error || "Failed to upload image");
           }
-
-          const uploadData = await uploadResponse.json();
+          if (typeof uploadData.url !== "string" || !uploadData.url) {
+            throw new Error("Image upload did not return a URL");
+          }
           uploadedImageUrls.push(uploadData.url);
         }
       }
@@ -262,6 +270,7 @@ export default function AddGiftModal({
       setImages([]);
       setImagePreviews([]);
       setSizeVariants([]);
+      setVariantKind("size");
       setIncludedProducts([]);
 
       showToast(
@@ -353,6 +362,19 @@ export default function AddGiftModal({
           <div>
             <SizeVariantEditor
               variants={sizeVariants}
+              variantKind={variantKind}
+              onVariantKindChange={(kind) => {
+                setVariantKind(kind);
+                const convertedVariants = convertVariantKind(
+                  sizeVariants,
+                  kind
+                );
+                setSizeVariants(convertedVariants);
+                setFormData((prev) => ({
+                  ...prev,
+                  stockQuantity: String(totalVariantStock(convertedVariants)),
+                }));
+              }}
               onChange={(variants) => {
                 setSizeVariants(variants);
                 setFormData((prev) => ({
@@ -369,7 +391,9 @@ export default function AddGiftModal({
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-1">
               {sizeVariants.length > 0
-                ? "Total stock across sizes"
+                ? `Total stock across ${
+                    variantKind === "volume" ? "volumes" : "sizes"
+                  }`
                 : "Number of gifts in stock *"}
             </label>
             <input
@@ -417,7 +441,7 @@ export default function AddGiftModal({
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
               onChange={handleImageSelect}
               className="hidden"
             />
