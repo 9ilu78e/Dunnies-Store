@@ -227,7 +227,7 @@ export default function ProductCard({
           </span>
         </div>
 
-        <div className="flex min-h-7 items-center gap-1.5 px-3 pt-2">
+        <div className="flex min-h-7 items-center gap-1.5 px-2 pt-1.5 sm:px-3 sm:pt-2">
           <div
             className="flex items-center gap-px"
             aria-label={`${rating.toFixed(1)} out of 5 stars`}
@@ -250,12 +250,12 @@ export default function ProductCard({
           </span>
         </div>
 
-        <div className="bg-white px-3 pb-3 pt-1">
+        <div className="bg-white px-2 pb-1 pt-1 sm:px-3 sm:pb-2">
           <span className="line-clamp-2 block h-10 overflow-hidden text-sm font-medium leading-5 text-gray-800 transition-colors group-hover:text-purple-700">
             {name}
           </span>
 
-          <div className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="text-base font-bold leading-5 text-gray-950">
               {formattedPrice}
             </span>
@@ -284,27 +284,29 @@ export default function ProductCard({
           }`}
         />
       </button>
-      <div className="grid grid-cols-2 gap-2 bg-white px-3 pb-3 pt-1">
+      <div className="grid grid-cols-2 gap-1.5 bg-white px-2 pb-2 pt-0 sm:gap-2 sm:px-3">
         <button
           type="button"
           onClick={handleWhatsAppOrder}
-          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-green-700 bg-green-700 px-2 py-2.5 text-[11px] font-semibold text-white transition hover:bg-green-800"
+          aria-label={`Order ${name} on WhatsApp`}
+          className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-green-700 bg-green-700 px-2 text-[11px] font-semibold text-white transition hover:bg-green-800 sm:h-10 sm:rounded-xl sm:py-2"
         >
           <MessageCircle className="h-4 w-4 shrink-0" />
-          <span className="truncate">WhatsApp</span>
+          <span className="hidden truncate sm:inline">WhatsApp</span>
         </button>
         <button
           type="button"
           onClick={handleAddToCart}
           disabled={addingToCart || stockQuantity === 0}
-          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-purple-700 bg-white px-2 py-2.5 text-[11px] font-semibold text-purple-800 transition hover:bg-purple-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+          aria-label={addingToCart ? "Adding to cart" : `Add ${name} to cart`}
+          className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-purple-700 bg-purple-700 px-2 text-[11px] font-semibold text-white transition hover:bg-purple-800 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-500 sm:h-10 sm:rounded-xl sm:py-2"
         >
           {addingToCart ? (
             <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />
           ) : (
             <ShoppingCart className="h-4 w-4 shrink-0" />
           )}
-          <span className="truncate">
+          <span className="hidden truncate sm:inline">
             {addingToCart ? "Adding..." : "Add to cart"}
           </span>
         </button>
