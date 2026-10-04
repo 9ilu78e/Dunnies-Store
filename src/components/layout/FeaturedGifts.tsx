@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import ProductList from "@/components/product/ProductList";
+import ProductCard from "@/components/product/ProductCard";
 
 interface Gift {
   id: string;
@@ -79,7 +79,23 @@ export default function FeaturedGifts() {
             <p className="text-gray-600">No gifts available yet.</p>
           </div>
         ) : (
-          <ProductList products={formattedGifts} cols={2} gap={8} />
+          <div
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 sm:gap-6"
+            aria-label="Featured gifts. Scroll horizontally to see more."
+          >
+            {formattedGifts.map((gift, index) => (
+              <div
+                key={gift.id}
+                className="h-full w-[58%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
+              >
+                <ProductCard
+                  {...gift}
+                  priority={index < 2}
+                  className="rounded-xl"
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </section>
