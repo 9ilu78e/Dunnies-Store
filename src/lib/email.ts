@@ -4,6 +4,13 @@ export interface EmailOptions {
   html: string;
 }
 
+type OrderEmailItem = {
+  name: string;
+  quantity: number;
+  price: number;
+  giftContents?: Array<{ name: string; quantity: number; size?: string }>;
+};
+
 const FORMSPREE_ID = process.env.FORMSPREE_ID || "mqajqokg";
 const FORMSPREE_URL = `https://formspree.io/f/${FORMSPREE_ID}`;
 
@@ -34,7 +41,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
 
 export function generateOrderConfirmationEmail(
   customerName: string,
-  items: Array<{ name: string; quantity: number; price: number }>,
+  items: OrderEmailItem[],
   total: number,
   source: string
 ): string {
@@ -42,7 +49,18 @@ export function generateOrderConfirmationEmail(
     .map(
       (item) => `
     <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}
+        ${
+          item.giftContents?.length
+            ? `<ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12px;">${item.giftContents
+                .map(
+                  (content) =>
+                    `<li>${content.name}${content.size ? ` · Size ${content.size}` : ""} × ${content.quantity}</li>`
+                )
+                .join("")}</ul>`
+            : ""
+        }
+      </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₦${item.price.toLocaleString()}</td>
     </tr>
@@ -111,7 +129,7 @@ export function generateAdminOrderNotificationEmail(
   customerName: string,
   customerEmail: string,
   customerPhone: string,
-  items: Array<{ name: string; quantity: number; price: number }>,
+  items: OrderEmailItem[],
   total: number,
   source: string,
   orderId: string
@@ -120,7 +138,18 @@ export function generateAdminOrderNotificationEmail(
     .map(
       (item) => `
     <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}
+        ${
+          item.giftContents?.length
+            ? `<ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12px;">${item.giftContents
+                .map(
+                  (content) =>
+                    `<li>${content.name}${content.size ? ` · Size ${content.size}` : ""} × ${content.quantity}</li>`
+                )
+                .join("")}</ul>`
+            : ""
+        }
+      </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₦${item.price.toLocaleString()}</td>
     </tr>

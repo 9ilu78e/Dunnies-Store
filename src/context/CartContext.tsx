@@ -8,6 +8,7 @@ import {
   useState,
   ReactNode,
 } from "react";
+import { giftContentsKey, type GiftContentSnapshot } from "@/lib/giftContents";
 
 export type CatalogItemType = "product" | "gift" | "souvenir";
 
@@ -19,16 +20,25 @@ type CartItem = {
   quantity: number;
   image: string;
   stockQuantity?: number;
+  size?: string;
+  giftContents?: GiftContentSnapshot[];
 };
 
 type CartContextType = {
   items: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity">, quantity?: number) => boolean;
-  removeFromCart: (id: CartItem["id"], itemType: CatalogItemType) => void;
+  removeFromCart: (
+    id: CartItem["id"],
+    itemType: CatalogItemType,
+    size?: string,
+    giftContents?: GiftContentSnapshot[]
+  ) => void;
   updateQuantity: (
     id: CartItem["id"],
     quantity: number,
-    itemType: CatalogItemType
+    itemType: CatalogItemType,
+    size?: string,
+    giftContents?: GiftContentSnapshot[]
   ) => void;
   refreshInventory: () => Promise<string[]>;
   inventoryChecking: boolean;
@@ -80,7 +90,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return false;
     }
     const existing = items.find(
-      (item) => item.id === product.id && item.itemType === product.itemType
+      (item) =>
+        item.id === product.id &&
+        item.itemType === product.itemType &&
+        item.size === product.size &&
+        giftContentsKey(item.giftContents) ===
+          giftContentsKey(product.giftContents)
     );
     if (existing) {
       const nextQuantity = existing.quantity + quantity;
@@ -88,7 +103,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (stockLimit !== undefined && nextQuantity > stockLimit) return false;
       setItems((current) =>
         current.map((i) =>
-          i.id === product.id && i.itemType === product.itemType
+          i.id === product.id &&
+          i.itemType === product.itemType &&
+          i.size === product.size &&
+          giftContentsKey(i.giftContents) ===
+            giftContentsKey(product.giftContents)
             ? { ...i, ...product, quantity: nextQuantity }
             : i
         )
@@ -105,24 +124,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const removeFromCart = (id: CartItem["id"], itemType: CatalogItemType) => {
+  const removeFromCart = (
+    id: CartItem["id"],
+    itemType: CatalogItemType,
+    size?: string,
+    giftContents?: GiftContentSnapshot[]
+  ) => {
     setItems((current) =>
-      current.filter((i) => i.id !== id || i.itemType !== itemType)
+      current.filter(
+        (i) =>
+          i.id !== id ||
+          i.itemType !== itemType ||
+          i.size !== size ||
+          giftContentsKey(i.giftContents) !== giftContentsKey(giftContents)
+      )
     );
   };
 
   const updateQuantity = (
     id: CartItem["id"],
     quantity: number,
-    itemType: CatalogItemType
+    itemType: CatalogItemType,
+    size?: string,
+    giftContents?: GiftContentSnapshot[]
   ) => {
     if (quantity <= 0) {
-      removeFromCart(id, itemType);
+      removeFromCart(id, itemType, size, giftContents);
       return;
     }
     setItems((current) =>
       current.map((i) =>
-        i.id === id && i.itemType === itemType
+        i.id === id &&
+        i.itemType === itemType &&
+        i.size === size &&
+        giftContentsKey(i.giftContents) === giftContentsKey(giftContents)
           ? {
               ...i,
               quantity:
@@ -146,6 +181,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           items: items.map((item) => ({
             id: String(item.id),
             itemType: item.itemType,
+            ...(item.size ? { size: item.size } : {}),
+            ...(item.giftContents
+              ? { giftContents: item.giftContents }
+              : {}),
           })),
         }),
         cache: "no-store",
@@ -156,7 +195,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       const availableByItem = new Map<
         string,
-        { stockQuantity: number; price: number; itemType: CatalogItemType }
+        {
+          stockQuantity: number;
+          price: number;
+          itemType: CatalogItemType;
+          size?: string;
+          giftContents?: GiftContentSnapshot[];
+        }
       >(
         data.items.map(
           (item: {
@@ -164,8 +209,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
             itemType: CatalogItemType;
             stockQuantity: number;
             price: number;
+            size?: string;
+            giftContents?: GiftContentSnapshot[];
           }) => [
-            `${item.itemType}:${item.id}`,
+            `${item.itemType}:${item.id}:${item.size ?? ""}:${giftContentsKey(item.giftContents)}`,
             item,
           ]
         )
@@ -173,7 +220,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const unavailableNames: string[] = [];
       const reconciledItems = items.flatMap((item) => {
         const available = availableByItem.get(
-          `${item.itemType}:${item.id}`
+          `${item.itemType}:${item.id}:${item.size ?? ""}:${giftContentsKey(item.giftContents)}`
         );
         if (!available || available.stockQuantity < 1) {
           unavailableNames.push(item.name);
@@ -185,6 +232,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
             quantity: Math.min(item.quantity, available.stockQuantity),
             stockQuantity: available.stockQuantity,
             price: available.price,
+            ...(available.giftContents
+              ? { giftContents: available.giftContents }
+              : {}),
           },
         ];
       });

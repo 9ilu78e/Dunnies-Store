@@ -9,7 +9,24 @@ interface Order {
   total: number;
   status: string;
   createdAt: string;
+  notes?: string | null;
   items?: any[];
+  orderItems?: Array<{
+    id: string;
+    quantity: number;
+    size: string | null;
+    product?: { name: string } | null;
+    gift?: { name: string } | null;
+    souvenir?: { name: string } | null;
+    giftContents?: Array<{
+      productId: string;
+      name: string;
+      quantity: number;
+      size?: string;
+      price: number;
+      image: string;
+    }> | null;
+  }>;
 }
 
 export default function ManageOrders() {
@@ -88,7 +105,9 @@ export default function ManageOrders() {
           <p className="text-gray-600 mb-4 text-lg font-semibold">
             No orders yet
           </p>
-          <p className="text-gray-500">Orders placed by customers will appear here</p>
+          <p className="text-gray-500">
+            Orders placed by customers will appear here
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -145,6 +164,51 @@ export default function ManageOrders() {
                   </button>
                 </div>
               </div>
+              {order.orderItems && order.orderItems.length > 0 && (
+                <div className="mt-4 border-t border-gray-100 pt-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Items
+                  </p>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    {order.orderItems.map((item) => (
+                      <li key={item.id}>
+                        {item.product?.name ||
+                          item.gift?.name ||
+                          item.souvenir?.name ||
+                          "Store item"}
+                        {item.size ? ` · Size ${item.size}` : ""} · Qty{" "}
+                        {item.quantity}
+                        {item.giftContents &&
+                          item.giftContents.length > 0 && (
+                            <ul className="ml-5 mt-1 list-disc space-y-1 text-xs text-gray-600">
+                              {item.giftContents.map((content) => (
+                                <li
+                                  key={`${content.productId}:${content.size ?? ""}`}
+                                >
+                                  {content.name}
+                                  {content.size
+                                    ? ` · Size ${content.size}`
+                                    : ""}{" "}
+                                  × {content.quantity}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {order.notes && (
+                            <div className="mt-4 border-t border-gray-100 pt-3">
+                              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                Delivery and payment
+                              </p>
+                              <p className="whitespace-pre-wrap text-sm text-gray-700">
+                                {order.notes}
+                              </p>
+                            </div>
+                          )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>

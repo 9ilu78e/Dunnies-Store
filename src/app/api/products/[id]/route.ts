@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { saveUploadedFile } from "@/lib/uploadHandler";
+import { totalVariantStock, validateSizeVariants } from "@/lib/sizeVariants";
 
 type Params = {
   params: Promise<{
@@ -23,21 +24,26 @@ export async function GET(_: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-
     const ratings = (product.comments as any[]).map((c: any) => c.rating);
-    const averageRating = ratings.length > 0 
-      ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
-      : 0;
+    const averageRating =
+      ratings.length > 0
+        ? Math.round(
+            (ratings.reduce((a: number, b: number) => a + b, 0) /
+              ratings.length) *
+              10
+          ) / 10
+        : 0;
 
     // Map imageUrls array to image (first) and images (all)
     // Handle null imageUrl from existing products
-    const imageUrls = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
-      ? product.imageUrls
-      : (product.imageUrl && typeof product.imageUrl === 'string')
-      ? [product.imageUrl]
-      : [];
+    const imageUrls =
+      Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+        ? product.imageUrls
+        : product.imageUrl && typeof product.imageUrl === "string"
+        ? [product.imageUrl]
+        : [];
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       product: {
         ...product,
         image: imageUrls[0] || "",
@@ -46,7 +52,7 @@ export async function GET(_: NextRequest, { params }: Params) {
         averageRating,
         totalComments: product.comments.length,
         totalLikes: product.likes.length,
-      }
+      },
     });
   } catch (error) {
     console.error("[PRODUCT_GET]", error);
@@ -92,9 +98,11 @@ export async function PUT(request: NextRequest, { params }: Params) {
       description,
       price,
       imageUrl,
+      imageUrls,
       categoryId,
       priority,
       stockQuantity,
+      sizeVariants,
       images,
     } = body;
     const parsedPrice =
@@ -104,14 +112,43 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     if (name) updateData.name = name;
     if (description) updateData.description = description;
-    if (imageUrl) updateData.imageUrl = imageUrl;
+    if (imageUrls !== undefined) {
+      if (
+        !Array.isArray(imageUrls) ||
+        !imageUrls.every(
+          (url) => typeof url === "string" && url.trim().length > 0
+        )
+      ) {
+        return NextResponse.json(
+          { error: "Image URLs must be a list of non-empty strings" },
+          { status: 400 }
+        );
+      }
+
+      const normalizedImageUrls: string[] = imageUrls.map((url: string) =>
+        url.trim()
+      );
+      updateData.imageUrls = normalizedImageUrls;
+      updateData.imageUrl = normalizedImageUrls[0] || null;
+    } else if (typeof imageUrl === "string") {
+      updateData.imageUrl = imageUrl.trim() || null;
+      updateData.imageUrls = imageUrl.trim() ? [imageUrl.trim()] : [];
+    }
     // Only update categoryId if it's a valid string value (not empty or "null")
-    if (categoryId && String(categoryId).trim() && String(categoryId) !== "null") {
+    if (
+      categoryId &&
+      String(categoryId).trim() &&
+      String(categoryId) !== "null"
+    ) {
       updateData.categoryId = categoryId;
     }
     if (priority) updateData.priority = priority;
     if (!Number.isNaN(parsedPrice)) updateData.price = parsedPrice;
-    if (stockQuantity !== undefined && stockQuantity !== null && stockQuantity !== "") {
+    if (
+      stockQuantity !== undefined &&
+      stockQuantity !== null &&
+      stockQuantity !== ""
+    ) {
       const parsedStockQuantity = Number(stockQuantity);
       if (
         !Number.isSafeInteger(parsedStockQuantity) ||
@@ -123,6 +160,16 @@ export async function PUT(request: NextRequest, { params }: Params) {
         );
       }
       updateData.stockQuantity = parsedStockQuantity;
+    }
+    if (sizeVariants !== undefined) {
+      const validation = validateSizeVariants(sizeVariants);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+      updateData.sizeVariants = validation.variants;
+      if (validation.variants.length > 0) {
+        updateData.stockQuantity = totalVariantStock(validation.variants);
+      }
     }
 
     if (images && Array.isArray(images) && images.length > 0) {
@@ -136,19 +183,19 @@ export async function PUT(request: NextRequest, { params }: Params) {
         }
       }
       if (processedImages.length > 0) {
-        updateData.imageUrls = processedImages;
-        // Update imageUrl to first image
-        updateData.imageUrl = processedImages[0];
+        const existingImageUrls = Array.isArray(updateData.imageUrls)
+          ? updateData.imageUrls.filter(
+              (url): url is string => typeof url === "string"
+            )
+          : [];
+        const allImageUrls = [...existingImageUrls, ...processedImages];
+        updateData.imageUrls = allImageUrls;
+        updateData.imageUrl = allImageUrls[0] || null;
       }
     }
-    // If no new images provided, keep existing imageUrls
-    // (don't set updateData.imageUrls if it's not in the request)
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
-        { error: "Nothing to update" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
     const product = await prisma.product.update({

@@ -3,6 +3,8 @@ import ProductDetail from "@/components/product/ProductDetail";
 import ProductDetailWrapper from "@/components/product/ProductDetailWrapper";
 import { type ProductRecord } from "@/Data/products";
 import { prisma } from "@/lib/prisma";
+import { readSizeVariants } from "@/lib/sizeVariants";
+import { readGiftIncludedProducts } from "@/lib/giftContents";
 
 type GiftDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -15,6 +17,34 @@ async function getGiftFromDatabase(id: string) {
     });
 
     if (gift) {
+      const includedProducts = readGiftIncludedProducts(gift.includedProducts);
+      const includedProductsFromDatabase = includedProducts.length
+        ? await prisma.product.findMany({
+            where: {
+              id: { in: includedProducts.map((item) => item.productId) },
+            },
+            select: {
+              id: true,
+              price: true,
+              flashSalePrice: true,
+              flashSaleEndsAt: true,
+            },
+          })
+        : [];
+      const includedProductPrice = includedProducts.reduce((total, content) => {
+        const bundledProduct = includedProductsFromDatabase.find(
+          (item) => item.id === content.productId
+        );
+        if (!bundledProduct) return total;
+        const unitPrice =
+          bundledProduct.flashSalePrice !== null &&
+          bundledProduct.flashSaleEndsAt !== null &&
+          bundledProduct.flashSaleEndsAt.getTime() > Date.now()
+            ? bundledProduct.flashSalePrice
+            : bundledProduct.price;
+        return total + unitPrice * content.quantity;
+      }, 0);
+
       // Fetch comments and likes separately
       const comments = await prisma.productComment.findMany({
         where: { productId: id },
@@ -23,7 +53,7 @@ async function getGiftFromDatabase(id: string) {
         where: { productId: id },
       });
 
-      return { ...gift, comments, likes };
+      return { ...gift, comments, likes, includedProductPrice };
     }
 
     return null;
@@ -73,19 +103,23 @@ function transformDatabaseGift(dbGift: any): ProductRecord {
     name: dbGift.name,
     description: dbGift.description || "",
     longDescription: dbGift.description || "",
-    price:
-      dbGift.flashSalePrice &&
-      dbGift.flashSaleEndsAt &&
-      new Date(dbGift.flashSaleEndsAt).getTime() > Date.now()
+    price: readGiftIncludedProducts(dbGift.includedProducts).length
+      ? dbGift.includedProductPrice
+      : dbGift.flashSalePrice &&
+          dbGift.flashSaleEndsAt &&
+          new Date(dbGift.flashSaleEndsAt).getTime() > Date.now()
         ? dbGift.flashSalePrice
         : dbGift.price,
     originalPrice:
+      !readGiftIncludedProducts(dbGift.includedProducts).length &&
       dbGift.flashSalePrice &&
       dbGift.flashSaleEndsAt &&
       new Date(dbGift.flashSaleEndsAt).getTime() > Date.now()
         ? dbGift.price
         : undefined,
     stockQuantity: dbGift.stockQuantity,
+    sizeVariants: readSizeVariants(dbGift.sizeVariants),
+    includedProducts: readGiftIncludedProducts(dbGift.includedProducts),
     rating: averageRating,
     reviewsCount: dbGift.comments.length,
     image: imageUrls[0],

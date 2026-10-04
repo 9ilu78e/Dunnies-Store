@@ -48,6 +48,7 @@ model Product {
   description     String
   price           Float
   stockQuantity   Int       @default(0)
+  sizeVariants    Json      @default("[]")
   imageUrl        String?
   imageUrls       String[]  @default([])
   categoryId      String?
@@ -70,8 +71,10 @@ model Gift {
   description     String?
   price           Float
   stockQuantity   Int       @default(0)
+  sizeVariants    Json      @default("[]")
   imageUrl        String?
   imageUrls       String[]  @default([])
+  includedProducts Json     @default("[]")
   categoryId      String?
   priority        String    @default("normal")
   flashSalePrice  Float?
@@ -89,6 +92,7 @@ model Souvenir {
   description     String?
   price           Float
   stockQuantity   Int       @default(0)
+  sizeVariants    Json      @default("[]")
   imageUrl        String?
   imageUrls       String[]  @default([])
   categoryId      String?
@@ -147,6 +151,8 @@ model OrderItem {
   giftId     String?
   souvenirId String?
   quantity   Int
+  size       String?
+  giftContents Json?
 
   order    Order     @relation(fields: [orderId], references: [id])
   product  Product?  @relation(fields: [productId], references: [id])

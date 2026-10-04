@@ -1,3 +1,6 @@
+import type { SizeVariant } from "@/lib/sizeVariants";
+import type { GiftIncludedProduct } from "@/lib/giftContents";
+
 export type ProductReview = {
   id: string;
   author: string;
@@ -14,6 +17,8 @@ export type ProductRecord = {
   longDescription: string;
   price: number;
   stockQuantity?: number;
+  sizeVariants?: SizeVariant[];
+  includedProducts?: GiftIncludedProduct[];
   originalPrice?: number;
   rating: number;
   reviewsCount: number;

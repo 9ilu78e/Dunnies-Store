@@ -3,6 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
+import SizeVariantEditor from "@/components/product/SizeVariantEditor";
+import {
+  readSizeVariants,
+  totalVariantStock,
+  type SizeVariant,
+} from "@/lib/sizeVariants";
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -29,6 +35,7 @@ export default function AddProductModal({
   });
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
@@ -57,6 +64,14 @@ export default function AddProductModal({
               categoryId: product.categoryId || "",
               priority: product.priority || "normal",
             });
+            const productSizeVariants = readSizeVariants(product.sizeVariants);
+            setSizeVariants(productSizeVariants);
+            if (productSizeVariants.length > 0) {
+              setFormData((prev) => ({
+                ...prev,
+                stockQuantity: String(totalVariantStock(productSizeVariants)),
+              }));
+            }
             // Show existing images from imageUrls array
             if (product.imageUrls && product.imageUrls.length > 0) {
               setImagePreviews(product.imageUrls);
@@ -89,23 +104,39 @@ export default function AddProductModal({
     }));
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const maxImages = 10;
-    const newImages = [...images, ...files].slice(0, maxImages);
-    setImages(newImages);
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const remainingSlots = Math.max(0, 10 - imagePreviews.length);
+    const newFiles = selectedFiles.slice(0, remainingSlots);
 
-    const previews: string[] = [];
-    newImages.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        previews.push(reader.result as string);
-        if (previews.length === newImages.length) {
-          setImagePreviews(previews);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    try {
+      const previews = await Promise.all(
+        newFiles.map(
+          (file) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () =>
+                typeof reader.result === "string"
+                  ? resolve(reader.result)
+                  : reject(new Error("Unable to preview selected image"));
+              reader.onerror = () =>
+                reject(
+                  reader.error || new Error("Unable to read selected image")
+                );
+              reader.readAsDataURL(file);
+            })
+        )
+      );
+      setImages((prev) => [...prev, ...newFiles]);
+      setImagePreviews((prev) => [...prev, ...previews]);
+    } catch (previewError) {
+      const message =
+        previewError instanceof Error
+          ? previewError.message
+          : "Unable to preview selected images";
+      setError(message);
+      showToast(message, "error");
+    }
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -113,7 +144,11 @@ export default function AddProductModal({
   };
 
   const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    const existingImageCount = imagePreviews.length - images.length;
+    if (index >= existingImageCount) {
+      const newImageIndex = index - existingImageCount;
+      setImages((prev) => prev.filter((_, i) => i !== newImageIndex));
+    }
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -157,7 +192,8 @@ export default function AddProductModal({
         description: formData.description,
         price: parseFloat(formData.price),
         stockQuantity: Number(formData.stockQuantity),
-        imageUrl: formData.imageUrl || allImageUrls[0] || "",
+        sizeVariants,
+        imageUrl: allImageUrls[0] || "",
         imageUrls: allImageUrls,
         categoryId: formData.categoryId,
         priority: formData.priority,
@@ -192,6 +228,7 @@ export default function AddProductModal({
       });
       setImages([]);
       setImagePreviews([]);
+      setSizeVariants([]);
 
       showToast(
         productId
@@ -282,8 +319,26 @@ export default function AddProductModal({
           </div>
 
           <div>
+            <SizeVariantEditor
+              variants={sizeVariants}
+              onChange={(variants) => {
+                setSizeVariants(variants);
+                setFormData((prev) => ({
+                  ...prev,
+                  stockQuantity:
+                    variants.length > 0
+                      ? String(totalVariantStock(variants))
+                      : prev.stockQuantity,
+                }));
+              }}
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Number of products in stock *
+              {sizeVariants.length > 0
+                ? "Total stock across sizes"
+                : "Number of products in stock *"}
             </label>
             <input
               type="number"
@@ -292,7 +347,8 @@ export default function AddProductModal({
               onChange={handleChange}
               min="0"
               step="1"
-              required
+              required={sizeVariants.length === 0}
+              readOnly={sizeVariants.length > 0}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
             />
           </div>

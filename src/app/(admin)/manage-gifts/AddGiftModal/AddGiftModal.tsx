@@ -3,6 +3,17 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
+import SizeVariantEditor from "@/components/product/SizeVariantEditor";
+import {
+  readSizeVariants,
+  totalVariantStock,
+  type SizeVariant,
+} from "@/lib/sizeVariants";
+import GiftContentsEditor from "@/components/product/GiftContentsEditor";
+import {
+  readGiftIncludedProducts,
+  type GiftIncludedProduct,
+} from "@/lib/giftContents";
 
 const toDateTimeLocal = (value: string | Date) => {
   const date = new Date(value);
@@ -36,6 +47,10 @@ export default function AddGiftModal({
   });
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
+  const [includedProducts, setIncludedProducts] = useState<
+    GiftIncludedProduct[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -69,6 +84,17 @@ export default function AddGiftModal({
                 ? toDateTimeLocal(gift.flashSaleEndsAt)
                 : "",
             });
+            const giftSizeVariants = readSizeVariants(gift.sizeVariants);
+            setSizeVariants(giftSizeVariants);
+            setIncludedProducts(
+              readGiftIncludedProducts(gift.includedProducts)
+            );
+            if (giftSizeVariants.length > 0) {
+              setFormData((prev) => ({
+                ...prev,
+                stockQuantity: String(totalVariantStock(giftSizeVariants)),
+              }));
+            }
             if (gift.imageUrl) {
               setImagePreviews([gift.imageUrl]);
             }
@@ -104,23 +130,38 @@ export default function AddGiftModal({
     }));
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const maxImages = 10;
-    const newImages = [...images, ...files].slice(0, maxImages);
-    setImages(newImages);
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const remainingSlots = Math.max(0, 10 - imagePreviews.length);
+    const newFiles = selectedFiles.slice(0, remainingSlots);
 
-    const previews: string[] = [];
-    newImages.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        previews.push(reader.result as string);
-        if (previews.length === newImages.length) {
-          setImagePreviews(previews);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    try {
+      const previews = await Promise.all(
+        newFiles.map(
+          (file) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () =>
+                typeof reader.result === "string"
+                  ? resolve(reader.result)
+                  : reject(new Error("Unable to preview selected image"));
+              reader.onerror = () =>
+                reject(
+                  reader.error || new Error("Unable to read selected image")
+                );
+              reader.readAsDataURL(file);
+            })
+        )
+      );
+      setImages((prev) => [...prev, ...newFiles]);
+      setImagePreviews((prev) => [...prev, ...previews]);
+    } catch (previewError) {
+      const message =
+        previewError instanceof Error
+          ? previewError.message
+          : "Unable to preview selected images";
+      showToast(message, "error");
+    }
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -128,7 +169,11 @@ export default function AddGiftModal({
   };
 
   const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    const existingImageCount = imagePreviews.length - images.length;
+    if (index >= existingImageCount) {
+      const newImageIndex = index - existingImageCount;
+      setImages((prev) => prev.filter((_, i) => i !== newImageIndex));
+    }
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -171,7 +216,9 @@ export default function AddGiftModal({
         description: formData.description,
         price: parseFloat(formData.price),
         stockQuantity: Number(formData.stockQuantity),
-        imageUrl: formData.imageUrl || allImageUrls[0] || "",
+        sizeVariants,
+        includedProducts,
+        imageUrl: allImageUrls[0] || "",
         imageUrls: allImageUrls,
         categoryId: formData.categoryId,
         priority: formData.priority,
@@ -214,6 +261,8 @@ export default function AddGiftModal({
       });
       setImages([]);
       setImagePreviews([]);
+      setSizeVariants([]);
+      setIncludedProducts([]);
 
       showToast(
         giftId
@@ -295,8 +344,33 @@ export default function AddGiftModal({
           </div>
 
           <div>
+            <GiftContentsEditor
+              contents={includedProducts}
+              onChange={setIncludedProducts}
+            />
+          </div>
+
+          <div>
+            <SizeVariantEditor
+              variants={sizeVariants}
+              onChange={(variants) => {
+                setSizeVariants(variants);
+                setFormData((prev) => ({
+                  ...prev,
+                  stockQuantity:
+                    variants.length > 0
+                      ? String(totalVariantStock(variants))
+                      : prev.stockQuantity,
+                }));
+              }}
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Number of gifts in stock *
+              {sizeVariants.length > 0
+                ? "Total stock across sizes"
+                : "Number of gifts in stock *"}
             </label>
             <input
               type="number"
@@ -305,7 +379,8 @@ export default function AddGiftModal({
               onChange={handleChange}
               min="0"
               step="1"
-              required
+              required={sizeVariants.length === 0}
+              readOnly={sizeVariants.length > 0}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
             />
           </div>
