@@ -59,6 +59,7 @@ type AvailableGiftProduct = {
   name: string;
   price: number;
   stockQuantity: number;
+  categoryName: string;
   imageUrl: string | null;
   imageUrls: string[];
   sizeVariants: unknown;
@@ -85,6 +86,7 @@ export default function ProductDetail({
   const [giftProductsLoading, setGiftProductsLoading] = useState(false);
   const [giftProductsError, setGiftProductsError] = useState("");
   const [newGiftProductId, setNewGiftProductId] = useState("");
+  const [giftCategoryFilter, setGiftCategoryFilter] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [availableStock, setAvailableStock] = useState(product.stockQuantity);
@@ -136,11 +138,41 @@ export default function ProductDetail({
         if (!cancelled) {
           setAvailableGiftProducts(
             (data.products || []).map(
-              (availableProduct: AvailableGiftProduct) => ({
+              (
+                availableProduct: AvailableGiftProduct & {
+                  category?: { name?: string } | null;
+                }
+              ) => ({
                 ...availableProduct,
+                categoryName:
+                  availableProduct.category?.name || "Uncategorized",
                 sizeVariants: readSizeVariants(availableProduct.sizeVariants),
               })
             )
+          );
+          setSelectedGiftContents((current) =>
+            current.map((content) => {
+              const availableProduct = (data.products || []).find(
+                (item: AvailableGiftProduct) => item.id === content.productId
+              );
+              if (!availableProduct) return content;
+              const variants = readSizeVariants(availableProduct.sizeVariants);
+              if (
+                !variants.length ||
+                variants.some(
+                  (variant) =>
+                    variant.size.toUpperCase() === content.size?.toUpperCase()
+                )
+              ) {
+                return content;
+              }
+              const firstAvailableVariant = variants.find(
+                (variant) => variant.stockQuantity > 0
+              );
+              return firstAvailableVariant
+                ? { ...content, size: firstAvailableVariant.size }
+                : content;
+            })
           );
         }
       } catch (loadError) {
@@ -335,6 +367,24 @@ export default function ProductDetail({
     (variant) => variant.size.toUpperCase() === selectedSize.toUpperCase()
   );
   const isCustomizableGift = itemType === "gift";
+  const giftProductCategories = useMemo(
+    () =>
+      [...new Set(availableGiftProducts.map((item) => item.categoryName))].sort(
+        (left, right) => left.localeCompare(right)
+      ),
+    [availableGiftProducts]
+  );
+  const defaultGiftProductChoice = (productId: string) => {
+    const productChoice = availableGiftProducts.find(
+      (item) => item.id === productId
+    );
+    const firstAvailableVariant = readSizeVariants(
+      productChoice?.sizeVariants
+    ).find((variant) => variant.stockQuantity > 0);
+    return firstAvailableVariant
+      ? { productId, quantity: 1, size: firstAvailableVariant.size }
+      : { productId, quantity: 1 };
+  };
   const selectedGiftProductDetails = selectedGiftContents.map((content) => {
     const selectedProduct = availableGiftProducts.find(
       (availableProduct) => availableProduct.id === content.productId
@@ -410,7 +460,13 @@ export default function ProductDetail({
     }
     if (isCustomizableGift && giftProductsLoading) return "Loading gift items";
     if (isCustomizableGift && !giftContentsValid) {
-      return "Choose available gift items";
+      const requiresSize = selectedGiftProductDetails.some(
+        (content) =>
+          content.productSizes.length > 0 &&
+          !content.size &&
+          content.productSizes.some((variant) => variant.stockQuantity > 0)
+      );
+      return requiresSize ? "Choose product sizes" : "Choose gift items";
     }
     if (!isStockAvailable) return "Out of stock";
     if (stockQuantity === undefined) {
@@ -424,6 +480,7 @@ export default function ProductDetail({
     product.stockStatus,
     giftContentsValid,
     giftProductsLoading,
+    selectedGiftProductDetails,
     selectedSize,
     sizeVariants.length,
     variantName,
@@ -843,11 +900,7 @@ export default function ProductDetail({
                             setSelectedGiftContents((current) =>
                               current.map((item, itemIndex) =>
                                 itemIndex === index
-                                  ? {
-                                      ...item,
-                                      productId: nextProductId,
-                                      size: undefined,
-                                    }
+                                  ? defaultGiftProductChoice(nextProductId)
                                   : item
                               )
                             );
@@ -859,23 +912,29 @@ export default function ProductDetail({
                           aria-label={`Gift item ${index + 1}`}
                           className="min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
                         >
-                          {availableGiftProducts
-                            .filter(
-                              (availableProduct) =>
-                                availableProduct.stockQuantity > 0 ||
-                                availableProduct.id === content.productId
-                            )
-                            .map((availableProduct) => (
-                              <option
-                                key={availableProduct.id}
-                                value={availableProduct.id}
-                              >
-                                {availableProduct.name}
-                                {availableProduct.stockQuantity <= 0
-                                  ? " (out of stock)"
-                                  : ""}
-                              </option>
-                            ))}
+                          {giftProductCategories.map((categoryName) => (
+                            <optgroup key={categoryName} label={categoryName}>
+                              {availableGiftProducts
+                                .filter(
+                                  (availableProduct) =>
+                                    availableProduct.categoryName ===
+                                      categoryName &&
+                                    (availableProduct.stockQuantity > 0 ||
+                                      availableProduct.id === content.productId)
+                                )
+                                .map((availableProduct) => (
+                                  <option
+                                    key={availableProduct.id}
+                                    value={availableProduct.id}
+                                  >
+                                    {availableProduct.name}
+                                    {availableProduct.stockQuantity <= 0
+                                      ? " (out of stock)"
+                                      : ""}
+                                  </option>
+                                ))}
+                            </optgroup>
+                          ))}
                         </select>
                         <input
                           type="number"
@@ -984,6 +1043,21 @@ export default function ProductDetail({
 
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <select
+                      value={giftCategoryFilter}
+                      onChange={(event) =>
+                        setGiftCategoryFilter(event.target.value)
+                      }
+                      aria-label="Filter gift products by category"
+                      className="min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none sm:max-w-48"
+                    >
+                      <option value="">All categories</option>
+                      {giftProductCategories.map((categoryName) => (
+                        <option key={categoryName} value={categoryName}>
+                          {categoryName}
+                        </option>
+                      ))}
+                    </select>
+                    <select
                       value={newGiftProductId}
                       onChange={(event) =>
                         setNewGiftProductId(event.target.value)
@@ -996,6 +1070,9 @@ export default function ProductDetail({
                         .filter(
                           (availableProduct) =>
                             availableProduct.stockQuantity > 0 &&
+                            (!giftCategoryFilter ||
+                              availableProduct.categoryName ===
+                                giftCategoryFilter) &&
                             !selectedGiftContents.some(
                               (content) =>
                                 content.productId === availableProduct.id
@@ -1017,7 +1094,7 @@ export default function ProductDetail({
                         if (!newGiftProductId) return;
                         setSelectedGiftContents((current) => [
                           ...current,
-                          { productId: newGiftProductId, quantity: 1 },
+                          defaultGiftProductChoice(newGiftProductId),
                         ]);
                         setNewGiftProductId("");
                         setAvailableStock(
@@ -1090,6 +1167,9 @@ export default function ProductDetail({
               className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                 isStockAvailable
                   ? "bg-green-50 text-green-700"
+                  : isCustomizableGift &&
+                    (giftProductsLoading || !giftContentsValid)
+                  ? "bg-amber-50 text-amber-700"
                   : "bg-red-50 text-red-700"
               }`}
             >
