@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import SizeVariantEditor from "@/components/product/SizeVariantEditor";
@@ -41,6 +41,7 @@ export default function AddGiftModal({
     name: "",
     description: "",
     price: "",
+    extraPrice: "0",
     stockQuantity: "0",
     imageUrl: "",
     categoryId: "",
@@ -55,9 +56,60 @@ export default function AddGiftModal({
   const [includedProducts, setIncludedProducts] = useState<
     GiftIncludedProduct[]
   >([]);
+  const [includedProductsPrice, setIncludedProductsPrice] = useState(0);
+  const initialGiftPrice = useRef<number | null>(null);
+  const initialExtraPrice = useRef<number | null>(null);
+  const initialIncludedProductsPrice = useRef<number | null>(null);
+  const extraPriceInitialized = useRef(false);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  const initializeExtraPrice = useCallback(() => {
+    if (
+      !giftId ||
+      extraPriceInitialized.current ||
+      initialGiftPrice.current === null ||
+      initialIncludedProductsPrice.current === null
+    ) {
+      return;
+    }
+
+    extraPriceInitialized.current = true;
+    const savedExtraPrice = initialExtraPrice.current ?? 0;
+    setFormData((prev) => ({
+      ...prev,
+      extraPrice: String(
+        savedExtraPrice > 0
+          ? savedExtraPrice
+          : Math.max(
+              0,
+              initialGiftPrice.current! - initialIncludedProductsPrice.current!
+            )
+      ),
+    }));
+  }, [giftId]);
+
+  const handleIncludedProductsPriceChange = useCallback(
+    (price: number) => {
+      initialIncludedProductsPrice.current = price;
+      setIncludedProductsPrice((current) =>
+        current === price ? current : price
+      );
+      initializeExtraPrice();
+    },
+    [initializeExtraPrice]
+  );
+
+  useEffect(() => {
+    const totalPrice =
+      includedProductsPrice + Math.max(0, Number(formData.extraPrice) || 0);
+    setFormData((prev) =>
+      prev.price === String(totalPrice)
+        ? prev
+        : { ...prev, price: String(totalPrice) }
+    );
+  }, [formData.extraPrice, includedProductsPrice]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,10 +125,13 @@ export default function AddGiftModal({
           if (giftResponse.ok) {
             const giftData = await giftResponse.json();
             const gift = giftData.gift;
+            initialGiftPrice.current = Number(gift.price);
+            initialExtraPrice.current = Number(gift.extraPrice ?? 0);
             setFormData({
               name: gift.name || "",
               description: gift.description || "",
               price: gift.price || "",
+              extraPrice: String(gift.extraPrice ?? 0),
               stockQuantity: String(gift.stockQuantity ?? 0),
               imageUrl: gift.imageUrl || "",
               categoryId: gift.categoryId || "",
@@ -88,6 +143,7 @@ export default function AddGiftModal({
                 ? toDateTimeLocal(gift.flashSaleEndsAt)
                 : "",
             });
+            initializeExtraPrice();
             const giftSizeVariants = readSizeVariants(gift.sizeVariants);
             setSizeVariants(giftSizeVariants);
             setVariantKind(getVariantKind(giftSizeVariants));
@@ -121,7 +177,7 @@ export default function AddGiftModal({
     if (giftId || formData.name === "") {
       fetchData();
     }
-  }, [giftId]);
+  }, [giftId, initializeExtraPrice]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -223,6 +279,7 @@ export default function AddGiftModal({
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
+        extraPrice: Math.max(0, Number(formData.extraPrice) || 0),
         stockQuantity: Number(formData.stockQuantity),
         sizeVariants,
         includedProducts,
@@ -260,6 +317,7 @@ export default function AddGiftModal({
         name: "",
         description: "",
         price: "",
+        extraPrice: "0",
         stockQuantity: "0",
         imageUrl: "",
         categoryId: "",
@@ -338,24 +396,43 @@ export default function AddGiftModal({
 
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Price (₦) *
+              Gift price (₦) *
             </label>
             <input
               type="number"
               name="price"
               value={formData.price}
-              onChange={handleChange}
-              placeholder="0.00"
-              step="0.01"
+              readOnly
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-800"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Automatically calculated from included products and the extra
+              price below.
+            </p>
           </div>
 
           <div>
             <GiftContentsEditor
               contents={includedProducts}
               onChange={setIncludedProducts}
+              onBasePriceChange={handleIncludedProductsPriceChange}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-gray-900">
+              Extra gift price (₦)
+            </label>
+            <input
+              type="number"
+              name="extraPrice"
+              value={formData.extraPrice}
+              onChange={handleChange}
+              min="0"
+              step="0.01"
+              placeholder="0"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-purple-500 focus:outline-none"
             />
           </div>
 

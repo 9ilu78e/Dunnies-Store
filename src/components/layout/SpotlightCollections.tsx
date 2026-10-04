@@ -105,7 +105,7 @@ export default function SpotlightCollections() {
                   {bestSellers.map((product, index) => (
                     <div
                       key={product.id}
-                      className="h-full w-[58%] shrink-0 snap-start sm:w-[31%] lg:w-[23%]"
+                      className="h-full w-[64%] shrink-0 snap-start sm:w-[31%] lg:w-[23%]"
                     >
                       <ProductCard {...product} priority={index < 2} />
                     </div>

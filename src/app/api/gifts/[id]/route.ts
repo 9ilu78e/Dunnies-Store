@@ -3,7 +3,10 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { saveUploadedFile } from "@/lib/uploadHandler";
 import { totalVariantStock, validateSizeVariants } from "@/lib/sizeVariants";
-import { validateGiftIncludedProducts } from "@/lib/giftContents";
+import {
+  readGiftIncludedProducts,
+  validateGiftIncludedProducts,
+} from "@/lib/giftContents";
 
 export async function GET(
   request: NextRequest,
@@ -114,6 +117,7 @@ export async function PUT(
       images,
       sizeVariants,
       includedProducts,
+      extraPrice,
     } = body;
 
     const updateData: Record<string, unknown> = {};
@@ -155,6 +159,16 @@ export async function PUT(
       }
       updateData.price = parsedPrice;
     }
+    if (extraPrice !== undefined && extraPrice !== "") {
+      const parsedExtraPrice = Number(extraPrice);
+      if (!Number.isFinite(parsedExtraPrice) || parsedExtraPrice < 0) {
+        return NextResponse.json(
+          { error: "Extra price must be a non-negative amount" },
+          { status: 400 }
+        );
+      }
+      updateData.extraPrice = parsedExtraPrice;
+    }
     if (stockQuantity !== undefined && stockQuantity !== "") {
       const parsedStockQuantity = Number(stockQuantity);
       if (
@@ -178,13 +192,19 @@ export async function PUT(
         updateData.stockQuantity = totalVariantStock(validation.variants);
       }
     }
-    if (includedProducts !== undefined) {
-      const validation = validateGiftIncludedProducts(includedProducts);
+    if (includedProducts !== undefined || extraPrice !== undefined) {
+      const contentsToPrice =
+        includedProducts !== undefined
+          ? includedProducts
+          : readGiftIncludedProducts(existing.includedProducts);
+      const validation = validateGiftIncludedProducts(contentsToPrice);
       if (!validation.valid) {
         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
       const matchingProducts = await prisma.product.count({
-        where: { id: { in: validation.contents.map((item) => item.productId) } },
+        where: {
+          id: { in: validation.contents.map((item) => item.productId) },
+        },
       });
       if (matchingProducts !== validation.contents.length) {
         return NextResponse.json(
@@ -192,7 +212,27 @@ export async function PUT(
           { status: 400 }
         );
       }
-      updateData.includedProducts = validation.contents;
+      if (includedProducts !== undefined) {
+        updateData.includedProducts = validation.contents;
+      }
+      const products = await prisma.product.findMany({
+        where: {
+          id: { in: validation.contents.map((item) => item.productId) },
+        },
+        select: { id: true, price: true },
+      });
+      const includedPrice = validation.contents.reduce((total, content) => {
+        const product = products.find((item) => item.id === content.productId);
+        return total + (product?.price ?? 0) * content.quantity;
+      }, 0);
+      const extra = Number(updateData.extraPrice ?? existing.extraPrice ?? 0);
+      updateData.price = includedPrice + extra;
+      if (Number(updateData.price) <= 0) {
+        return NextResponse.json(
+          { error: "Gift price must be greater than zero" },
+          { status: 400 }
+        );
+      }
     }
     if (priority !== undefined) updateData.priority = priority || "normal";
     if (flashSalePrice !== undefined || flashSaleEndsAt !== undefined) {

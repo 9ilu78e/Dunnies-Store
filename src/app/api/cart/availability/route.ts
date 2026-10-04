@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
           stockQuantity: true,
           sizeVariants: true,
           includedProducts: true,
+          extraPrice: true,
           flashSalePrice: true,
           flashSaleEndsAt: true,
         },
@@ -162,7 +163,8 @@ export async function POST(request: NextRequest) {
                 : []
             )
           : []);
-      let bundlePrice = 0;
+      let bundlePrice =
+        item.itemType === "gift" && "extraPrice" in item ? item.extraPrice : 0;
       let bundleStock = Number.MAX_SAFE_INTEGER;
       const normalizedGiftContents = [];
       if (item.itemType === "gift" && selectedGiftContents.length > 0) {
@@ -174,9 +176,7 @@ export async function POST(request: NextRequest) {
             bundleStock = 0;
             continue;
           }
-          const productVariants = readSizeVariants(
-            bundledProduct.sizeVariants
-          );
+          const productVariants = readSizeVariants(bundledProduct.sizeVariants);
           const bundleSize = content.size?.trim().toUpperCase();
           const bundleVariant = bundleSize
             ? productVariants.find(
@@ -196,8 +196,7 @@ export async function POST(request: NextRequest) {
           normalizedGiftContents.push({
             productId: bundledProduct.id,
             name: bundledProduct.name,
-            image:
-              bundledProduct.imageUrls[0] || bundledProduct.imageUrl || "",
+            image: bundledProduct.imageUrls[0] || bundledProduct.imageUrl || "",
             ...(bundleSize ? { size: bundleSize } : {}),
             quantity: content.quantity,
             price: unitPrice,
@@ -209,8 +208,8 @@ export async function POST(request: NextRequest) {
         : item.stockQuantity;
       const isConfiguredGift =
         item.itemType === "gift" &&
-        Array.isArray(configuredContents) &&
-        configuredContents.length > 0;
+        ((Array.isArray(configuredContents) && configuredContents.length > 0) ||
+          selectedGiftContents.length > 0);
       const itemPrice =
         item.itemType === "gift" && selectedGiftContents.length > 0
           ? bundlePrice

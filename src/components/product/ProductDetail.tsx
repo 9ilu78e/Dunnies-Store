@@ -115,11 +115,11 @@ export default function ProductDetail({
   }, []);
 
   useEffect(() => {
-    if (itemType !== "gift" || !product.includedProducts?.length) return;
+    if (itemType !== "gift") return;
 
     let cancelled = false;
     setSelectedGiftContents(
-      product.includedProducts.map((content) => ({ ...content }))
+      (product.includedProducts ?? []).map((content) => ({ ...content }))
     );
     setGiftProductsLoading(true);
     setGiftProductsError("");
@@ -334,8 +334,7 @@ export default function ProductDetail({
   const selectedVariant = sizeVariants.find(
     (variant) => variant.size.toUpperCase() === selectedSize.toUpperCase()
   );
-  const isCustomizableGift =
-    itemType === "gift" && (product.includedProducts?.length ?? 0) > 0;
+  const isCustomizableGift = itemType === "gift";
   const selectedGiftProductDetails = selectedGiftContents.map((content) => {
     const selectedProduct = availableGiftProducts.find(
       (availableProduct) => availableProduct.id === content.productId
@@ -374,7 +373,7 @@ export default function ProductDetail({
   });
   const giftBundlePrice = selectedGiftProductDetails.reduce(
     (total, content) => total + content.price * content.quantity,
-    0
+    product.extraPrice ?? 0
   );
   const giftBundleStock = selectedGiftProductDetails.reduce(
     (stock, content) =>
@@ -811,8 +810,8 @@ export default function ProductDetail({
                   Customise what’s inside
                 </h2>
                 <p className="mt-1 text-xs leading-5 text-gray-600">
-                  Change the gift contents and quantities. The price updates
-                  from the products you choose.
+                  Choose or change the gift contents and quantities. The price
+                  includes the gift items and its additional charge.
                 </p>
               </div>
 
@@ -826,6 +825,11 @@ export default function ProductDetail({
                 </p>
               ) : (
                 <>
+                  {selectedGiftContents.length === 0 && (
+                    <p className="rounded-xl bg-gray-50 p-3 text-sm text-gray-600">
+                      Choose products below to build this gift.
+                    </p>
+                  )}
                   <div className="space-y-3">
                     {selectedGiftProductDetails.map((content, index) => (
                       <div
@@ -1207,19 +1211,21 @@ export default function ProductDetail({
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {product.specs.map((spec) => (
-                <div
-                  key={spec.label}
-                  className="flex min-w-0 flex-col gap-1 rounded-xl border border-gray-100 bg-white p-3 sm:p-4"
-                >
-                  <span className="text-xs font-medium text-gray-500">
-                    {spec.label}
-                  </span>
-                  <span className="break-words text-sm font-semibold text-gray-900">
-                    {spec.value}
-                  </span>
-                </div>
-              ))}
+              {product.specs
+                .filter((spec) => spec.label.toLowerCase() !== "sku")
+                .map((spec) => (
+                  <div
+                    key={spec.label}
+                    className="flex min-w-0 flex-col gap-1 rounded-xl border border-gray-100 bg-white p-3 sm:p-4"
+                  >
+                    <span className="text-xs font-medium text-gray-500">
+                      {spec.label}
+                    </span>
+                    <span className="break-words text-sm font-semibold text-gray-900">
+                      {spec.value}
+                    </span>
+                  </div>
+                ))}
             </div>
           </div>
         </div>

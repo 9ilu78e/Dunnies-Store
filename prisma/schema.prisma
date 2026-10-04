@@ -75,6 +75,7 @@ model Gift {
   imageUrl        String?
   imageUrls       String[]  @default([])
   includedProducts Json     @default("[]")
+  extraPrice       Float    @default(0)
   categoryId      String?
   priority        String    @default("normal")
   flashSalePrice  Float?

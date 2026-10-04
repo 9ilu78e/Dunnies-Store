@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
           stockQuantity: true,
           sizeVariants: true,
           includedProducts: true,
+          extraPrice: true,
           flashSalePrice: true,
           flashSaleEndsAt: true,
         },
@@ -253,7 +254,7 @@ export async function POST(request: NextRequest) {
           }));
         if (requestedContents.length > 0) {
           giftContents = [];
-          unitPrice = 0;
+          unitPrice = gift.extraPrice;
           for (const content of requestedContents) {
             const bundledProduct = catalogItems.product.get(content.productId);
             if (!bundledProduct) {

@@ -19,6 +19,7 @@ export type ProductRecord = {
   stockQuantity?: number;
   sizeVariants?: SizeVariant[];
   includedProducts?: GiftIncludedProduct[];
+  extraPrice?: number;
   originalPrice?: number;
   rating: number;
   reviewsCount: number;

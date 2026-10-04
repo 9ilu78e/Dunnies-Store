@@ -43,7 +43,7 @@ async function getGiftFromDatabase(id: string) {
             ? bundledProduct.flashSalePrice
             : bundledProduct.price;
         return total + unitPrice * content.quantity;
-      }, 0);
+      }, gift.extraPrice);
 
       // Fetch comments and likes separately
       const comments = await prisma.productComment.findMany({
@@ -106,10 +106,10 @@ function transformDatabaseGift(dbGift: any): ProductRecord {
     price: readGiftIncludedProducts(dbGift.includedProducts).length
       ? dbGift.includedProductPrice
       : dbGift.flashSalePrice &&
-          dbGift.flashSaleEndsAt &&
-          new Date(dbGift.flashSaleEndsAt).getTime() > Date.now()
-        ? dbGift.flashSalePrice
-        : dbGift.price,
+        dbGift.flashSaleEndsAt &&
+        new Date(dbGift.flashSaleEndsAt).getTime() > Date.now()
+      ? dbGift.flashSalePrice
+      : dbGift.price,
     originalPrice:
       !readGiftIncludedProducts(dbGift.includedProducts).length &&
       dbGift.flashSalePrice &&
@@ -120,6 +120,7 @@ function transformDatabaseGift(dbGift: any): ProductRecord {
     stockQuantity: dbGift.stockQuantity,
     sizeVariants: readSizeVariants(dbGift.sizeVariants),
     includedProducts: readGiftIncludedProducts(dbGift.includedProducts),
+    extraPrice: dbGift.extraPrice,
     rating: averageRating,
     reviewsCount: dbGift.comments.length,
     image: imageUrls[0],

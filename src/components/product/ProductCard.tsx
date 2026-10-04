@@ -103,11 +103,13 @@ export default function ProductCard({
   };
 
   const handleWhatsAppOrder = () => {
+    if (stockQuantity !== undefined && stockQuantity < 1) return;
     window.open(whatsappHref, "_blank", "noopener,noreferrer");
   };
 
   const handleAddToCart = async () => {
-    if (addingToCart) return;
+    if (addingToCart || (stockQuantity !== undefined && stockQuantity < 1))
+      return;
     setAddingToCart(true);
     try {
       const response = await fetch("/api/cart/availability", {
@@ -288,8 +290,13 @@ export default function ProductCard({
         <button
           type="button"
           onClick={handleWhatsAppOrder}
-          aria-label={`Order ${name} on WhatsApp`}
-          className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-green-700 bg-green-700 px-2 text-[11px] font-semibold text-white transition hover:bg-green-800 sm:h-10 sm:rounded-xl sm:py-2"
+          disabled={stockQuantity !== undefined && stockQuantity < 1}
+          aria-label={
+            stockQuantity !== undefined && stockQuantity < 1
+              ? `${name} is out of stock`
+              : `Order ${name} on WhatsApp`
+          }
+          className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-green-700 bg-green-700 px-2 text-[11px] font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300 sm:h-10 sm:rounded-xl sm:py-2"
         >
           <MessageCircle className="h-4 w-4 shrink-0" />
           <span className="hidden truncate sm:inline">WhatsApp</span>
@@ -297,8 +304,16 @@ export default function ProductCard({
         <button
           type="button"
           onClick={handleAddToCart}
-          disabled={addingToCart || stockQuantity === 0}
-          aria-label={addingToCart ? "Adding to cart" : `Add ${name} to cart`}
+          disabled={
+            addingToCart || (stockQuantity !== undefined && stockQuantity < 1)
+          }
+          aria-label={
+            stockQuantity !== undefined && stockQuantity < 1
+              ? `${name} is out of stock`
+              : addingToCart
+              ? "Adding to cart"
+              : `Add ${name} to cart`
+          }
           className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-800 px-2 text-[11px] font-semibold text-white transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:border-slate-400 disabled:bg-slate-400 disabled:text-white disabled:opacity-70 sm:h-10 sm:rounded-xl sm:py-2"
         >
           {addingToCart ? (

@@ -86,7 +86,7 @@ export default function FeaturedSouvenirs() {
             {formattedSouvenirs.map((souvenir, index) => (
               <div
                 key={souvenir.id}
-                className="h-full w-[58%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
+                className="h-full w-[64%] shrink-0 snap-start sm:w-[30%] lg:w-[23%]"
               >
                 <ProductCard
                   {...souvenir}
