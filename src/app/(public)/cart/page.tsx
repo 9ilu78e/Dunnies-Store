@@ -7,6 +7,7 @@ import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/components/ui/Toast";
+import { giftContentsKey } from "@/lib/giftContents";
 
 export default function CartPage() {
   const router = useRouter();
@@ -102,7 +103,7 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-6">
             {cartItems.map((item) => (
               <div
-                key={item.id}
+                key={`${item.itemType}:${item.id}:${item.size ?? ""}:${giftContentsKey(item.giftContents)}`}
                 className="bg-white rounded-3xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all"
               >
                 <div className="flex flex-col sm:flex-row sm:gap-6">
@@ -121,6 +122,24 @@ export default function CartPage() {
                     <h3 className="font-bold text-base mb-1 truncate">
                       {item.name}
                     </h3>
+                    {item.size && (
+                      <p className="mb-2 text-sm text-gray-600">
+                        Size: <span className="font-semibold">{item.size}</span>
+                      </p>
+                    )}
+                    {item.giftContents && item.giftContents.length > 0 && (
+                      <ul className="mb-3 space-y-1 text-xs text-gray-600">
+                        {item.giftContents.map((content) => (
+                          <li
+                            key={`${content.productId}:${content.size ?? ""}`}
+                          >
+                            {content.name}
+                            {content.size ? ` · Size ${content.size}` : ""} ×{" "}
+                            {content.quantity}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <p className="text-lg sm:text-xl font-black text-violet-600 mb-3 sm:mb-4">
                       {formatPrice(item.price)}
                     </p>
@@ -132,7 +151,9 @@ export default function CartPage() {
                             updateQuantity(
                               item.id,
                               item.quantity - 1,
-                              item.itemType
+                              item.itemType,
+                              item.size,
+                              item.giftContents
                             )
                           }
                           className="p-1 sm:p-2 hover:text-violet-600 disabled:opacity-50"
@@ -148,7 +169,9 @@ export default function CartPage() {
                             updateQuantity(
                               item.id,
                               item.quantity + 1,
-                              item.itemType
+                              item.itemType,
+                              item.size,
+                              item.giftContents
                             )
                           }
                           className="p-1 sm:p-2 hover:text-violet-600"
@@ -162,7 +185,14 @@ export default function CartPage() {
                         </button>
                       </div>
                       <button
-                        onClick={() => removeFromCart(item.id, item.itemType)}
+                        onClick={() =>
+                          removeFromCart(
+                            item.id,
+                            item.itemType,
+                            item.size,
+                            item.giftContents
+                          )
+                        }
                         className="text-red-500 flex items-center gap-1 sm:gap-2 text-sm font-semibold hover:text-red-700 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" /> Remove

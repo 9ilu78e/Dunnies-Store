@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import ProductsCatalog from "@/components/product/ProductsCatalog";
 import { type ProductRecord } from "@/Data/products";
 import { prisma } from "@/lib/prisma";
+import { readGiftIncludedProducts } from "@/lib/giftContents";
 
 export const metadata: Metadata = {
   title: "Gifts – Dunnis Stores",
   description: "Browse our collection of unique gift items for every occasion",
 };
+
+export const dynamic = "force-dynamic";
 
 type ApiProduct = {
   id: string;
@@ -21,6 +24,7 @@ type ApiProduct = {
   imageUrl: string;
   imageUrls?: string[];
   category?: string | null;
+  includedProducts?: ProductRecord["includedProducts"];
 };
 
 const adaptProductRecord = (
@@ -48,6 +52,7 @@ const adaptProductRecord = (
     price: isFlashSaleActive ? product.flashSalePrice! : product.price,
     originalPrice: isFlashSaleActive ? product.price : undefined,
     stockQuantity: product.stockQuantity ?? 0,
+    includedProducts: product.includedProducts,
     rating: product.rating ?? 0,
     reviewsCount: product.reviewsCount ?? 0,
     image: imageUrls[0],
@@ -76,6 +81,45 @@ async function fetchGifts(): Promise<ProductRecord[]> {
       where: { productId: { in: gifts.map((gift) => gift.id) } },
       select: { productId: true, rating: true },
     });
+    const includedProducts = gifts.flatMap((gift) =>
+      readGiftIncludedProducts(gift.includedProducts).map((content) => ({
+        giftId: gift.id,
+        ...content,
+      }))
+    );
+    const bundledProducts = includedProducts.length
+      ? await prisma.product.findMany({
+          where: {
+            id: { in: [...new Set(includedProducts.map((item) => item.productId))] },
+          },
+          select: {
+            id: true,
+            price: true,
+            flashSalePrice: true,
+            flashSaleEndsAt: true,
+          },
+        })
+      : [];
+    const bundledProductsById = new Map(
+      bundledProducts.map((product) => [product.id, product])
+    );
+    const includedPriceByGift = new Map<string, number>();
+    for (const content of includedProducts) {
+      const bundledProduct = bundledProductsById.get(content.productId);
+      if (!bundledProduct) continue;
+      const isFlashSaleActive =
+        bundledProduct.flashSalePrice !== null &&
+        bundledProduct.flashSaleEndsAt !== null &&
+        bundledProduct.flashSaleEndsAt.getTime() > Date.now();
+      const price = isFlashSaleActive
+        ? bundledProduct.flashSalePrice!
+        : bundledProduct.price;
+      includedPriceByGift.set(
+        content.giftId,
+        (includedPriceByGift.get(content.giftId) ?? 0) +
+          price * content.quantity
+      );
+    }
     const ratingsByGift = new Map<string, number[]>();
     for (const comment of comments) {
       const ratings = ratingsByGift.get(comment.productId) ?? [];
@@ -91,6 +135,9 @@ async function fetchGifts(): Promise<ProductRecord[]> {
           name: gift.name,
           description: gift.description || "",
           price: gift.price,
+          ...(readGiftIncludedProducts(gift.includedProducts).length
+            ? { price: includedPriceByGift.get(gift.id) ?? 0 }
+            : {}),
           stockQuantity: gift.stockQuantity,
           flashSalePrice: gift.flashSalePrice,
           flashSaleEndsAt: gift.flashSaleEndsAt,
@@ -106,6 +153,7 @@ async function fetchGifts(): Promise<ProductRecord[]> {
               ? gift.imageUrls
               : undefined,
           category: gift.category?.name || "Gift",
+          includedProducts: readGiftIncludedProducts(gift.includedProducts),
         },
         "Gift"
       );

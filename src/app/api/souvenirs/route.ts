@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { totalVariantStock, validateSizeVariants } from "@/lib/sizeVariants";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,12 +21,12 @@ export async function GET(request: NextRequest) {
     // Create maps for efficient lookup
     const commentsMap = new Map<string, any[]>();
     const likesMap = new Map<string, any[]>();
-    
+
     allComments.forEach((c: any) => {
       if (!commentsMap.has(c.productId)) commentsMap.set(c.productId, []);
       commentsMap.get(c.productId)!.push(c);
     });
-    
+
     allLikes.forEach((l: any) => {
       if (!likesMap.has(l.productId)) likesMap.set(l.productId, []);
       likesMap.get(l.productId)!.push(l);
@@ -36,17 +37,23 @@ export async function GET(request: NextRequest) {
       const souvenirLikes = likesMap.get(souvenir.id) || [];
 
       // Map imageUrls array to image (first) and images (all)
-      const imageUrls = Array.isArray(souvenir.imageUrls) && souvenir.imageUrls.length > 0
-        ? souvenir.imageUrls
-        : (souvenir.imageUrl && typeof souvenir.imageUrl === 'string')
-        ? [souvenir.imageUrl]
-        : [];
+      const imageUrls =
+        Array.isArray(souvenir.imageUrls) && souvenir.imageUrls.length > 0
+          ? souvenir.imageUrls
+          : souvenir.imageUrl && typeof souvenir.imageUrl === "string"
+          ? [souvenir.imageUrl]
+          : [];
 
       // Calculate average rating
       const ratings = (souvenirComments as any[]).map((c: any) => c.rating);
-      const averageRating = ratings.length > 0 
-        ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
-        : 0;
+      const averageRating =
+        ratings.length > 0
+          ? Math.round(
+              (ratings.reduce((a: number, b: number) => a + b, 0) /
+                ratings.length) *
+                10
+            ) / 10
+          : 0;
 
       return {
         ...souvenir,
@@ -59,13 +66,16 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ souvenirs: souvenirsWithProcessedImages }, {
-      headers: {
-        'Cache-Control': 'no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+    return NextResponse.json(
+      { souvenirs: souvenirsWithProcessedImages },
+      {
+        headers: {
+          "Cache-Control": "no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       }
-    });
+    );
   } catch (error) {
     console.error("[SOUVENIRS_GET]", error);
     return NextResponse.json(
@@ -89,12 +99,15 @@ export async function POST(request: NextRequest) {
       priority,
       flashSalePrice,
       flashSaleEndsAt,
+      sizeVariants,
     } = body;
 
     const parsedPrice = Number(price);
     const parsedStockQuantity = Number(stockQuantity ?? 0);
     const parsedFlashSalePrice =
-      flashSalePrice === "" || flashSalePrice === null || flashSalePrice === undefined
+      flashSalePrice === "" ||
+      flashSalePrice === null ||
+      flashSalePrice === undefined
         ? null
         : Number(flashSalePrice);
     const parsedFlashSaleEndsAt = flashSaleEndsAt
@@ -117,10 +130,14 @@ export async function POST(request: NextRequest) {
           Number.isNaN(parsedFlashSaleEndsAt.getTime()) ||
           parsedFlashSaleEndsAt.getTime() <= Date.now())) ||
       (flashSaleEndsAt &&
-        (!parsedFlashSaleEndsAt || Number.isNaN(parsedFlashSaleEndsAt.getTime())))
+        (!parsedFlashSaleEndsAt ||
+          Number.isNaN(parsedFlashSaleEndsAt.getTime())))
     ) {
       return NextResponse.json(
-        { error: "Enter a name, valid price, non-negative stock, and valid flash sale details" },
+        {
+          error:
+            "Enter a name, valid price, non-negative stock, and valid flash sale details",
+        },
         { status: 400 }
       );
     }
@@ -135,6 +152,17 @@ export async function POST(request: NextRequest) {
       flashSaleEndsAt: parsedFlashSalePrice ? parsedFlashSaleEndsAt : null,
     };
 
+    if (sizeVariants !== undefined) {
+      const validation = validateSizeVariants(sizeVariants);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+      souvenirData.sizeVariants = validation.variants;
+      if (validation.variants.length > 0) {
+        souvenirData.stockQuantity = totalVariantStock(validation.variants);
+      }
+    }
+
     // Handle imageUrls array from frontend
     if (imageUrls && Array.isArray(imageUrls)) {
       souvenirData.imageUrls = imageUrls;
@@ -144,7 +172,11 @@ export async function POST(request: NextRequest) {
       souvenirData.imageUrls = [imageUrl];
     }
 
-    if (categoryId && String(categoryId).trim() && String(categoryId) !== "null") {
+    if (
+      categoryId &&
+      String(categoryId).trim() &&
+      String(categoryId) !== "null"
+    ) {
       souvenirData.categoryId = categoryId;
     }
 

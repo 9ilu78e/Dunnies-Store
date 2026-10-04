@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Package,
   CreditCard,
@@ -21,8 +20,15 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [step, setStep] = useState<"form" | "success">("form");
   const [inventoryError, setInventoryError] = useState("");
-  const router = useRouter();
-  const { items, refreshInventory, inventoryChecking, clearCart } = useCart();
+  const [submitting, setSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState("");
+  const [deliveryDetails, setDeliveryDetails] = useState({
+    customerName: "",
+    customerPhone: "",
+    customerEmail: "",
+    address: "",
+  });
+  const { items, clearCart } = useCart();
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -34,23 +40,64 @@ export default function CheckoutPage() {
 
   const placeOrder = async () => {
     setInventoryError("");
+    if (
+      !deliveryDetails.customerName.trim() ||
+      !deliveryDetails.customerPhone.trim() ||
+      !deliveryDetails.customerEmail.trim() ||
+      !deliveryDetails.address.trim()
+    ) {
+      setInventoryError("Enter your name, phone, email, and delivery address.");
+      return;
+    }
+    if (!paymentMethod || items.length === 0) return;
+
+    setSubmitting(true);
     try {
-      const unavailable = await refreshInventory();
-      if (unavailable.length > 0) {
-        setInventoryError(
-          "Some items went out of stock and were removed. Please review your cart."
-        );
-        showToast("Out-of-stock items were removed from your cart.", "warning");
-        router.push("/cart");
-        return;
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: deliveryDetails.customerName.trim(),
+          customerPhone: deliveryDetails.customerPhone.trim(),
+          customerEmail: deliveryDetails.customerEmail.trim(),
+          items: items.map((item) => ({
+            itemId: String(item.id),
+            itemType: item.itemType,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            ...(item.size ? { size: item.size } : {}),
+            ...(item.giftContents
+              ? {
+                  giftContents: item.giftContents.map((content) => ({
+                    productId: content.productId,
+                    quantity: content.quantity,
+                    ...(content.size ? { size: content.size } : {}),
+                  })),
+                }
+              : {}),
+          })),
+          total,
+          source: "site",
+          notes: `Delivery address: ${deliveryDetails.address.trim()}\nPayment method: ${paymentMethod}`,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "We could not place your order.");
       }
+      setOrderId(data.order.id);
       clearCart();
       setStep("success");
     } catch (error) {
-      console.error("Unable to verify stock before order:", error);
+      console.error("Unable to place order:", error);
       setInventoryError(
-        "We could not check stock. Please try again before placing your order."
+        error instanceof Error
+          ? error.message
+          : "We could not place your order. Please try again."
       );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -59,7 +106,7 @@ export default function CheckoutPage() {
       value: "pay-before-delivery",
       label: "Pay Before Delivery",
       icon: CreditCard,
-      desc: "Pay with Paystack/Flutterwave",
+      desc: "We will contact you with payment instructions.",
     },
     {
       value: "pay-on-delivery",
@@ -78,12 +125,12 @@ export default function CheckoutPage() {
           </div>
           <h2 className="text-3xl font-black mb-4">Order Confirmed!</h2>
           <p className="text-xl font-bold text-violet-600 mb-6">
-            #DUN-{Math.floor(Math.random() * 9999)}
+            #{orderId}
           </p>
           <p className="text-gray-600 mb-8">
             {paymentMethod === "pay-on-delivery"
-              ? "Payment on delivery"
-              : "Payment completed"}
+              ? "Your order is confirmed. Payment is due on delivery."
+              : "Your order is confirmed. We will contact you with payment instructions."}
           </p>
           <Link
             href="/"
@@ -114,6 +161,14 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     placeholder="Full Name"
+                    value={deliveryDetails.customerName}
+                    onChange={(event) =>
+                      setDeliveryDetails((current) => ({
+                        ...current,
+                        customerName: event.target.value,
+                      }))
+                    }
+                    required
                     className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none"
                   />
                 </div>
@@ -122,6 +177,14 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     placeholder="+234 800 000 0000"
+                    value={deliveryDetails.customerPhone}
+                    onChange={(event) =>
+                      setDeliveryDetails((current) => ({
+                        ...current,
+                        customerPhone: event.target.value,
+                      }))
+                    }
+                    required
                     className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none"
                   />
                 </div>
@@ -130,6 +193,14 @@ export default function CheckoutPage() {
                   <input
                     type="email"
                     placeholder="Email"
+                    value={deliveryDetails.customerEmail}
+                    onChange={(event) =>
+                      setDeliveryDetails((current) => ({
+                        ...current,
+                        customerEmail: event.target.value,
+                      }))
+                    }
+                    required
                     className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none"
                   />
                 </div>
@@ -138,6 +209,14 @@ export default function CheckoutPage() {
                   <textarea
                     rows={3}
                     placeholder="Delivery Address"
+                    value={deliveryDetails.address}
+                    onChange={(event) =>
+                      setDeliveryDetails((current) => ({
+                        ...current,
+                        address: event.target.value,
+                      }))
+                    }
+                    required
                     className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none resize-none"
                   ></textarea>
                 </div>
@@ -197,13 +276,15 @@ export default function CheckoutPage() {
                 <button
                   onClick={() => void placeOrder()}
                   disabled={
-                    !paymentMethod || items.length === 0 || inventoryChecking
+                    !paymentMethod || items.length === 0 || submitting
                   }
                   className="flex-1 bg-linear-to-r from-violet-600 to-fuchsia-600 text-white py-4 rounded-2xl font-bold disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {paymentMethod === "pay-on-delivery"
+                  {submitting
+                    ? "Placing Order..."
+                    : paymentMethod === "pay-on-delivery"
                     ? "Place Order"
-                    : "Pay Now"}{" "}
+                    : "Continue to Payment"}{" "}
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>

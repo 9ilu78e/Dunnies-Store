@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { totalVariantStock, validateSizeVariants } from "@/lib/sizeVariants";
 
 export async function GET(request: NextRequest) {
   try {
@@ -145,6 +146,7 @@ export async function POST(request: NextRequest) {
       categoryId,
       priority,
       stockQuantity,
+      sizeVariants,
     } = body;
 
     if (!name || !description || !price) {
@@ -168,6 +170,17 @@ export async function POST(request: NextRequest) {
       price: parseFloat(price),
       stockQuantity: parsedStockQuantity,
     };
+
+    if (sizeVariants !== undefined) {
+      const validation = validateSizeVariants(sizeVariants);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+      productData.sizeVariants = validation.variants;
+      if (validation.variants.length > 0) {
+        productData.stockQuantity = totalVariantStock(validation.variants);
+      }
+    }
 
     // Only include categoryId if it has a valid value
     if (

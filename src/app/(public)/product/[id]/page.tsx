@@ -6,6 +6,7 @@ import {
   ProductRecord,
 } from "@/Data/products";
 import { prisma } from "@/lib/prisma";
+import { readSizeVariants } from "@/lib/sizeVariants";
 
 type ProductDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -113,6 +114,7 @@ function transformDatabaseProduct(dbProduct: any): ProductRecord {
     longDescription: dbProduct.description || "",
     price: isFlashSaleActive ? dbProduct.flashSalePrice : dbProduct.price,
     stockQuantity: dbProduct.stockQuantity,
+    sizeVariants: readSizeVariants(dbProduct.sizeVariants),
     originalPrice: isFlashSaleActive ? dbProduct.price : undefined,
     rating: averageRating,
     reviewsCount: ratings.length,

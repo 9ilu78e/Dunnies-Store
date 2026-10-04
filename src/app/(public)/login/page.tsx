@@ -152,7 +152,7 @@ export default function LoginPage() {
           : code === "auth/popup-blocked"
           ? "Your browser blocked the Google sign-in popup. Allow popups for this website and try again."
           : code === "auth/network-request-failed"
-          ? "Firebase could not be reached. Check your connection and make sure browser extensions or network filters are not blocking Firebase."
+          ? "Firebase could not be reached. In Firebase Console, add this site's domain under Authentication > Settings > Authorized domains. In Google Cloud Console, allow this domain in the Firebase API key's HTTP referrers and allow the Identity Toolkit API. Also check that your network or browser extensions are not blocking Firebase."
           : error instanceof Error
           ? error.message
           : "Google Sign-In failed";
@@ -164,9 +164,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-[100svh] bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center px-4 py-2 sm:min-h-screen sm:p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-8 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-5 sm:p-8 backdrop-blur-sm">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />

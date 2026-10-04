@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { saveUploadedFile } from "@/lib/uploadHandler";
+import { totalVariantStock, validateSizeVariants } from "@/lib/sizeVariants";
+import { validateGiftIncludedProducts } from "@/lib/giftContents";
 
 export async function GET(
   request: NextRequest,
@@ -14,10 +16,7 @@ export async function GET(
     });
 
     if (!gift) {
-      return NextResponse.json(
-        { error: "Gift not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Gift not found" }, { status: 404 });
     }
 
     // Fetch comments and likes separately
@@ -29,18 +28,24 @@ export async function GET(
     });
 
     const ratings = (comments as any[]).map((c: any) => c.rating);
-    const averageRating = ratings.length > 0 
-      ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
-      : 0;
+    const averageRating =
+      ratings.length > 0
+        ? Math.round(
+            (ratings.reduce((a: number, b: number) => a + b, 0) /
+              ratings.length) *
+              10
+          ) / 10
+        : 0;
 
     // Map imageUrls array to image (first) and images (all)
-    const imageUrls = Array.isArray(gift.imageUrls) && gift.imageUrls.length > 0
-      ? gift.imageUrls
-      : (gift.imageUrl && typeof gift.imageUrl === 'string')
-      ? [gift.imageUrl]
-      : [];
+    const imageUrls =
+      Array.isArray(gift.imageUrls) && gift.imageUrls.length > 0
+        ? gift.imageUrls
+        : gift.imageUrl && typeof gift.imageUrl === "string"
+        ? [gift.imageUrl]
+        : [];
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       gift: {
         ...gift,
         image: imageUrls[0] || "",
@@ -49,7 +54,7 @@ export async function GET(
         averageRating,
         totalComments: comments.length,
         totalLikes: likes.length,
-      }
+      },
     });
   } catch (error) {
     console.error("[GIFTS_GET]", error);
@@ -107,13 +112,18 @@ export async function PUT(
       flashSaleEndsAt,
       imageUrls,
       images,
+      sizeVariants,
+      includedProducts,
     } = body;
 
     const updateData: Record<string, unknown> = {};
 
     if (name !== undefined) {
       if (typeof name !== "string" || !name.trim()) {
-        return NextResponse.json({ error: "Name is required" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Name is required" },
+          { status: 400 }
+        );
       }
       updateData.name = name.trim();
     }
@@ -121,30 +131,68 @@ export async function PUT(
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl || null;
     if (categoryId !== undefined) updateData.categoryId = categoryId || null;
     if (Array.isArray(imageUrls)) {
-      const processedImageUrls = imageUrls.filter(
-        (url: unknown): url is string => typeof url === "string"
-      );
-      updateData.imageUrls = processedImageUrls;
-      if (imageUrl === undefined) {
-        updateData.imageUrl = processedImageUrls[0] || null;
+      if (
+        !imageUrls.every(
+          (url: unknown) => typeof url === "string" && url.trim().length > 0
+        )
+      ) {
+        return NextResponse.json(
+          { error: "Image URLs must be a list of non-empty strings" },
+          { status: 400 }
+        );
       }
+      const processedImageUrls = imageUrls.map((url: string) => url.trim());
+      updateData.imageUrls = processedImageUrls;
+      updateData.imageUrl = processedImageUrls[0] || null;
     }
     if (price !== undefined && price !== "") {
       const parsedPrice = Number(price);
       if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
-        return NextResponse.json({ error: "Price must be greater than zero" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Price must be greater than zero" },
+          { status: 400 }
+        );
       }
       updateData.price = parsedPrice;
     }
     if (stockQuantity !== undefined && stockQuantity !== "") {
       const parsedStockQuantity = Number(stockQuantity);
-      if (!Number.isSafeInteger(parsedStockQuantity) || parsedStockQuantity < 0) {
+      if (
+        !Number.isSafeInteger(parsedStockQuantity) ||
+        parsedStockQuantity < 0
+      ) {
         return NextResponse.json(
           { error: "Stock quantity must be a non-negative whole number" },
           { status: 400 }
         );
       }
       updateData.stockQuantity = parsedStockQuantity;
+    }
+    if (sizeVariants !== undefined) {
+      const validation = validateSizeVariants(sizeVariants);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+      updateData.sizeVariants = validation.variants;
+      if (validation.variants.length > 0) {
+        updateData.stockQuantity = totalVariantStock(validation.variants);
+      }
+    }
+    if (includedProducts !== undefined) {
+      const validation = validateGiftIncludedProducts(includedProducts);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+      const matchingProducts = await prisma.product.count({
+        where: { id: { in: validation.contents.map((item) => item.productId) } },
+      });
+      if (matchingProducts !== validation.contents.length) {
+        return NextResponse.json(
+          { error: "One or more gift contents reference an unknown product" },
+          { status: 400 }
+        );
+      }
+      updateData.includedProducts = validation.contents;
     }
     if (priority !== undefined) updateData.priority = priority || "normal";
     if (flashSalePrice !== undefined || flashSaleEndsAt !== undefined) {
@@ -157,7 +205,9 @@ export async function PUT(
         ? new Date(flashSaleEndsAt)
         : null;
       const updatedBasePrice =
-        typeof updateData.price === "number" ? updateData.price : existing.price;
+        typeof updateData.price === "number"
+          ? updateData.price
+          : existing.price;
       if (
         parsedFlashSalePrice !== null &&
         (!Number.isFinite(parsedFlashSalePrice) ||
@@ -168,7 +218,10 @@ export async function PUT(
           parsedFlashSaleEndsAt.getTime() <= Date.now())
       ) {
         return NextResponse.json(
-          { error: "Flash sale price must be greater than zero and less than the regular price" },
+          {
+            error:
+              "Flash sale price must be greater than zero and less than the regular price",
+          },
           { status: 400 }
         );
       }
@@ -212,10 +265,7 @@ export async function PUT(
     }
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
-        { error: "Nothing to update" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
     const gift = await prisma.gift.update({

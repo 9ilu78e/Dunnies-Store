@@ -3,6 +3,7 @@ import ProductDetail from "@/components/product/ProductDetail";
 import ProductDetailWrapper from "@/components/product/ProductDetailWrapper";
 import { type ProductRecord } from "@/Data/products";
 import { prisma } from "@/lib/prisma";
+import { readSizeVariants } from "@/lib/sizeVariants";
 
 type SouvenirDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -92,6 +93,7 @@ function transformDatabaseSouvenir(dbSouvenir: any): ProductRecord {
         ? dbSouvenir.price
         : undefined,
     stockQuantity: dbSouvenir.stockQuantity,
+    sizeVariants: readSizeVariants(dbSouvenir.sizeVariants),
     rating: averageRating,
     reviewsCount: dbSouvenir.comments.length,
     image: imageUrls[0],

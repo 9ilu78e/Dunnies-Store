@@ -25,6 +25,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { showToast } from "@/components/ui/Toast";
 import type { CatalogItemType } from "@/context/CartContext";
+import type {
+  GiftContentSelection,
+  GiftContentSnapshot,
+} from "@/lib/giftContents";
+import { giftContentsKey } from "@/lib/giftContents";
+import { readSizeVariants } from "@/lib/sizeVariants";
 
 type ProductDetailProps = {
   product: ProductRecord;
@@ -42,6 +48,18 @@ type Comment = {
   createdAt: string;
 };
 
+type AvailableGiftProduct = {
+  id: string;
+  name: string;
+  price: number;
+  stockQuantity: number;
+  imageUrl: string | null;
+  imageUrls: string[];
+  sizeVariants: unknown;
+  flashSalePrice: number | null;
+  flashSaleEndsAt: string | null;
+};
+
 export default function ProductDetail({
   product,
   itemType = "product",
@@ -52,6 +70,16 @@ export default function ProductDetail({
   const { user, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
+  const [availableGiftProducts, setAvailableGiftProducts] = useState<
+    AvailableGiftProduct[]
+  >([]);
+  const [selectedGiftContents, setSelectedGiftContents] = useState<
+    GiftContentSelection[]
+  >([]);
+  const [giftProductsLoading, setGiftProductsLoading] = useState(false);
+  const [giftProductsError, setGiftProductsError] = useState("");
+  const [newGiftProductId, setNewGiftProductId] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [availableStock, setAvailableStock] = useState(product.stockQuantity);
   const [copied, setCopied] = useState(false);
@@ -79,6 +107,49 @@ export default function ProductDetail({
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (itemType !== "gift" || !product.includedProducts?.length) return;
+
+    let cancelled = false;
+    setSelectedGiftContents(
+      product.includedProducts.map((content) => ({ ...content }))
+    );
+    setGiftProductsLoading(true);
+    setGiftProductsError("");
+
+    const loadProducts = async () => {
+      try {
+        const response = await fetch("/api/products", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Could not load products for this gift");
+        }
+        if (!cancelled) {
+          setAvailableGiftProducts(
+            (data.products || []).map((availableProduct: AvailableGiftProduct) => ({
+              ...availableProduct,
+              sizeVariants: readSizeVariants(availableProduct.sizeVariants),
+            }))
+          );
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setGiftProductsError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Could not load products for this gift"
+          );
+        }
+      } finally {
+        if (!cancelled) setGiftProductsLoading(false);
+      }
+    };
+    void loadProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, [itemType, product.id, product.includedProducts]);
 
   const redirectToLogin = () => {
     sessionStorage.setItem(
@@ -247,26 +318,124 @@ export default function ProductDetail({
 
   const wishlisted = isInWishlist(product.id);
 
-  const stockQuantity = availableStock ?? product.stockQuantity;
+  const sizeVariants = product.sizeVariants ?? [];
+  const selectedVariant = sizeVariants.find(
+    (variant) => variant.size.toUpperCase() === selectedSize.toUpperCase()
+  );
+  const isCustomizableGift =
+    itemType === "gift" && (product.includedProducts?.length ?? 0) > 0;
+  const selectedGiftProductDetails = selectedGiftContents.map((content) => {
+    const selectedProduct = availableGiftProducts.find(
+      (availableProduct) => availableProduct.id === content.productId
+    );
+    const productSizes = selectedProduct
+      ? readSizeVariants(selectedProduct.sizeVariants)
+      : [];
+    const selectedProductSize = productSizes.find(
+      (variant) =>
+        variant.size.toUpperCase() === (content.size ?? "").toUpperCase()
+    );
+    const availableProductStock = selectedProduct
+      ? productSizes.length > 0
+        ? selectedProductSize?.stockQuantity ?? 0
+        : selectedProduct.stockQuantity
+      : 0;
+    const currentPrice = selectedProduct
+      ? selectedProduct.flashSalePrice !== null &&
+        selectedProduct.flashSaleEndsAt !== null &&
+        new Date(selectedProduct.flashSaleEndsAt).getTime() > Date.now()
+        ? selectedProduct.flashSalePrice
+        : selectedProduct.price
+      : 0;
+    return {
+      ...content,
+      product: selectedProduct,
+      productSizes,
+      availableStock: availableProductStock,
+      price: currentPrice,
+      isValid:
+        Boolean(selectedProduct) &&
+        content.quantity > 0 &&
+        availableProductStock >= content.quantity &&
+        (productSizes.length === 0 || Boolean(selectedProductSize)),
+    };
+  });
+  const giftBundlePrice = selectedGiftProductDetails.reduce(
+    (total, content) => total + content.price * content.quantity,
+    0
+  );
+  const giftBundleStock = selectedGiftProductDetails.reduce(
+    (stock, content) =>
+      Math.min(stock, Math.floor(content.availableStock / content.quantity)),
+    Number.MAX_SAFE_INTEGER
+  );
+  const giftContentsValid =
+    selectedGiftContents.length > 0 &&
+    selectedGiftProductDetails.every((content) => content.isValid);
+  const baseItemStock =
+    sizeVariants.length > 0
+      ? selectedSize
+        ? availableStock ?? selectedVariant?.stockQuantity ?? 0
+        : 0
+      : availableStock ?? product.stockQuantity;
+  const stockQuantity =
+    isCustomizableGift && giftProductsLoading
+      ? 0
+      : isCustomizableGift
+      ? Math.min(baseItemStock ?? 0, giftBundleStock)
+      : baseItemStock;
   const isStockAvailable =
-    stockQuantity === undefined
+    isCustomizableGift
+      ? Boolean(
+          giftContentsValid &&
+            (stockQuantity === undefined || stockQuantity > 0)
+        )
+      : sizeVariants.length > 0
+      ? Boolean(selectedSize && selectedVariant && (stockQuantity ?? 0) > 0)
+      : stockQuantity === undefined
       ? product.stockStatus !== "out-of-stock"
       : stockQuantity > 0;
   const stockLabel = useMemo(() => {
+    if (sizeVariants.length > 0 && !selectedSize) return "Choose a size";
+    if (isCustomizableGift && giftProductsLoading) return "Loading gift items";
+    if (isCustomizableGift && !giftContentsValid) {
+      return "Choose available gift items";
+    }
     if (!isStockAvailable) return "Out of stock";
     if (stockQuantity === undefined) {
       return product.stockStatus === "low-stock" ? "Low stock" : "In stock";
     }
     if (stockQuantity <= 5) return `Low stock · ${stockQuantity} left`;
     return `In stock · ${stockQuantity} available`;
-  }, [isStockAvailable, product.stockStatus, stockQuantity]);
+  }, [
+    isStockAvailable,
+    isCustomizableGift,
+    product.stockStatus,
+    giftContentsValid,
+    giftProductsLoading,
+    selectedSize,
+    sizeVariants.length,
+    stockQuantity,
+  ]);
 
-  const fetchCurrentAvailability = async () => {
+  const fetchCurrentAvailability = async (
+    size = selectedSize,
+    giftContents: GiftContentSelection[] = isCustomizableGift
+      ? selectedGiftContents
+      : []
+  ) => {
     const response = await fetch("/api/cart/availability", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: [{ id: product.id, itemType }],
+        items: [
+          {
+            id: product.id,
+            itemType,
+            ...(size ? { size } : {}),
+            ...(isCustomizableGift ? { giftContents } : {}),
+          },
+        ],
       }),
       cache: "no-store",
     });
@@ -280,13 +449,41 @@ export default function ProductDetail({
         itemType: CatalogItemType;
         stockQuantity: number;
         price: number;
-      }) => item.id === product.id && item.itemType === itemType
-    ) as { id: string; itemType: CatalogItemType; stockQuantity: number; price: number } | undefined;
+        size?: string;
+        giftContents?: GiftContentSnapshot[];
+      }) =>
+        item.id === product.id &&
+        item.itemType === itemType &&
+        item.size === (size || undefined)
+    ) as
+      | {
+          id: string;
+          itemType: CatalogItemType;
+          stockQuantity: number;
+          price: number;
+          size?: string;
+          giftContents?: GiftContentSnapshot[];
+        }
+      | undefined;
     return current;
   };
 
   const handleAddToCart = async () => {
     try {
+      if (sizeVariants.length > 0 && !selectedSize) {
+        showToast(
+          "Choose a size before adding this item to your cart.",
+          "warning"
+        );
+        return;
+      }
+      if (isCustomizableGift && !giftContentsValid) {
+        showToast(
+          "Choose an available product, quantity, and any required size for every gift item.",
+          "warning"
+        );
+        return;
+      }
       const current = await fetchCurrentAvailability();
       if (!current || current.stockQuantity < 1) {
         setAvailableStock(0);
@@ -302,6 +499,10 @@ export default function ProductDetail({
           price: current.price,
           image: selectedImage,
           stockQuantity: current.stockQuantity,
+          ...(selectedSize ? { size: selectedSize } : {}),
+          ...(current.giftContents?.length
+            ? { giftContents: current.giftContents }
+            : {}),
         },
         quantity
       );
@@ -320,6 +521,17 @@ export default function ProductDetail({
   };
 
   const handleOrderWhatsApp = async () => {
+    if (sizeVariants.length > 0 && !selectedSize) {
+      showToast("Choose a size before placing your order.", "warning");
+      return;
+    }
+    if (isCustomizableGift && !giftContentsValid) {
+      showToast(
+        "Choose an available product, quantity, and any required size for every gift item.",
+        "warning"
+      );
+      return;
+    }
     const whatsappWindow = window.open("about:blank", "_blank");
     if (!whatsappWindow) {
       showToast("Allow pop-ups to continue to WhatsApp.", "warning");
@@ -344,7 +556,21 @@ export default function ProductDetail({
           : product.href;
 
       const whatsappLink = getWhatsAppLink(whatsappNumber, {
-        productName: product.name,
+        productName: selectedSize
+          ? `${product.name} (Size ${selectedSize})`
+          : product.name,
+        ...(isCustomizableGift
+          ? {
+              productName: `${product.name}\nGift contents:\n${selectedGiftProductDetails
+                .map(
+                  (content) =>
+                    `- ${content.product?.name || "Product"}${
+                      content.size ? ` (Size ${content.size})` : ""
+                    } × ${content.quantity}`
+                )
+                .join("\n")}`,
+            }
+          : {}),
         productPrice: current.price,
         productQuantity: quantity,
         productImage: selectedImage,
@@ -536,21 +762,284 @@ export default function ProductDetail({
             <h1 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
               {product.name}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-3">
-              {product.description}
-            </p>
           </div>
 
           <div className="flex flex-wrap items-end gap-3">
             <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
-              ₦{Number(product.price).toLocaleString()}
+              ₦
+              {Number(
+                isCustomizableGift && !giftProductsLoading
+                  ? giftBundlePrice
+                  : product.price
+              ).toLocaleString()}
             </p>
-            {product.originalPrice && (
+            {!isCustomizableGift && product.originalPrice && (
               <p className="text-sm sm:text-base text-gray-400 line-through">
                 ₦{Number(product.originalPrice).toLocaleString()}
               </p>
             )}
           </div>
+
+          {isCustomizableGift && (
+            <section className="space-y-3 rounded-2xl border border-purple-100 bg-white p-4">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">
+                  Customise what’s inside
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-gray-600">
+                  Change the gift contents and quantities. The price updates
+                  from the products you choose.
+                </p>
+              </div>
+
+              {giftProductsLoading ? (
+                <p className="text-sm text-gray-500">
+                  Loading products in stock...
+                </p>
+              ) : giftProductsError ? (
+                <p role="alert" className="text-sm text-red-700">
+                  {giftProductsError}
+                </p>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {selectedGiftProductDetails.map((content, index) => (
+                      <div
+                        key={`${content.productId}-${index}`}
+                        className="grid grid-cols-1 gap-2 rounded-xl bg-gray-50 p-3 sm:grid-cols-[minmax(0,1fr)_5rem_auto] sm:items-center"
+                      >
+                        <select
+                          value={content.productId}
+                          onChange={(event) => {
+                            const nextProductId = event.target.value;
+                            setSelectedGiftContents((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? {
+                                      ...item,
+                                      productId: nextProductId,
+                                      size: undefined,
+                                    }
+                                  : item
+                              )
+                            );
+                            setAvailableStock(
+                              selectedVariant?.stockQuantity ??
+                                product.stockQuantity
+                            );
+                          }}
+                          aria-label={`Gift item ${index + 1}`}
+                          className="min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                        >
+                          {availableGiftProducts
+                            .filter(
+                              (availableProduct) =>
+                                availableProduct.stockQuantity > 0 ||
+                                availableProduct.id === content.productId
+                            )
+                            .map((availableProduct) => (
+                              <option
+                                key={availableProduct.id}
+                                value={availableProduct.id}
+                              >
+                                {availableProduct.name}
+                                {availableProduct.stockQuantity <= 0
+                                  ? " (out of stock)"
+                                  : ""}
+                              </option>
+                            ))}
+                        </select>
+                        <input
+                          type="number"
+                          min="1"
+                          max={
+                            content.productSizes.length > 0 && content.size
+                              ? content.availableStock
+                              : content.product?.stockQuantity
+                          }
+                          step="1"
+                          value={content.quantity}
+                          onChange={(event) => {
+                            const quantity = Math.max(
+                              1,
+                              Number(event.target.value) || 1
+                            );
+                            setSelectedGiftContents((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, quantity } : item
+                              )
+                            );
+                            setAvailableStock(
+                              selectedVariant?.stockQuantity ??
+                                product.stockQuantity
+                            );
+                          }}
+                          aria-label={`Gift item ${index + 1} quantity`}
+                          className="w-full rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedGiftContents((current) =>
+                              current.filter(
+                                (_, itemIndex) => itemIndex !== index
+                              )
+                            );
+                            setAvailableStock(
+                              selectedVariant?.stockQuantity ??
+                                product.stockQuantity
+                            );
+                          }}
+                          className="justify-self-end rounded-lg p-2 text-sm text-red-600 hover:bg-red-50 sm:justify-self-auto"
+                          aria-label={`Remove ${
+                            content.product?.name || "gift item"
+                          }`}
+                        >
+                          Remove
+                        </button>
+                        {content.productSizes.length > 0 && (
+                          <select
+                            value={content.size ?? ""}
+                            onChange={(event) => {
+                              setSelectedGiftContents((current) =>
+                                current.map((item, itemIndex) =>
+                                  itemIndex === index
+                                    ? {
+                                        ...item,
+                                        size: event.target.value || undefined,
+                                      }
+                                    : item
+                                )
+                              );
+                              setAvailableStock(
+                                selectedVariant?.stockQuantity ??
+                                  product.stockQuantity
+                              );
+                            }}
+                            aria-label={`Gift item ${index + 1} size`}
+                            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none sm:col-span-3"
+                          >
+                            <option value="">Choose item size</option>
+                            {content.productSizes.map((variant) => (
+                              <option
+                                key={variant.size}
+                                value={variant.size}
+                                disabled={variant.stockQuantity === 0}
+                              >
+                                {variant.size}
+                                {variant.stockQuantity === 0
+                                  ? " (sold out)"
+                                  : ""}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        <div className="text-xs text-gray-500 sm:col-span-3">
+                          {content.product
+                            ? `₦${content.price.toLocaleString()} each`
+                            : "Product unavailable"}
+                          {content.availableStock < content.quantity &&
+                            " · Not enough stock for this quantity"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <select
+                      value={newGiftProductId}
+                      onChange={(event) =>
+                        setNewGiftProductId(event.target.value)
+                      }
+                      aria-label="Choose a product to add to this gift"
+                      className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                    >
+                      <option value="">Choose another product</option>
+                      {availableGiftProducts
+                        .filter(
+                          (availableProduct) =>
+                            availableProduct.stockQuantity > 0 &&
+                            !selectedGiftContents.some(
+                              (content) =>
+                                content.productId === availableProduct.id
+                            )
+                        )
+                        .map((availableProduct) => (
+                          <option
+                            key={availableProduct.id}
+                            value={availableProduct.id}
+                          >
+                            {availableProduct.name}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!newGiftProductId}
+                      onClick={() => {
+                        if (!newGiftProductId) return;
+                        setSelectedGiftContents((current) => [
+                          ...current,
+                          { productId: newGiftProductId, quantity: 1 },
+                        ]);
+                        setNewGiftProductId("");
+                        setAvailableStock(
+                          selectedVariant?.stockQuantity ??
+                            product.stockQuantity
+                        );
+                      }}
+                      className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Add product
+                    </button>
+                  </div>
+                  <p className="text-xs font-medium text-gray-600">
+                    Gift contents total: ₦{giftBundlePrice.toLocaleString()}
+                  </p>
+                </>
+              )}
+            </section>
+          )}
+
+          {sizeVariants.length > 0 && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-semibold text-gray-900">
+                Choose a size
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {sizeVariants.map((variant) => {
+                  const isAvailable = variant.stockQuantity > 0;
+                  const isSelected =
+                    selectedSize.toUpperCase() === variant.size.toUpperCase();
+                  return (
+                    <button
+                      key={variant.size}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSize(variant.size);
+                        setAvailableStock(variant.stockQuantity);
+                        setQuantity(1);
+                      }}
+                      disabled={!isAvailable}
+                      aria-pressed={isSelected}
+                      className={`min-w-16 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                        isSelected
+                          ? "border-purple-600 bg-purple-600 text-white"
+                          : "border-gray-300 bg-white text-gray-800 hover:border-purple-400"
+                      } disabled:cursor-not-allowed disabled:opacity-40`}
+                    >
+                      {variant.size}
+                      <span className="mt-0.5 block text-[10px] font-normal">
+                        {isAvailable
+                          ? `${variant.stockQuantity} in stock`
+                          : "Sold out"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          )}
 
           <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600 flex-wrap">
             <div className="flex items-center gap-1 text-amber-500">
@@ -584,15 +1073,15 @@ export default function ProductDetail({
               <button
                 onClick={() =>
                   setQuantity((prev) =>
-                    availableStock === undefined
+                    stockQuantity === undefined
                       ? prev + 1
-                      : Math.min(prev + 1, availableStock)
+                      : Math.min(prev + 1, stockQuantity)
                   )
                 }
                 className="text-gray-600 px-0.5 sm:px-1 text-xs sm:text-sm md:text-base"
                 title="Increase quantity"
                 disabled={
-                  availableStock !== undefined && quantity >= availableStock
+                  stockQuantity !== undefined && quantity >= stockQuantity
                 }
               >
                 +
@@ -666,34 +1155,36 @@ export default function ProductDetail({
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white border border-gray-200 p-6 space-y-4">
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900">
-              Product details
+          <div className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 space-y-5">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+              {itemType === "gift"
+                ? "Gift details"
+                : itemType === "souvenir"
+                ? "Souvenir details"
+                : "Product details"}
             </h3>
-            <p className="text-xs sm:text-sm text-gray-600">
-              {product.longDescription}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {product.highlights.map((highlight) => (
-                <div
-                  key={highlight}
-                  className="flex items-start gap-3 text-xs sm:text-sm text-gray-700"
-                >
-                  <Check className="w-4 h-4 text-green-500 mt-1" />
-                  <span>{highlight}</span>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(product.longDescription || product.description) && (
+              <div className="rounded-xl bg-gray-50 p-4 sm:p-5">
+                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Description
+                </h4>
+                <p className="whitespace-pre-line break-words text-sm leading-7 text-gray-700">
+                  {product.longDescription || product.description}
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {product.specs.map((spec) => (
                 <div
                   key={spec.label}
-                  className="flex justify-between text-xs sm:text-sm text-gray-600 border-b border-gray-100 py-2"
+                  className="flex min-w-0 flex-col gap-1 rounded-xl border border-gray-100 bg-white p-3 sm:p-4"
                 >
-                  <span className="font-medium text-gray-800">
+                  <span className="text-xs font-medium text-gray-500">
                     {spec.label}
                   </span>
-                  <span>{spec.value}</span>
+                  <span className="break-words text-sm font-semibold text-gray-900">
+                    {spec.value}
+                  </span>
                 </div>
               ))}
             </div>
