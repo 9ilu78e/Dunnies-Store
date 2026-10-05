@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Clock3, Flame } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import ProductCard from "@/components/product/ProductCard";
+import ProductCard from "@/components/catalog/ProductCard";
 
 type FlashSaleProduct = {
   id: string;

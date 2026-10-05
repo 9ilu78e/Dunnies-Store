@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ProductsCatalog from "@/components/product/ProductsCatalog";
+import ProductsCatalog from "@/components/catalog/ProductsCatalog";
 import { type ProductRecord } from "@/Data/products";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -84,17 +84,28 @@ const adaptProductRecord = (
 };
 
 type ProductPageProps = {
-  searchParams: Promise<{ category?: string; search?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    categoryName?: string;
+    search?: string;
+  }>;
 };
 
 async function fetchProductsByCategory(
-  categoryId?: string
+  categoryId?: string,
+  categoryName?: string
 ): Promise<ProductRecord[]> {
   try {
-    if (categoryId) {
-      const category = await prisma.category.findUnique({
-        where: { id: categoryId },
-      });
+    if (categoryId || categoryName) {
+      const category = categoryId
+        ? await prisma.category.findUnique({ where: { id: categoryId } })
+        : await prisma.category.findFirst({
+            where: {
+              name: { equals: categoryName ?? "", mode: "insensitive" },
+              type: "gift",
+              isActive: true,
+            },
+          });
 
       if (!category) {
         return [];
@@ -289,11 +300,13 @@ async function fetchProductsByCategory(
 export default async function ProductListingPage({
   searchParams,
 }: ProductPageProps) {
-  const { category, search = "" } = await searchParams;
-  const catalog = await fetchProductsByCategory(category);
+  const { category, categoryName, search = "" } = await searchParams;
+  const catalog = await fetchProductsByCategory(category, categoryName);
+  const categoryLabel = categoryName?.trim();
 
-  const pageTitle = category ? "Products by Category" : "All Products";
-  const pageDescription = category
+  const hasCategory = Boolean(category || categoryLabel);
+  const pageTitle = hasCategory ? "Products by Category" : "All Products";
+  const pageDescription = hasCategory
     ? "View all products in this category"
     : "Discover our full range of products curated for quality and value.";
 
@@ -302,11 +315,13 @@ export default async function ProductListingPage({
       <div className="max-w-7xl mx-auto space-y-10">
         <div>
           <p className="text-sm font-semibold text-purple-600 uppercase tracking-widest">
-            {category ? "Category" : "All Products"}
+            {hasCategory ? "Category" : "All Products"}
           </p>
           <h1 className="text-4xl font-bold text-gray-900 mt-1">
             {pageTitle === "Products by Category"
-              ? `Browse Collection`
+              ? categoryLabel
+                ? `Browse ${categoryLabel}`
+                : `Browse Collection`
               : "Browse Our Complete Collection"}
           </h1>
           <p className="text-slate-600 mt-2">{pageDescription}</p>

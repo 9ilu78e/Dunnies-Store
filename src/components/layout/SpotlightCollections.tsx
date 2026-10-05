@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Flame } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import ProductCard from "@/components/product/ProductCard";
+import ProductCard from "@/components/catalog/ProductCard";
 
 interface BestSeller {
   id: string;

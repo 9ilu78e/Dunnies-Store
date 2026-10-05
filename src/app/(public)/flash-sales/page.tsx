@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Flame, Sparkles } from "lucide-react";
-import FlashSalesProducts from "@/components/product/FlashSalesProducts";
+import FlashSalesProducts from "@/components/catalog/FlashSalesProducts";
 
 export const metadata: Metadata = {
   title: "Flash Sales – Dunnis Stores",

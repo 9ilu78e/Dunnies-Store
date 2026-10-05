@@ -120,22 +120,22 @@ const supportCards = [
 
 const giftIdeas = [
   {
-    title: "Birthday Bundles",
+    title: "Birthday Gifts",
     blurb: "Thoughtful finds for celebrations happening right now.",
-    href: "/gifts/birthday",
+    href: "/product?categoryName=Birthday%20Gifts",
     tag: "Trending",
   },
   {
     title: "Corporate Gifts",
     blurb: "Curated sets that impress clients and teams.",
-    href: "/gifts/corporate",
+    href: "/product?categoryName=Corporate%20Gifts",
     tag: "Bestseller",
   },
   {
-    title: "Home & Living",
-    blurb: "Statement decor and cozy essentials.",
-    href: "/categories/decor",
-    tag: "New drop",
+    title: "All Products",
+    blurb: "Browse gifts, products, and souvenirs from the full collection.",
+    href: "/product",
+    tag: "Browse all",
   },
 ];
 

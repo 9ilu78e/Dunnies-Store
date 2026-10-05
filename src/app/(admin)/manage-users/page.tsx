@@ -102,8 +102,10 @@ export default function ManageUsers() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Users &amp; admins</h1>
-        <p className="text-gray-600">
+        <h1 className="bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-4xl font-bold text-transparent">
+          Users &amp; admins
+        </h1>
+        <p className="mt-2 text-lg text-gray-600">
           Manage accounts and access roles for password, email-link, and Google sign-ins.
         </p>
       </div>

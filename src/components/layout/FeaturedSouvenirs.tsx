@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import ProductCard from "@/components/product/ProductCard";
+import ProductCard from "@/components/catalog/ProductCard";
 
 interface Souvenir {
   id: string;
@@ -80,7 +80,7 @@ export default function FeaturedSouvenirs() {
           </div>
         ) : (
           <div
-            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 sm:gap-6"
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 scrollbar-hide sm:gap-6"
             aria-label="Featured souvenirs. Scroll horizontally to see more."
           >
             {formattedSouvenirs.map((souvenir, index) => (

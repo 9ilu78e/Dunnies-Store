@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSiteSettings } from "@/components/layout/SiteSettingsProvider";
 import {
   MapPin,
   Phone,
@@ -15,30 +16,30 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-const contactInfo = [
-  {
-    icon: MapPin,
-    title: "Visit Our Office",
-    details: ["4th Floor, Area 11", "Garki, Abuja, Nigeria", "900100"],
-  },
-  {
-    icon: Phone,
-    title: "Call Us",
-    details: ["+234 901 987 6543", "Mon-Sat: 9am - 7pm"],
-  },
-  {
-    icon: Mail,
-    title: "Email Us",
-    details: ["support@dunnistores.ng", "Response within 12hrs"],
-  },
-  {
-    icon: Clock,
-    title: "Business Hours",
-    details: ["Monday - Friday: 9am - 7pm", "Saturday: 10am - 4pm"],
-  },
-];
-
 export default function ContactPage() {
+  const { supportEmail, supportPhone, address } = useSiteSettings();
+  const contactInfo = [
+    {
+      icon: MapPin,
+      title: "Visit Our Office",
+      details: [address],
+    },
+    {
+      icon: Phone,
+      title: "Call Us",
+      details: [supportPhone, "Mon-Sat: 9am - 7pm"],
+    },
+    {
+      icon: Mail,
+      title: "Email Us",
+      details: [supportEmail, "Response within 12hrs"],
+    },
+    {
+      icon: Clock,
+      title: "Business Hours",
+      details: ["Monday - Friday: 9am - 7pm", "Saturday: 10am - 4pm"],
+    },
+  ];
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -47,6 +48,8 @@ export default function ContactPage() {
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleInputChange = (e) => {
     setFormData({
@@ -55,13 +58,21 @@ export default function ContactPage() {
     });
   };
 
-  const handleSubmit = () => {
-    if (
-      formData.name &&
-      formData.email &&
-      formData.subject &&
-      formData.message
-    ) {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (sending) return;
+    setSending(true);
+    setSubmitError("");
+    try {
+      const response = await fetch("/api/contact-messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to send your message.");
+      }
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
@@ -73,6 +84,12 @@ export default function ContactPage() {
           message: "",
         });
       }, 3000);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Unable to send your message."
+      );
+    } finally {
+      setSending(false);
     }
   };
   const abujaMapEmbedUrl =
@@ -158,10 +175,11 @@ export default function ContactPage() {
                     <Headphones className="w-6 h-6 text-violet-600" />
                     Send Us a Message
                   </h2>
-                  <div className="space-y-3">
+                  <form onSubmit={handleSubmit} className="space-y-3">
                     <input
                       type="text"
                       name="name"
+                      required
                       value={formData.name}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-violet-500 focus:outline-none text-sm"
@@ -170,14 +188,24 @@ export default function ContactPage() {
                     <input
                       type="email"
                       name="email"
+                      required
                       value={formData.email}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-violet-500 focus:outline-none text-sm"
                       placeholder="Email Address *"
                     />
                     <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-violet-500 focus:outline-none text-sm"
+                      placeholder="Phone Number (optional)"
+                    />
+                    <input
                       type="text"
                       name="subject"
+                      required
                       value={formData.subject}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-violet-500 focus:outline-none text-sm"
@@ -185,20 +213,27 @@ export default function ContactPage() {
                     />
                     <textarea
                       name="message"
+                      required
                       value={formData.message}
                       onChange={handleInputChange}
                       rows="3"
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-violet-500 focus:outline-none resize-none text-sm"
                       placeholder="Your Message *"
                     />
+                    {submitError && (
+                      <p role="alert" className="text-sm text-red-700">
+                        {submitError}
+                      </p>
+                    )}
                     <button
-                      onClick={handleSubmit}
-                      className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-2 rounded-lg font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm"
+                      type="submit"
+                      disabled={sending}
+                      className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-2 rounded-lg font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Send className="w-4 h-4" />
-                      <span>Send Message</span>
+                      <span>{sending ? "Sending..." : "Send Message"}</span>
                     </button>
-                  </div>
+                  </form>
                 </>
               )}
             </div>

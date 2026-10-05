@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSiteSettings } from "./SiteSettingsProvider";
 import {
   Facebook,
   Twitter,
@@ -14,13 +15,34 @@ import {
 } from "lucide-react";
 
 export default function Footer() {
+  const { storeName, supportEmail, supportPhone, address } = useSiteSettings();
   const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = useState("");
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (email) {
-      console.log("Subscribing:", email);
+    if (!email.trim() || submitting) return;
+    setSubmitting(true);
+    setSubscriptionMessage("");
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to subscribe right now.");
+      }
+      setSubscriptionMessage(result.message);
       setEmail("");
+    } catch (error) {
+      setSubscriptionMessage(
+        error instanceof Error ? error.message : "Unable to subscribe right now."
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -31,7 +53,7 @@ export default function Footer() {
           <div className="lg:col-span-2 space-y-6">
             <div>
               <h3 className="text-2xl font-black mb-2 bg-linear-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-                Dunni Stores
+                {storeName}
               </h3>
               <p className="text-sm leading-relaxed text-gray-400">
                 Your home for thoughtful gifts and memorable souvenirs,
@@ -43,15 +65,19 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
-                <p className="text-sm">123 Abuja, Nigeria</p>
+                <p className="text-sm">{address}</p>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-violet-400 shrink-0" />
-                <p className="text-sm">+234 800 123 4567</p>
+                <a href={`tel:${supportPhone.replace(/[^\d+]/g, "")}`} className="text-sm hover:text-violet-400">
+                  {supportPhone}
+                </a>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-violet-400 shrink-0" />
-                <p className="text-sm">hello@dunnistores.ng</p>
+                <a href={`mailto:${supportEmail}`} className="text-sm hover:text-violet-400">
+                  {supportEmail}
+                </a>
               </div>
             </div>
 
@@ -107,14 +133,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/track"
-                  className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
-                >
-                  Track Order
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/faqs"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
@@ -131,11 +149,21 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/careers"
+                  href="/help"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
-                  Careers
+                  Live Chat
                 </Link>
+              </li>
+              <li>
+                <a
+                  href={`https://wa.me/${supportPhone.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
+                >
+                  WhatsApp Contact
+                </a>
               </li>
             </ul>
           </div>
@@ -148,7 +176,7 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <Link
-                  href="/products"
+                  href="/product"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
                   All Products
@@ -156,42 +184,58 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/souvenirs"
+                  href="/gift"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
-                  Souvenirs & Keepsakes
+                  Gifts Packages
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/electronics"
+                  href="/product?categoryName=Birthday%20Gifts"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
-                  Electronics
+                  Birthday Gifts
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/fashion"
+                  href="/product?categoryName=Ramadan%20Packages"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
-                  Fashion
+                  Ramadan Packages
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/home"
+                  href="/product?categoryName=Eid%20al-Fitr%20Packages"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
-                  Home & Living
+                  Eid al-Fitr Packages
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/deals"
+                  href="/product?categoryName=Gifts%20for%20Him"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
-                  Special Deals
+                  Gifts for Him
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/product?categoryName=Gifts%20for%20Her"
+                  className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
+                >
+                  Gifts for Her
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/product?categoryName=Corporate%20Gifts"
+                  className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
+                >
+                  Corporate Gifts
                 </Link>
               </li>
             </ul>
@@ -205,18 +249,10 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <Link
-                  href="/shipping"
-                  className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
-                >
-                  Shipping Info
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/returns"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
-                  Returns Policy
+                  Return Policy
                 </Link>
               </li>
               <li>
@@ -279,6 +315,7 @@ export default function Footer() {
                 />
                 <button
                   type="submit"
+                  disabled={submitting}
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 hover:bg-gray-600 rounded-lg transition-colors"
                   aria-label="Subscribe"
                 >
@@ -302,10 +339,11 @@ export default function Footer() {
               />
               <button
                 type="submit"
+                disabled={submitting}
                 className="w-full px-4 py-2.5 text-sm bg-linear-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
-                <span>Subscribe</span>
+                <span>{submitting ? "Subscribing..." : "Subscribe"}</span>
               </button>
             </form>
 
@@ -324,19 +362,25 @@ export default function Footer() {
               />
               <button
                 type="submit"
+                disabled={submitting}
                 className="px-4 lg:px-6 py-3 text-sm lg:text-base bg-linear-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
               >
                 <Send className="w-4 h-4" />
-                <span className="hidden lg:inline">Subscribe</span>
+                <span className="hidden lg:inline">{submitting ? "Subscribing..." : "Subscribe"}</span>
               </button>
             </form>
+            {subscriptionMessage && (
+              <p role="status" className="text-center text-sm text-gray-200">
+                {subscriptionMessage}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="border-t border-gray-700 pt-8">
           <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
             <p className="text-sm text-gray-400">
-              © 2025 Dunni Stores Nigeria. All rights reserved.
+              © {new Date().getFullYear()} {storeName}. All rights reserved.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-6">

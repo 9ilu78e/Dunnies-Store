@@ -131,10 +131,10 @@ export default function AdminLayout({
       </div>
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex items-center justify-between bg-white/90 backdrop-blur border-b border-purple-100 px-2 sm:px-4 lg:px-6 h-14 sm:h-16 gap-2">
+        <header className="flex items-center justify-between border-b border-gray-200 bg-white/90 px-2 sm:px-4 lg:px-6 h-14 sm:h-16 gap-2 text-gray-700 backdrop-blur">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0">
             <button
-              className="lg:hidden p-1.5 sm:p-2 rounded-lg border border-gray-200 shrink-0"
+              className="lg:hidden p-1.5 sm:p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 shrink-0"
               onClick={() => setIsSidebarOpen(true)}
             >
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
@@ -150,8 +150,8 @@ export default function AdminLayout({
 
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             <div className="relative flex-1 min-w-0">
-              <div className="flex min-w-0 items-center rounded-full border-2 border-purple-300 bg-linear-to-r from-purple-50 to-pink-50 px-2 py-1.5 shadow-sm transition-all hover:shadow-md sm:px-4 sm:py-2">
-                <Search className="h-4 w-4 shrink-0 text-purple-600 sm:h-5 sm:w-5" />
+              <div className="flex min-w-0 items-center rounded-full border-2 border-gray-200 bg-white px-2 py-1.5 shadow-sm transition-all hover:shadow-md sm:px-4 sm:py-2">
+                <Search className="h-4 w-4 shrink-0 text-gray-500 sm:h-5 sm:w-5" />
                 <input
                   type="search"
                   placeholder="Search products, orders, users..."
@@ -233,7 +233,7 @@ export default function AdminLayout({
             <NotificationBell role="admin" />
             <button
               onClick={() => setShowLogoutModal(true)}
-              className="flex items-center gap-1 sm:gap-2 rounded-full border border-purple-100 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-white/80 hover:bg-white/90 transition shrink-0"
+              className="flex items-center gap-1 sm:gap-2 rounded-full border border-gray-200 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-white hover:bg-gray-50 transition shrink-0"
             >
               <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center shrink-0">
                 {user ? (

@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadImage } from "@/lib/cloudinary";
+import { verifyUserAuth } from "@/lib/authMiddleware";
 
-const uploadFolders = new Set(["categories", "products", "gifts", "souvenirs"]);
+const uploadFolders = new Set([
+  "categories",
+  "products",
+  "gifts",
+  "souvenirs",
+  "hero",
+  "branding",
+]);
 const supportedImageTypes = new Set([
   "image/jpeg",
   "image/png",
@@ -12,6 +20,11 @@ const supportedImageTypes = new Set([
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyUserAuth(request);
+    if (!auth.isAuthenticated || auth.user?.role.toLowerCase() !== "admin") {
+      return NextResponse.json({ error: "Admin access required." }, { status: 403 });
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
     const requestedFolder = formData.get("folder");

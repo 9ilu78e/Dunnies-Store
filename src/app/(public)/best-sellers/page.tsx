@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ProductCard from "@/components/product/ProductCard";
+import ProductCard from "@/components/catalog/ProductCard";
 import { getBestSellers } from "@/lib/bestSellers";
 
 export const dynamic = "force-dynamic";

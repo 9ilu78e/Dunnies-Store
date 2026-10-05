@@ -51,7 +51,7 @@ function normalizePaymentMethod(value?: string): string {
     .toLowerCase()
     .replace(/\s+/g, "-");
 
-  return ["pay-on-delivery", "pay-before-delivery"].includes(normalized)
+  return ["pay-on-delivery", "pay-before-delivery", "paystack"].includes(normalized)
     ? normalized
     : "pay-on-delivery";
 }
@@ -237,6 +237,9 @@ export async function POST(request: NextRequest) {
           extraPrice: true,
           flashSalePrice: true,
           flashSaleEndsAt: true,
+          imageUrl: true,
+          imageUrls: true,
+          category: { select: { name: true } },
         },
       }),
       prisma.souvenir.findMany({
@@ -250,6 +253,9 @@ export async function POST(request: NextRequest) {
           sizeVariants: true,
           flashSalePrice: true,
           flashSaleEndsAt: true,
+          imageUrl: true,
+          imageUrls: true,
+          category: { select: { name: true } },
         },
       }),
     ]);
@@ -285,6 +291,7 @@ export async function POST(request: NextRequest) {
         imageUrls: true,
         flashSalePrice: true,
         flashSaleEndsAt: true,
+        category: { select: { name: true } },
       },
     });
 
@@ -341,6 +348,8 @@ export async function POST(request: NextRequest) {
       quantity: number;
       price: number;
       deliveryFee: number;
+      imageUrl: string;
+      categoryName: string;
       size?: string;
       giftContents?: GiftContentSnapshot[];
     }>;
@@ -458,6 +467,9 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
         price: unitPrice,
         deliveryFee: catalogItem.deliveryFee,
+        imageUrl:
+          catalogItem.imageUrls[0] || catalogItem.imageUrl || "",
+        categoryName: catalogItem.category?.name || "Store item",
         size: item.size,
         giftContents,
       });
@@ -651,9 +663,9 @@ export async function GET(request: NextRequest) {
       include: {
         orderItems: {
           include: {
-            product: { select: { name: true } },
-            gift: { select: { name: true } },
-            souvenir: { select: { name: true } },
+            product: { select: { id: true, name: true } },
+            gift: { select: { id: true, name: true } },
+            souvenir: { select: { id: true, name: true } },
           },
         },
       },

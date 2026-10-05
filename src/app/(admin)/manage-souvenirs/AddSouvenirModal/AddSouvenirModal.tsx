@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
-import SizeVariantEditor from "@/components/product/SizeVariantEditor";
+import SizeVariantEditor from "@/components/catalog/SizeVariantEditor";
 import {
   convertVariantKind,
   getVariantKind,

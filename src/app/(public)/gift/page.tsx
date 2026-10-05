@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ProductsCatalog from "@/components/product/ProductsCatalog";
+import ProductsCatalog from "@/components/catalog/ProductsCatalog";
 import { type ProductRecord } from "@/Data/products";
 import { prisma } from "@/lib/prisma";
 import { readGiftIncludedProducts } from "@/lib/giftContents";

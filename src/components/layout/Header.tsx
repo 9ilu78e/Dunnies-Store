@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
@@ -9,6 +10,7 @@ import { getCategories } from "@/lib/categoryClient";
 import LogoutModal from "./LogoutModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 import NotificationBell from "@/components/notification/NotificationBell";
+import { useSiteSettings } from "./SiteSettingsProvider";
 import {
   Menu,
   X,
@@ -30,8 +32,7 @@ import {
   Flame,
   Sparkles,
   LogOut,
-  Settings,
-  CreditCard,
+  LogIn,
 } from "lucide-react";
 
 type CurrentUser = {
@@ -57,6 +58,13 @@ const getProfileDestination = (user: CurrentUser | null) => {
 };
 
 export default function Header() {
+  const {
+    storeName,
+    headerSubtitle,
+    headerLogo,
+    headerTitleColor,
+    headerSubtitleColor,
+  } = useSiteSettings();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -268,18 +276,42 @@ export default function Header() {
               className="flex items-center space-x-2 group shrink-0"
             >
               <div className="relative">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-purple-600 via-pink-500 to-purple-700 rounded-xl flex items-center justify-center shadow-md shadow-purple-500/20 transform group-hover:scale-105 transition-all duration-300">
-                  <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <div className="relative w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-purple-600 via-pink-500 to-purple-700 rounded-xl flex items-center justify-center shadow-md shadow-purple-500/20 transform group-hover:scale-105 transition-all duration-300">
+                  {headerLogo ? (
+                    <Image
+                      src={headerLogo}
+                      alt={`${storeName} logo`}
+                      fill
+                      sizes="44px"
+                      className="rounded-xl object-cover"
+                    />
+                  ) : (
+                    <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  )}
                   <Sparkles className="w-2.5 h-2.5 text-yellow-300 absolute -top-0.5 -right-0.5 animate-pulse" />
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full border-2 border-white"></div>
               </div>
               <div className="hidden sm:block">
-                <span className="font-bold text-base md:text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent group-hover:from-pink-600 group-hover:to-purple-600 transition-all duration-300">
-                  Dunnis Stores
+                <span
+                  style={
+                    headerTitleColor.toLowerCase() === "#7c3aed"
+                      ? undefined
+                      : { color: headerTitleColor }
+                  }
+                  className={`font-bold text-base md:text-lg transition-all duration-300 ${
+                    headerTitleColor.toLowerCase() === "#7c3aed"
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent group-hover:from-pink-600 group-hover:to-purple-600"
+                      : ""
+                  }`}
+                >
+                  {storeName}
                 </span>
-                <p className="text-[10px] text-gray-500 font-medium -mt-0.5">
-                  Premium Shopping
+                <p
+                  className="text-[10px] font-medium -mt-0.5"
+                  style={{ color: headerSubtitleColor }}
+                >
+                  {headerSubtitle}
                 </p>
               </div>
             </Link>
@@ -305,6 +337,14 @@ export default function Header() {
             <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
               {user && (
                 <div className="lg:hidden">
+                  <NotificationBell
+                    role="user"
+                    onUnreadCountChange={setUnreadNotificationCount}
+                  />
+                </div>
+              )}
+              {user && (
+                <div className="hidden lg:block">
                   <NotificationBell
                     role="user"
                     onUnreadCountChange={setUnreadNotificationCount}
@@ -350,7 +390,7 @@ export default function Header() {
 
                 {/* Enhanced Dropdown Menu */}
                 <div
-                  className={`absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 transition-all duration-300 z-50 overflow-hidden ${
+                  className={`absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 transition-all duration-300 z-50 overflow-hidden ${
                     isUserDropdownOpen
                       ? "opacity-100 visible translate-y-0"
                       : "opacity-0 invisible -translate-y-2 pointer-events-none"
@@ -424,16 +464,19 @@ export default function Header() {
                       </>
                     ) : (
                       <>
-                        <Link
-                          href="/login"
-                          className="flex items-center space-x-2.5 bg-purple-600 px-3 py-2 text-white transition-all group hover:bg-purple-700"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                        >
-                          <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center transition-colors group-hover:bg-white/30">
-                            <User className="w-3.5 h-3.5 text-white" />
-                          </div>
-                          <p className="font-medium text-sm text-white">Login</p>
-                        </Link>
+                        <div className="flex justify-center px-4 py-2">
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-12 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
+                            onClick={() => {
+                              setIsUserDropdownOpen(false);
+                              router.push("/login");
+                            }}
+                          >
+                            <LogIn className="h-4 w-4" aria-hidden="true" />
+                            Login
+                          </button>
+                        </div>
                         <hr className="my-1.5 border-gray-100" />
                         <Link
                           href="/orders"
@@ -609,13 +652,19 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="flex flex-row gap-3 mt-2 text-sm">
-                  <Link
-                    href="/login"
-                    onClick={closeMobileMenu}
-                    className="text-white font-medium bg-purple-700 hover:bg-purple-800 rounded-full px-4 py-1 transition"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMobileMenu();
+                      router.push("/login");
+                    }}
+                  className="px-1 py-1 font-medium text-white transition hover:text-purple-100"
                   >
-                    Login
-                  </Link>
+                   <span className="inline-flex items-center gap-2">
+                     <LogIn className="h-4 w-4" aria-hidden="true" />
+                     Login
+                   </span>
+                  </button>
                 </div>
               )}
             </div>
@@ -623,17 +672,17 @@ export default function Header() {
         </div>
 
         {/* Mobile Menu Items */}
-        <div className="p-4 space-y-2">
+        <div className="space-y-1 px-3 py-1.5">
           {navItems.map((item, index) => (
             <div key={`mobile-${item.label}-${index}`}>
               {item.children ? (
                 <>
                   <button
                     onClick={() => handleDropdownToggle(item.label)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
                   >
                     <span className="flex items-center space-x-3">
-                      <span className="flex h-8 w-8 items-center justify-center text-purple-600">
+                      <span className="flex h-7 w-8 items-center justify-center text-purple-600">
                         {item.icon}
                       </span>
                       <span className="font-semibold text-gray-700">
@@ -651,12 +700,12 @@ export default function Header() {
                       openDropdown === item.label ? "max-h-96" : "max-h-0"
                     }`}
                   >
-                    <div className="pl-12 space-y-1 py-2">
+                    <div className="pl-10 space-y-0.5 py-1">
                       {item.children.map((child) => (
                         <Link
                           key={child.label}
                           href={child.href || "#"}
-                          className="block px-4 py-2.5 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
+                          className="block px-3 py-1.5 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
                           onClick={closeMobileMenu}
                         >
                           {child.label}
@@ -668,10 +717,10 @@ export default function Header() {
               ) : (
                 <Link
                   href={item.href || "#"}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
+                  className="flex items-center space-x-3 px-3 py-1.5 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
                   onClick={closeMobileMenu}
                 >
-                  <span className="flex h-8 w-8 items-center justify-center text-purple-600">
+                  <span className="flex h-7 w-8 items-center justify-center text-purple-600">
                     {item.icon}
                   </span>
                   <span className="font-semibold text-gray-700">
@@ -683,23 +732,23 @@ export default function Header() {
           ))}
 
           {/* Additional Links */}
-          <div className="pt-4 mt-4 border-t border-gray-200 space-y-2">
+          <div className="pt-1 mt-1 border-t border-gray-200 space-y-1">
             <Link
               href="/wishlist"
-              className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200"
+              className="flex items-center space-x-3 px-3 py-1.5 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200"
               onClick={closeMobileMenu}
             >
-              <span className="flex h-8 w-8 items-center justify-center text-red-600">
+              <span className="flex h-7 w-8 items-center justify-center text-red-600">
                 <Heart className="w-4 h-4" />
               </span>
               <span className="font-semibold text-gray-700">Wishlist</span>
             </Link>
             <Link
               href="/orders"
-              className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200"
+              className="flex items-center space-x-3 px-3 py-1.5 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200"
               onClick={closeMobileMenu}
             >
-              <span className="flex h-8 w-8 items-center justify-center text-blue-600">
+              <span className="flex h-7 w-8 items-center justify-center text-blue-600">
                 <Package className="w-4 h-4" />
               </span>
               <span className="font-semibold text-gray-700">My Orders</span>

@@ -147,6 +147,7 @@ model Order {
   customerPhone   String
   deliveryAddress String   @default("")
   paymentMethod   String   @default("pay-on-delivery")
+  paymentStatus   String   @default("pending")
   total           Float
   deliveryFee     Float?
   status          String   @default("pending") // "pending", "confirmed", "processing", "delivered", "cancelled"
@@ -158,6 +159,25 @@ model Order {
 
   user       User?       @relation(fields: [userId], references: [id])
   orderItems OrderItem[]
+  payment    PaystackPayment?
+}
+
+model PaystackPayment {
+  id                String    @id @default(cuid())
+  orderId           String    @unique
+  provider          String    @default("paystack")
+  reference         String    @unique
+  transactionId     String?
+  amountKobo        Int
+  currency          String    @default("NGN")
+  status            String    @default("pending")
+  authorizationUrl  String?
+  paidAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
 }
 
 model Notification {
@@ -174,6 +194,46 @@ model Notification {
 
   @@index([recipientRole, accountId, isRead])
   @@index([orderId])
+}
+
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  isSubscribed   Boolean   @default(true)
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([isSubscribed])
+}
+
+model SiteSettings {
+  id                  String   @id @default("main")
+  storeName           String   @default("Dunnis Stores")
+  headerSubtitle      String   @default("Premium Shopping")
+  headerLogo          String   @default("")
+  headerTitleColor    String   @default("#7c3aed")
+  headerSubtitleColor String   @default("#6b7280")
+  supportEmail        String   @default("support@dunnistores.ng")
+  supportPhone        String   @default("+234 901 987 6543")
+  address             String   @default("Garki, Abuja, Nigeria")
+  heroImages          String[] @default([])
+  updatedAt           DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  isReviewed Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isReviewed, createdAt])
 }
 
 model EmailLog {

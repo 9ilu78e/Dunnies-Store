@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import ProductList from "@/components/product/ProductList";
+import ProductList from "@/components/catalog/ProductList";
 import { prisma } from "@/lib/prisma";
 
 async function fetchWorldwideFavorites() {
