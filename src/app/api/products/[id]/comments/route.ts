@@ -158,3 +158,44 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
+  try {
+    const auth = await verifyUserAuth(request);
+    if (!auth.isAuthenticated || !auth.user) {
+      return unauthorizedResponse("You must be logged in to manage comments.");
+    }
+    if (auth.user.role.toLowerCase() !== "admin") {
+      return NextResponse.json(
+        { error: "Only admins can delete product comments." },
+        { status: 403 }
+      );
+    }
+
+    const { id: productId } = await params;
+    const body = (await request.json()) as { commentId?: unknown };
+    if (typeof body.commentId !== "string" || !body.commentId.trim()) {
+      return NextResponse.json(
+        { error: "A valid comment ID is required." },
+        { status: 400 }
+      );
+    }
+
+    const comment = await prisma.productComment.findFirst({
+      where: { id: body.commentId.trim(), productId },
+      select: { id: true },
+    });
+    if (!comment) {
+      return NextResponse.json({ error: "Comment not found." }, { status: 404 });
+    }
+
+    await prisma.productComment.delete({ where: { id: comment.id } });
+    return NextResponse.json({ message: "Comment deleted." });
+  } catch (error) {
+    console.error("[PRODUCT_COMMENT_DELETE]", error);
+    return NextResponse.json(
+      { error: "Unable to delete this comment." },
+      { status: 500 }
+    );
+  }
+}

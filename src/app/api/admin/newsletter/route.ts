@@ -2,19 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminActor } from "@/lib/adminUsersAccess";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => {
-    const entities: Record<string, string> = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-    return entities[character];
-  });
-}
+import { createNewsletterCampaignEmail } from "@/lib/emails/newsletterCampaignEmail";
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,12 +39,7 @@ export async function POST(request: NextRequest) {
       select: { email: true },
       orderBy: { subscribedAt: "asc" },
     });
-    const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937"><h1 style="color:#7e22ce">Dunnis Stores</h1>${escapeHtml(
-      body.content.trim()
-    )
-      .split(/\r?\n/)
-      .map((line) => `<p>${line || "&nbsp;"}</p>`)
-      .join("")}<p style="color:#6b7280;font-size:12px">You received this email because you subscribed to Dunnis Stores newsletters.</p></div>`;
+    const html = createNewsletterCampaignEmail(body.content.trim());
 
     let successful = 0;
     let failed = 0;

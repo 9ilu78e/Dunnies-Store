@@ -2,19 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminActor } from "@/lib/adminUsersAccess";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => {
-    const entities: Record<string, string> = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-    return entities[character];
-  });
-}
+import { createContactNotificationEmail } from "@/lib/emails/contactNotificationEmail";
 
 export async function POST(request: NextRequest) {
   try {
@@ -99,9 +87,15 @@ export async function POST(request: NextRequest) {
         sendEmail({
           to: adminEmail,
           subject: `New contact message: ${subject}`,
-          html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937"><h2>New contact message</h2><p>Hello ${escapeHtml(adminName)},</p><p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p><p><strong>Phone:</strong> ${escapeHtml(phone || "Not provided")}</p><p><strong>Subject:</strong> ${escapeHtml(subject)}</p><p>${escapeHtml(message).replace(/\r?\n/g, "<br>")}</p><p>Review and respond in the <a href="${escapeHtml(
-            `${new URL(request.url).origin}/admin/contact-messages`
-          )}">admin message inbox</a>.</p></div>`,
+          html: createContactNotificationEmail({
+            adminName,
+            name,
+            email,
+            phone,
+            subject,
+            message,
+            inboxUrl: `${new URL(request.url).origin}/admin/contact-messages`,
+          }),
         })
       )
     );

@@ -130,10 +130,11 @@ export async function GET(request: NextRequest) {
       matchingNotifications,
       true
     );
+    const visibleNotifications = notifications.slice(0, 25);
 
     return NextResponse.json({
-      notifications: notifications.slice(0, 25),
-      unreadCount: notifications.filter((notification) => !notification.isRead).length,
+      notifications: visibleNotifications,
+      unreadCount: visibleNotifications.filter((notification) => !notification.isRead).length,
     });
   } catch (error) {
     console.error("[NOTIFICATIONS_GET]", error);

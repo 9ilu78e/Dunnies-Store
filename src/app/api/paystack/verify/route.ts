@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyUserAuth } from "@/lib/authMiddleware";
 import { prisma } from "@/lib/prisma";
 import {
   settlePaystackPayment,
@@ -8,27 +7,23 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await verifyUserAuth(request);
-    if (!auth.isAuthenticated || !auth.user?.email) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-    }
     const body = (await request.json()) as { reference?: unknown };
-    if (typeof body.reference !== "string" || !body.reference.trim()) {
+    if (
+      typeof body.reference !== "string" ||
+      !body.reference.trim() ||
+      body.reference.length > 200
+    ) {
       return NextResponse.json({ error: "A valid payment reference is required." }, { status: 400 });
     }
 
     const payment = await prisma.paystackPayment.findUnique({
-      where: { reference: body.reference },
+      where: { reference: body.reference.trim() },
       include: { order: true },
     });
     if (!payment) return NextResponse.json({ error: "Payment not found." }, { status: 404 });
-    if (
-      auth.user.role.toLowerCase() !== "admin" &&
-      payment.order.customerEmail.trim().toLowerCase() !== auth.user.email.trim().toLowerCase()
-    ) {
-      return NextResponse.json({ error: "You cannot verify this payment." }, { status: 403 });
-    }
 
+    // Paystack redirects can arrive without the store login session. The opaque
+    // reference identifies only this payment; settlement still requires Paystack verification.
     const transaction = await verifyPaystackTransaction(payment.reference);
     const result = await settlePaystackPayment(payment.reference, transaction);
     return NextResponse.json({

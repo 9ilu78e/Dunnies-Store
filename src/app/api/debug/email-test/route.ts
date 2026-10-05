@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { BrevoEmailError, sendBrevoEmail } from "@/lib/brevoEmail";
+import { testEmailHtml } from "@/lib/emails/testEmail";
 
 export async function GET() {
   if (process.env.NODE_ENV === "production") {
@@ -18,11 +19,7 @@ export async function GET() {
     const messageId = await sendBrevoEmail({
       to: senderEmail,
       subject: 'Test Email - Dunnis Stores',
-      html: `
-        <h1>Test Email</h1>
-        <p>This is a test email from Dunnis Stores.</p>
-        <p>If you receive this, email sending is working!</p>
-      `,
+      html: testEmailHtml,
     });
 
     return NextResponse.json({

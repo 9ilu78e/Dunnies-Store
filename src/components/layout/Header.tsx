@@ -15,8 +15,8 @@ import {
   Menu,
   X,
   User,
+  UserRound,
   Heart,
-  ShoppingBag,
   ChevronDown,
   Gift,
   ShoppingCart,
@@ -32,8 +32,8 @@ import {
   Flame,
   Sparkles,
   LogOut,
-  LogIn,
 } from "lucide-react";
+import { useWishlistContext } from "@/context/WishlistContext";
 
 type CurrentUser = {
   uid: string;
@@ -80,6 +80,8 @@ export default function Header() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { totalItems } = useCart();
+  const { items: wishlistItems } = useWishlistContext();
+  const wishlistCount = wishlistItems.length;
 
   const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -172,7 +174,6 @@ export default function Header() {
       {
         label: "Best Sellers",
         href: "/best-sellers",
-        icon: <Flame className="w-4 h-4" />,
       },
       {
         label: "Gifts",
@@ -447,6 +448,14 @@ export default function Header() {
                             <Heart className="w-3.5 h-3.5 text-pink-600" />
                           </div>
                           <p className="font-medium text-sm">Wishlist</p>
+                          {wishlistCount > 0 && (
+                            <span
+                              aria-label={`${wishlistCount} wishlist items`}
+                              className="ml-auto min-w-5 rounded-full bg-red-600 px-1.5 py-0.5 text-center text-[11px] font-bold leading-4 text-white"
+                            >
+                              {wishlistCount}
+                            </span>
+                          )}
                         </Link>
                         <hr className="my-1.5 border-gray-100" />
                         <button
@@ -473,7 +482,7 @@ export default function Header() {
                               router.push("/login");
                             }}
                           >
-                            <LogIn className="h-4 w-4" aria-hidden="true" />
+                            <UserRound className="h-4 w-4" aria-hidden="true" />
                             Login
                           </button>
                         </div>
@@ -504,14 +513,19 @@ export default function Header() {
                 </div>
               </div>
 
-              {/* Cart Icon */}              <Link
+              {/*
+ Cart Icon */}              <Link
                 href="/cart"
-                className="relative p-2.5 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group"
+                aria-label={`Cart${totalItems > 0 ? `, ${totalItems} items` : ""}`}
+                className="relative inline-flex items-center gap-1.5 rounded-xl px-2.5 py-2 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group"
                 onClick={() => setIsUserDropdownOpen(false)}
               >
-                <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-purple-600 transition-all duration-200 group-hover:scale-110" />
+                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-purple-600 transition-all duration-200 group-hover:scale-110" />
+                <span className="text-[15px] font-semibold text-gray-700 group-hover:text-purple-600 ml-3">
+                  Cart
+                </span>
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
+                  <span className="absolute -top-1 left-6 min-w-5 h-5 px-1 bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
                     {totalItems}
                   </span>
                 )}
@@ -532,12 +546,12 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex w-full items-center justify-center space-x-1 pb-3 border-t border-gray-100 pt-3">
+          <nav className="hidden lg:flex w-full items-center justify-center space-x-2 pb-3 border-t border-gray-100 pt-3">
             {navItems.map((item, index) => (
               <div key={`${item.label}-${index}`} className="relative group">
                 {item.children ? (
                   <>
-                    <button className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-gray-700 text-xs font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all duration-200">
+                    <button className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 text-sm font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all duration-200">
                       {item.icon}
                       <span>{item.label}</span>
                       <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
@@ -558,7 +572,7 @@ export default function Header() {
                 ) : (
                   <Link
                     href={item.href || "#"}
-                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-gray-700 text-xs font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all duration-200"
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 text-sm font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all duration-200"
                     onClick={() => setOpenDropdown(null)}
                   >
                     {item.icon}
@@ -661,7 +675,7 @@ export default function Header() {
                   className="px-1 py-1 font-medium text-white transition hover:text-purple-100"
                   >
                    <span className="inline-flex items-center gap-2">
-                     <LogIn className="h-4 w-4" aria-hidden="true" />
+                     <UserRound className="h-4 w-4" aria-hidden="true" />
                      Login
                    </span>
                   </button>
@@ -742,6 +756,11 @@ export default function Header() {
                 <Heart className="w-4 h-4" />
               </span>
               <span className="font-semibold text-gray-700">Wishlist</span>
+              {wishlistCount > 0 && (
+                <span className="ml-auto min-w-5 rounded-full bg-red-600 px-1.5 py-0.5 text-center text-[11px] font-bold leading-4 text-white">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
             <Link
               href="/orders"

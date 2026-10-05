@@ -17,6 +17,7 @@ const supportedImageTypes = new Set([
   "image/webp",
   "image/avif",
 ]);
+const svgType = "image/svg+xml";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,9 +43,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!supportedImageTypes.has(file.type)) {
+    const isSvg = file.type === svgType;
+    if (!supportedImageTypes.has(file.type) && !(isSvg && folder === "hero")) {
       return NextResponse.json(
-        { error: "Only JPEG, PNG, GIF, WebP, and AVIF images are supported" },
+        { error: "Only JPEG, PNG, GIF, WebP, and AVIF images are supported. SVG is supported for hero slides." },
         { status: 400 }
       );
     }
@@ -54,6 +56,29 @@ export async function POST(request: NextRequest) {
         { error: "File size must be less than 10MB" },
         { status: 400 }
       );
+    }
+
+    let uploadFile = file;
+    if (isSvg) {
+      let svg = await file.text();
+      const standardSvgDoctype =
+        /<!DOCTYPE\s+svg\s+PUBLIC\s+["']-\/\/W3C\/\/DTD SVG 1\.[01]\/\/EN["']\s+["']https?:\/\/www\.w3\.org\/Graphics\/SVG\/1\.[01]\/DTD\/svg1[01]\.dtd["'](?:\s*\[[\s\S]*?\])?\s*>/gi;
+      svg = svg.replace(standardSvgDoctype, "");
+      const unsafeSvgContent =
+        /<!DOCTYPE|<!ENTITY|<\s*script\b|<\s*foreignObject\b|\bon[a-z]+\s*=|(?:href|xlink:href)\s*=\s*["']\s*(?:https?:|javascript:|data:(?!image\/(?:png|jpe?g|gif|webp);base64,))|url\(\s*["']?\s*(?:https?:|javascript:|data:(?!image\/(?:png|jpe?g|gif|webp);base64,))|@import/i;
+      if (
+        !/<svg(?:\s|>)/i.test(svg) ||
+        unsafeSvgContent.test(svg)
+      ) {
+        return NextResponse.json(
+          { error: "The SVG contains unsupported or unsafe content." },
+          { status: 400 }
+        );
+      }
+      uploadFile = new File([svg], file.name, {
+        type: svgType,
+        lastModified: file.lastModified,
+      });
     }
 
     if (
@@ -70,7 +95,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const url = await uploadImage(file, folder);
+    const url = await uploadImage(uploadFile, folder);
     console.log(`[UPLOAD] File uploaded to Cloudinary: ${url}`);
 
     return NextResponse.json({ url }, { status: 200 });

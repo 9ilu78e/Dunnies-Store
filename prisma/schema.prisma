@@ -25,6 +25,7 @@ model User {
 
   orders         Order[]
   addresses      Address[]
+  paymentMethods SavedPaymentMethod[]
   comments       ProductComment[]
   likes          ProductLike[]
   commentReplies CommentReply[]   @relation("CommentReplies")
@@ -172,12 +173,35 @@ model PaystackPayment {
   currency          String    @default("NGN")
   status            String    @default("pending")
   authorizationUrl  String?
+  savePaymentMethod Boolean   @default(false)
+  savedMethodChargeAttemptedAt DateTime?
   paidAt            DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
+}
+
+model SavedPaymentMethod {
+  id                       String   @id @default(cuid())
+  userId                   String
+  authorizationCodeEncrypted String
+  signature                String
+  brand                    String?
+  cardType                 String?
+  last4                    String
+  expMonth                 String
+  expYear                  String
+  bank                     String?
+  isDefault                Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, signature])
+  @@index([userId, isDefault])
 }
 
 model Notification {
@@ -219,6 +243,7 @@ model SiteSettings {
   supportPhone        String   @default("+234 901 987 6543")
   address             String   @default("Garki, Abuja, Nigeria")
   heroImages          String[] @default([])
+  heroSlides          Json     @default("[]")
   updatedAt           DateTime @updatedAt
 }
 

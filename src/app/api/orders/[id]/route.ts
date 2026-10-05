@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { verifyUserAuth } from "@/lib/authMiddleware";
 import {
   sendEmail,
-  generateUserUpdateEmail,
   type OrderEmailItem,
 } from "@/lib/email";
+import { generateOrderDeliveryEmail } from "@/lib/emails/orderDeliveryEmail";
 import { formatOrderNumber } from "@/lib/orderNumber";
 
 const VALID_ORDER_STATUSES = [
@@ -336,20 +336,22 @@ export async function PATCH(
         const deliveryFee =
           order.deliveryFee ??
           (inferredDeliveryFee > 0 ? inferredDeliveryFee : null);
-        const userEmailHtml = generateUserUpdateEmail(
+        const orderEmailDetails = {
+          orderNumber: formatOrderNumber(order.orderNumber),
+          status: statusLabel,
+          items: emailItems,
+          total: order.total,
+          deliveryFee,
+          deliveryAddress: order.deliveryAddress,
+          paymentMethod: order.paymentMethod,
+          orderDate: order.createdAt,
+        };
+        const statusMessage = `${ORDER_STATUS_COPY[requestedStatus as (typeof VALID_ORDER_STATUSES)[number]]}\n\nYou can track your order in your customer account any time.`;
+        const userEmailHtml = generateOrderDeliveryEmail(
           order.customerName,
-          `Order ${statusLabel} - #${formatOrderNumber(order.orderNumber)}`,
-          `${ORDER_STATUS_COPY[requestedStatus as (typeof VALID_ORDER_STATUSES)[number]]}\n\nYou can track your order in your customer account any time.`,
-          {
-            orderNumber: formatOrderNumber(order.orderNumber),
-            status: statusLabel,
-            items: emailItems,
-            total: order.total,
-            deliveryFee,
-            deliveryAddress: order.deliveryAddress,
-            paymentMethod: order.paymentMethod,
-            orderDate: order.createdAt,
-          }
+          statusLabel,
+          statusMessage,
+          orderEmailDetails
         );
 
         await sendEmail({

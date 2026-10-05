@@ -522,7 +522,6 @@ export default function UsersInterfacePage() {
                 className="rounded-lg sm:rounded-2xl border border-gray-200 p-3 sm:p-4 hover:border-purple-200 hover:shadow-md transition bg-linear-to-br from-white to-purple-50/30"
               >
                 <p className="inline-flex items-center text-xs font-semibold text-purple-600 bg-purple-100/80 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full mb-2">
-                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
                   {idea.tag}
                 </p>
                 <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 line-clamp-2">
