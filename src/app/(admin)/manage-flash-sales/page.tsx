@@ -188,17 +188,19 @@ export default function ManageFlashSalesPage() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-3xl bg-linear-to-r from-purple-700 via-fuchsia-600 to-pink-500 p-6 text-white shadow-lg sm:p-8">
+      <header className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex items-start gap-4">
-          <div className="rounded-2xl bg-white/15 p-3">
-            <BadgePercent className="h-7 w-7" />
+          <div className="rounded-2xl bg-purple-50 p-3">
+            <BadgePercent className="h-7 w-7 text-purple-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-purple-100">
+            <p className="text-sm font-semibold uppercase tracking-wider text-purple-600">
               Promotions
             </p>
-            <h1 className="mt-1 text-3xl font-bold">Manage Flash Sales</h1>
-            <p className="mt-2 max-w-2xl text-purple-100">
+            <h1 className="mt-1 bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-4xl font-bold text-transparent">
+              Manage Flash Sales
+            </h1>
+            <p className="mt-2 max-w-2xl text-lg text-gray-600">
               Select multiple products, set each sale price, and give them all
               one shared end time.
             </p>

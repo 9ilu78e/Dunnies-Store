@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import ProductDetail from "@/components/product/ProductDetail";
-import ProductDetailWrapper from "@/components/product/ProductDetailWrapper";
+import ProductDetail from "@/components/catalog/product/ProductDetail";
+import ProductDetailWrapper from "@/components/catalog/shared/ProductDetailWrapper";
 import {
   getProductById as getLocalProductById,
   ProductRecord,

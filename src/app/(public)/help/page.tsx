@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSiteSettings } from "@/components/layout/SiteSettingsProvider";
 import {
   Search,
   MessageCircle,
@@ -32,30 +33,6 @@ const faqs = [
   },
 ];
 
-const contactOptions = [
-  {
-    title: "Live chat",
-    description: "Available every day, 7am–11pm WAT.",
-    icon: MessageCircle,
-    href: "/contact",
-    cta: "Start chat",
-  },
-  {
-    title: "Call support",
-    description: "Prefer a human voice? We’ve got you.",
-    icon: Phone,
-    href: "tel:+2348000000000",
-    cta: "Call now",
-  },
-  {
-    title: "Email support",
-    description: "Detailed inquiries and partnerships.",
-    icon: Mail,
-    href: "mailto:support@dunnis.store",
-    cta: "Send email",
-  },
-];
-
 const helpTopics = [
   {
     title: "Shipping & tracking",
@@ -81,6 +58,30 @@ const helpTopics = [
 
 export default function HelpCenterPage() {
   const [search, setSearch] = useState("");
+  const { supportEmail, supportPhone } = useSiteSettings();
+  const contactOptions = [
+    {
+      title: "Live chat",
+      description: "Available every day, 7am–11pm WAT.",
+      icon: MessageCircle,
+      href: "/contact",
+      cta: "Start chat",
+    },
+    {
+      title: "Call support",
+      description: "Prefer a human voice? We’ve got you.",
+      icon: Phone,
+      href: `tel:${supportPhone.replace(/[^\d+]/g, "")}`,
+      cta: "Call now",
+    },
+    {
+      title: "Email support",
+      description: "Detailed inquiries and partnerships.",
+      icon: Mail,
+      href: `mailto:${supportEmail}`,
+      cta: "Send email",
+    },
+  ];
 
   return (
     <section className="bg-gray-50 min-h-screen py-16 px-4 sm:px-6 lg:px-8">

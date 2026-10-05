@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import ProductDetail from "@/components/product/ProductDetail";
-import ProductDetailWrapper from "@/components/product/ProductDetailWrapper";
+import GiftDetail from "@/components/catalog/gift/GiftDetail";
+import ProductDetailWrapper from "@/components/catalog/shared/ProductDetailWrapper";
 import { type ProductRecord } from "@/Data/products";
 import { prisma } from "@/lib/prisma";
 import { readSizeVariants } from "@/lib/sizeVariants";
@@ -162,7 +162,7 @@ export default async function GiftDetailPage({ params }: GiftDetailPageProps) {
     <ProductDetailWrapper>
       <section className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          <ProductDetail product={product} itemType="gift" />
+          <GiftDetail product={product} />
         </div>
       </section>
     </ProductDetailWrapper>

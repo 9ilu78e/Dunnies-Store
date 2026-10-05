@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Loader2, Upload, ImageIcon } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
-import SizeVariantEditor from "@/components/product/SizeVariantEditor";
+import SizeVariantEditor from "@/components/catalog/SizeVariantEditor";
 import {
   convertVariantKind,
   getVariantKind,
@@ -12,7 +12,7 @@ import {
   type SizeVariant,
   type VariantKind,
 } from "@/lib/sizeVariants";
-import GiftContentsEditor from "@/components/product/GiftContentsEditor";
+import GiftContentsEditor from "@/components/catalog/GiftContentsEditor";
 import {
   readGiftIncludedProducts,
   type GiftIncludedProduct,

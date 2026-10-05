@@ -80,8 +80,10 @@ export default function OrderHistoryPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-600">
           Operations
         </p>
-        <h1 className="mt-2 text-3xl font-bold text-gray-900">Order history</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="mt-2 bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-4xl font-bold text-transparent">
+          Order history
+        </h1>
+        <p className="mt-2 text-lg text-gray-600">
           Deleted orders are kept here and can be restored to active orders.
         </p>
         <Link

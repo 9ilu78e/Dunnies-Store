@@ -25,6 +25,30 @@ type CartItem = {
   giftContents?: GiftContentSnapshot[];
 };
 
+function getCartItemKey(item: CartItem): string {
+  return `${item.itemType}:${item.id}:${item.size ?? ""}:${giftContentsKey(
+    item.giftContents
+  )}`;
+}
+
+function mergeDuplicateCartItems(items: CartItem[]): CartItem[] {
+  const merged = new Map<string, CartItem>();
+  for (const item of items) {
+    const key = getCartItemKey(item);
+    const existing = merged.get(key);
+    if (existing) {
+      merged.set(key, {
+        ...existing,
+        ...item,
+        quantity: existing.quantity + item.quantity,
+      });
+    } else {
+      merged.set(key, item);
+    }
+  }
+  return Array.from(merged.values());
+}
+
 type CartContextType = {
   items: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity">, quantity?: number) => boolean;
@@ -62,12 +86,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           Omit<CartItem, "itemType"> & { itemType?: CatalogItemType }
         >;
         if (Array.isArray(parsed)) {
-          setItems(
-            parsed.map((item) => ({
-              ...item,
-              itemType: item.itemType ?? "product",
-            }))
-          );
+          const restoredItems = parsed.map((item) => ({
+            ...item,
+            itemType: item.itemType ?? "product",
+          })) as CartItem[];
+          setItems(mergeDuplicateCartItems(restoredItems));
         }
       }
     } catch (error) {

@@ -95,7 +95,7 @@ export default function CategoriesGrid({ type }: { type: CategoryType }) {
 
   return (
     <section className="w-full bg-linear-to-br from-violet-50 via-white to-fuchsia-50">
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-5 lg:py-6">
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">

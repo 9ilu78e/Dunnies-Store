@@ -16,6 +16,8 @@ export type OrderEmailItem = {
   name: string;
   quantity: number;
   price: number;
+  imageUrl?: string;
+  categoryName?: string;
   giftContents?: Array<{ name: string; quantity: number; size?: string }>;
 };
 
@@ -51,6 +53,16 @@ function escapeHtml(value: string): string {
     };
     return entities[character];
   });
+}
+
+function getSafeEmailImageUrl(value?: string): string {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? escapeHtml(url.toString()) : "";
+  } catch {
+    return "";
+  }
 }
 
 export async function sendEmail(options: EmailOptions): Promise<void> {
@@ -135,7 +147,19 @@ export function generateOrderConfirmationEmail(
     .map(
       (item) => `
     <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          ${
+            getSafeEmailImageUrl(item.imageUrl)
+              ? `<img src="${getSafeEmailImageUrl(item.imageUrl)}" alt="${escapeHtml(item.name)}" width="64" height="64" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #eee;" />`
+              : ""
+          }
+          <div><strong>${escapeHtml(item.name)}</strong>
+            ${
+              item.categoryName
+                ? `<div style="margin-top:4px;color:#7c3aed;font-size:12px;">${escapeHtml(item.categoryName)}</div>`
+                : ""
+            }
         ${
           item.giftContents?.length
             ? `<ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12px;">${item.giftContents
@@ -152,6 +176,8 @@ export function generateOrderConfirmationEmail(
                 .join("")}</ul>`
             : ""
         }
+          </div>
+        </div>
       </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
         item.quantity
@@ -266,110 +292,90 @@ export function generateAdminOrderNotificationEmail(
       ? total - productsSubtotal
       : configuredDeliveryFee;
   const itemsHtml = items
-    .map(
-      (item) => `
-    <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}
-        ${
-          item.giftContents?.length
-            ? `<ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12px;">${item.giftContents
-                .map(
-                  (content) =>
-                    `<li>${content.name}${
-                      content.size
-                        ? ` · ${getVariantKindLabel(
-                            getVariantChoiceKind(content.size)
-                          )} ${formatVariantChoice(content.size)}`
-                        : ""
-                    } × ${content.quantity}</li>`
-                )
-                .join("")}</ul>`
-            : ""
-        }
-      </td>
-      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${
-        item.quantity
-      }</td>
-      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₦${item.price.toLocaleString()}</td>
-    </tr>
-  `
-    )
+    .map((item) => {
+      const imageUrl = getSafeEmailImageUrl(item.imageUrl);
+      const contents = item.giftContents?.length
+        ? `<div style="margin-top:6px;color:#64748b;font-size:12px;">${item.giftContents
+            .map(
+              (content) =>
+                `${escapeHtml(content.name)}${
+                  content.size
+                    ? ` · ${getVariantKindLabel(
+                        getVariantChoiceKind(content.size)
+                      )} ${formatVariantChoice(content.size)}`
+                    : ""
+                } × ${content.quantity}`
+            )
+            .join("<br>")}</div>`
+        : "";
+      return `
+        <tr>
+          <td style="padding:16px 18px;border-bottom:1px solid #eef2f7;">
+            <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
+              <td style="width:68px;vertical-align:top;">
+                ${
+                  imageUrl
+                    ? `<img src="${imageUrl}" alt="${escapeHtml(item.name)}" width="56" height="56" style="display:block;width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0;" />`
+                    : `<div style="width:56px;height:56px;border-radius:10px;background:#f3e8ff;text-align:center;line-height:56px;color:#7e22ce;font-size:12px;font-weight:bold;">ITEM</div>`
+                }
+              </td>
+              <td style="vertical-align:top;">
+                <div style="color:#111827;font-weight:700;">${escapeHtml(item.name)}</div>
+                ${
+                  item.categoryName
+                    ? `<div style="margin-top:4px;color:#7c3aed;font-size:12px;font-weight:600;">${escapeHtml(item.categoryName)}</div>`
+                    : ""
+                }
+                ${contents}
+              </td>
+              <td style="width:48px;text-align:center;vertical-align:top;color:#475569;">×${item.quantity}</td>
+              <td style="width:112px;text-align:right;vertical-align:top;color:#111827;font-weight:700;">${formatNaira(item.price * item.quantity)}</td>
+            </tr></table>
+          </td>
+        </tr>`;
+    })
     .join("");
+  const sourceLabel =
+    source === "whatsapp" ? "WhatsApp" : source === "site" ? "Website" : source;
+  const adminOrdersUrl = `${getBaseUrl()}/manage-orders`;
 
   return `
     <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .alert { background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin-bottom: 20px; }
-        .customer-info { background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .total { font-size: 18px; font-weight: bold; text-align: right; padding: 15px; background: white; border-radius: 8px; margin-top: 15px; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .badge-whatsapp { background: #25d366; color: white; }
-        .badge-site { background: #3b82f6; color: white; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="alert">
-          <h2 style="margin-top: 0;">🔔 New Order Received!</h2>
-          <p>Order ID: <strong>#${formatOrderNumber(orderNumber)}</strong></p>
-        </div>
-
-        <div class="customer-info">
-          <h3 style="margin-top: 0;">Customer Information</h3>
-          <p><strong>Name:</strong> ${customerName}</p>
-          <p><strong>Email:</strong> ${customerEmail}</p>
-          <p><strong>Phone:</strong> ${customerPhone}</p>
-          <p><strong>Source:</strong> <span class="badge ${
-            source === "whatsapp" ? "badge-whatsapp" : "badge-site"
-          }">${source.toUpperCase()}</span></p>
-          ${
-            paymentMethod ? `<p><strong>Payment Method:</strong> ${paymentMethod}</p>` : ""
-          }
-          ${
-            deliveryAddress ? `<p><strong>Delivery Address:</strong> ${deliveryAddress}</p>` : ""
-          }
-          ${
-            status ? `<p><strong>Status:</strong> ${status}</p>` : ""
-          }
-        </div>
-
-        <h3>Order Items</h3>
-        <table>
-          <thead>
-            <tr style="background: #f0f0f0;">
-              <th style="padding: 10px; text-align: left;">Product</th>
-              <th style="padding: 10px; text-align: center;">Qty</th>
-              <th style="padding: 10px; text-align: right;">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHtml}
-          </tbody>
-        </table>
-
-        <div class="total">
-          <div style="font-size: 14px; font-weight: normal; margin-bottom: 8px;">
-            Products subtotal: ${formatNaira(productsSubtotal)}<br />
-            Delivery: ${deliveryFee === null || deliveryFee <= 0
-              ? "Pending"
-              : formatNaira(deliveryFee)}
-          </div>
-          Total${deliveryFee === null || deliveryFee <= 0 ? " (delivery pending)" : ""}: ${formatNaira(total)}
-        </div>
-
-        <p style="margin-top: 30px; text-align: center;">
-          <a href="${
-            process.env.FRONTEND_URL ||
-              process.env.NEXTAUTH_URL ||
-              "http://localhost:3000"
-          }/manage-orders" style="background: #a855f7; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">View in Admin Panel</a>
-        </p>
-      </div>
+    <html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#172033;">
+      <table role="presentation" style="width:100%;border-collapse:collapse;background:#f1f5f9;padding:28px 12px;">
+        <tr><td align="center">
+          <table role="presentation" style="width:100%;max-width:680px;border-collapse:separate;border-spacing:0;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 28px rgba(15,23,42,.08);">
+            <tr><td style="padding:28px 32px;background:#26104a;color:#fff;">
+              <p style="margin:0 0 10px;color:#d8b4fe;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">Dunnis Stores · Admin</p>
+              <h1 style="margin:0;font-size:26px;line-height:1.25;">A new order needs your attention</h1>
+              <p style="margin:12px 0 0;color:#e9d5ff;font-size:15px;">Order #${formatOrderNumber(orderNumber)} <span style="padding:5px 9px;border-radius:99px;background:#7e22ce;color:#fff;font-size:11px;font-weight:bold;">${escapeHtml(status || "NEW").toUpperCase()}</span></p>
+            </td></tr>
+            <tr><td style="padding:24px 32px 8px;">
+              <h2 style="margin:0 0 14px;color:#111827;font-size:16px;">Customer &amp; delivery</h2>
+              <table role="presentation" style="width:100%;border-collapse:collapse;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+                <tr><td style="padding:14px 16px;color:#64748b;font-size:12px;">CUSTOMER</td><td style="padding:14px 16px;color:#111827;font-size:14px;font-weight:700;">${escapeHtml(customerName)}</td></tr>
+                <tr><td style="padding:12px 16px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;">EMAIL</td><td style="padding:12px 16px;border-top:1px solid #e2e8f0;font-size:14px;"><a href="mailto:${escapeHtml(customerEmail)}" style="color:#6d28d9;">${escapeHtml(customerEmail)}</a></td></tr>
+                <tr><td style="padding:12px 16px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;">PHONE</td><td style="padding:12px 16px;border-top:1px solid #e2e8f0;color:#111827;font-size:14px;">${escapeHtml(customerPhone || "Not provided")}</td></tr>
+                <tr><td style="padding:12px 16px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;">DELIVERY</td><td style="padding:12px 16px;border-top:1px solid #e2e8f0;color:#111827;font-size:14px;line-height:1.5;">${escapeHtml(deliveryAddress || "Not provided").replace(/\r?\n/g, "<br>")}</td></tr>
+              </table>
+              <p style="margin:14px 0 0;color:#475569;font-size:13px;"><strong>Order source:</strong> ${escapeHtml(sourceLabel)}${paymentMethod ? ` &nbsp;·&nbsp; <strong>Payment:</strong> ${escapeHtml(paymentMethod)}` : ""}</p>
+            </td></tr>
+            <tr><td style="padding:22px 32px 8px;">
+              <h2 style="margin:0 0 12px;color:#111827;font-size:16px;">Items ordered</h2>
+              <table role="presentation" style="width:100%;border-collapse:collapse;border:1px solid #eef2f7;border-radius:12px;overflow:hidden;"><tbody>${itemsHtml}</tbody></table>
+            </td></tr>
+            <tr><td style="padding:16px 32px 26px;">
+              <table role="presentation" style="width:100%;border-collapse:collapse;">
+                <tr><td style="padding:5px 0;color:#64748b;font-size:14px;">Items subtotal</td><td align="right" style="padding:5px 0;color:#334155;font-size:14px;">${formatNaira(productsSubtotal)}</td></tr>
+                <tr><td style="padding:5px 0;color:#64748b;font-size:14px;">Delivery</td><td align="right" style="padding:5px 0;color:#334155;font-size:14px;">${deliveryFee === null || deliveryFee <= 0 ? "Pending" : formatNaira(deliveryFee)}</td></tr>
+                <tr><td style="padding:14px 0 0;border-top:1px solid #e2e8f0;color:#111827;font-size:17px;font-weight:bold;">Total</td><td align="right" style="padding:14px 0 0;border-top:1px solid #e2e8f0;color:#6d28d9;font-size:20px;font-weight:bold;">${formatNaira(total)}</td></tr>
+              </table>
+              <div style="padding-top:24px;text-align:center;"><a href="${escapeHtml(adminOrdersUrl)}" style="display:inline-block;padding:13px 22px;border-radius:10px;background:#7e22ce;color:#fff;text-decoration:none;font-size:14px;font-weight:bold;">Review this order</a></div>
+            </td></tr>
+            <tr><td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;color:#94a3b8;text-align:center;font-size:11px;">Automated order notification · Dunnis Stores</td></tr>
+          </table>
+        </td></tr>
+      </table>
     </body>
     </html>
   `;
@@ -387,7 +393,19 @@ export function generateUserUpdateEmail(
           (item) => `
             <tr>
               <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                ${escapeHtml(item.name)}
+                <div style="display:flex;align-items:center;gap:12px;">
+                  ${
+                    getSafeEmailImageUrl(item.imageUrl)
+                      ? `<img src="${getSafeEmailImageUrl(item.imageUrl)}" alt="${escapeHtml(item.name)}" width="64" height="64" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #eee;" />`
+                      : ""
+                  }
+                  <div>
+                    <strong>${escapeHtml(item.name)}</strong>
+                    ${
+                      item.categoryName
+                        ? `<div style="margin-top:4px;color:#7c3aed;font-size:12px;">${escapeHtml(item.categoryName)}</div>`
+                        : ""
+                    }
                 ${
                   item.giftContents?.length
                     ? `<ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12px;">${item.giftContents
@@ -402,6 +420,8 @@ export function generateUserUpdateEmail(
                         .join("")}</ul>`
                     : ""
                 }
+                  </div>
+                </div>
               </td>
               <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
               <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatNaira(item.price)}</td>

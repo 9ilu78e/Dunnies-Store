@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Package, CheckCircle, XCircle, Clock3 } from "lucide-react";
+import { Package, CheckCircle, XCircle, Clock3, LoaderCircle } from "lucide-react";
 import { formatOrderNumber } from "@/lib/orderNumber";
 
 interface OrderItemData {
@@ -23,6 +23,7 @@ interface OrderRecord {
   notes?: string | null;
   deliveryAddress?: string | null;
   paymentMethod?: string | null;
+  paymentStatus?: string | null;
   orderItems?: OrderItemData[];
 }
 
@@ -47,6 +48,34 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [requestedOrderNumber, setRequestedOrderNumber] = useState("");
+  const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState("");
+
+  const retryPayment = async (orderId: string) => {
+    setPayingOrderId(orderId);
+    setPaymentError("");
+    try {
+      const response = await fetch("/api/paystack/initialize", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to start payment.");
+      if (typeof data.authorizationUrl !== "string") {
+        throw new Error("Paystack did not return a payment link.");
+      }
+      window.location.assign(data.authorizationUrl);
+    } catch (paymentStartError) {
+      setPaymentError(
+        paymentStartError instanceof Error
+          ? paymentStartError.message
+          : "Unable to start payment."
+      );
+      setPayingOrderId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -118,6 +147,11 @@ export default function OrdersPage() {
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </div>
+        )}
+        {paymentError && (
+          <p role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {paymentError}
+          </p>
         )}
 
         <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -196,6 +230,39 @@ export default function OrdersPage() {
                       <p className="mt-1 text-sm font-semibold text-gray-800">{order.deliveryAddress || "Not provided"}</p>
                     </div>
                   </div>
+                  {order.paymentMethod === "paystack" && (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-purple-100 bg-purple-50/60 p-3">
+                      <p className="text-sm text-gray-700">
+                        Payment:{" "}
+                        <span
+                          className={`font-semibold ${
+                            order.paymentStatus === "paid"
+                              ? "text-emerald-700"
+                              : "text-amber-700"
+                          }`}
+                        >
+                          {order.paymentStatus === "paid"
+                            ? "Paid"
+                            : "Payment required before delivery"}
+                        </span>
+                      </p>
+                      {order.paymentStatus !== "paid" && (
+                        <button
+                          type="button"
+                          onClick={() => void retryPayment(order.id)}
+                          disabled={payingOrderId !== null}
+                          className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-60"
+                        >
+                          {payingOrderId === order.id && (
+                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                          )}
+                          {payingOrderId === order.id
+                            ? "Starting payment..."
+                            : "Pay now"}
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-4">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Items</p>

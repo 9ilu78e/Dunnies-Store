@@ -13,6 +13,8 @@ import {
   User,
   BarChart3,
   BadgePercent,
+  Mail,
+  MessageSquareText,
 } from "lucide-react";
 
 const navItems = [
@@ -67,6 +69,16 @@ const navItems = [
     icon: Users,
   },
   {
+    label: "Newsletter",
+    href: "/admin/newsletter",
+    icon: Mail,
+  },
+  {
+    label: "Contact Messages",
+    href: "/admin/contact-messages",
+    icon: MessageSquareText,
+  },
+  {
     label: "Settings",
     href: "/admin-settings",
     icon: Settings,
@@ -88,14 +100,14 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="h-full w-72 bg-linear-to-b from-purple-950 via-purple-900 to-purple-800 text-white flex flex-col border-r border-purple-950">
-      <div className="px-6 py-6 border-b border-white/10 space-y-4">
-        <p className="text-[20px] uppercase tracking-[0.15em] text-purple-300 font-bold">
+    <aside className="flex h-full w-72 flex-col border-r border-gray-200 bg-white text-gray-800">
+      <div className="space-y-3 border-b border-gray-200 px-5 py-4">
+        <p className="text-[20px] font-bold uppercase tracking-[0.15em] text-purple-700">
           Dunnis Admin
         </p>
 
-        <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3 shadow-inner">
-          <div className="w-10 h-10 rounded-2xl overflow-hidden bg-white/10 flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-2.5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-200">
             {user ? (
               <UserAvatar
                 src={user.photoURL}
@@ -105,22 +117,22 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
                 className="object-cover"
               />
             ) : (
-              <User className="w-10 h-10" />
+              <User className="h-6 w-6 text-gray-600" />
             )}
           </div>
-          <div className="text-white min-w-0">
-            <p className="text-[15px] text-purple-200">Signed in as</p>
+          <div className="min-w-0 text-gray-700">
+            <p className="text-[13px] text-gray-500">Signed in as</p>
             <p className="font-semibold text-xs leading-tight truncate">
               {user?.fullName || "Admin"}
             </p>
-            <p className="text-[13px] text-purple-200 truncate">
+            <p className="truncate text-[13px] text-gray-500">
               {user?.email || "admin@dunnis.store"}
             </p>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3 md:space-y-2 md:px-4 md:py-6">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -130,10 +142,10 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onNavClick}
-              className={`flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-sm transition md:gap-3 md:px-3 md:py-2 md:text-base ${
+              className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition ${
                 isActive
-                  ? "bg-white/15 text-white shadow-lg shadow-purple-900/30"
-                  : "text-gray-300 hover:bg-white/5"
+                  ? "bg-purple-50 font-semibold text-purple-700"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -143,7 +155,7 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
         })}
       </nav>
 
-      <div className="px-6 py-6 border-t border-white/10 text-xs text-purple-200">
+      <div className="border-t border-gray-200 px-5 py-3 text-xs text-gray-500">
         © {new Date().getFullYear()} Dunnis Stores
       </div>
     </aside>

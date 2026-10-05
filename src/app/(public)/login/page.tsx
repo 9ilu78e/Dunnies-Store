@@ -164,7 +164,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center px-4 py-2 sm:min-h-screen sm:p-4">
+    <div className="login-page bg-gradient-to-br from-purple-100 via-pink-50 to-purple-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 p-5 sm:p-8 backdrop-blur-sm">
           {error && (

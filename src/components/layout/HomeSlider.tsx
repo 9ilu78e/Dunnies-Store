@@ -3,45 +3,32 @@
 import { useEffect, useState } from "react";
 import type { KeyboardEvent } from "react";
 import Image from "next/image";
-
-const slides = [
-  {
-    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.47.jpeg",
-    alt: "Wedding gifts promotion",
-  },
-  {
-    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.48.jpeg",
-    alt: "Birthday gifts promotion",
-  },
-  {
-    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.48 (1).jpeg",
-    alt: "Mother's Day gifts promotion",
-  },
-  {
-    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.48 (2).jpeg",
-    alt: "Ramadan gifts promotion",
-  },
-  {
-    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.48 (3).jpeg",
-    alt: "Father's Day gifts promotion",
-  },
-  {
-    image: "/assets/WhatsApp Image 2026-10-03 at 04.09.49.jpeg",
-    alt: "Eid gifts promotion",
-  },
-];
+import { useSiteSettings } from "./SiteSettingsProvider";
 
 export default function HeroSlider() {
   const [current, setCurrent] = useState(0);
+  const { heroImages } = useSiteSettings();
+  const slides = heroImages.map((image) => ({
+    image,
+    alt: "Dunni Stores promotion",
+  }));
 
   useEffect(() => {
+    if (current >= slides.length) setCurrent(0);
+  }, [current, slides.length]);
+
+  useEffect(() => {
+    if (slides.length < 2) return;
     const timer = setInterval(() => {
       setCurrent((index) => (index + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
+
+  if (slides.length === 0) return null;
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (slides.length < 2) return;
     if (event.key === "ArrowLeft") {
       setCurrent((index) => (index + slides.length - 1) % slides.length);
     } else if (event.key === "ArrowRight") {
@@ -80,23 +67,25 @@ export default function HeroSlider() {
           </div>
         ))}
       </div>
-      <div
-        className="flex justify-center gap-2 pt-3"
-        aria-label="Slide navigation"
-      >
-        {slides.map((slide, index) => (
-          <button
-            key={slide.image}
-            type="button"
-            onClick={() => setCurrent(index)}
-            className={`h-2.5 rounded-full transition-all ${
-              index === current ? "w-7 bg-purple-700" : "w-2.5 bg-purple-300"
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-            aria-current={index === current ? "true" : undefined}
-          />
-        ))}
-      </div>
+      {slides.length > 1 && (
+        <div
+          className="flex justify-center gap-2 pt-3"
+          aria-label="Slide navigation"
+        >
+          {slides.map((slide, index) => (
+            <button
+              key={slide.image}
+              type="button"
+              onClick={() => setCurrent(index)}
+              className={`h-2.5 rounded-full transition-all ${
+                index === current ? "w-7 bg-purple-700" : "w-2.5 bg-purple-300"
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+              aria-current={index === current ? "true" : undefined}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -156,9 +156,34 @@ export async function PATCH(
       include: {
         orderItems: {
           include: {
-            product: { select: { name: true, price: true } },
-            gift: { select: { name: true, price: true, extraPrice: true } },
-            souvenir: { select: { name: true, price: true } },
+            product: {
+              select: {
+                name: true,
+                price: true,
+                imageUrl: true,
+                imageUrls: true,
+                category: { select: { name: true } },
+              },
+            },
+            gift: {
+              select: {
+                name: true,
+                price: true,
+                extraPrice: true,
+                imageUrl: true,
+                imageUrls: true,
+                category: { select: { name: true } },
+              },
+            },
+            souvenir: {
+              select: {
+                name: true,
+                price: true,
+                imageUrl: true,
+                imageUrls: true,
+                category: { select: { name: true } },
+              },
+            },
           },
         },
       },
@@ -189,6 +214,13 @@ export async function PATCH(
       });
     }
 
+    if (Object.prototype.hasOwnProperty.call(body, "paymentStatus")) {
+      return NextResponse.json(
+        { error: "Payment status can only be updated through verified payment processing." },
+        { status: 403 }
+      );
+    }
+
     if (order.archivedAt) {
       return NextResponse.json(
         { error: "Archived orders must be restored before changing their status." },
@@ -201,6 +233,16 @@ export async function PATCH(
       return NextResponse.json(
         { error: "Invalid order status." },
         { status: 400 }
+      );
+    }
+    if (
+      order.paymentMethod === "paystack" &&
+      order.paymentStatus !== "paid" &&
+      ["processing", "delivered"].includes(requestedStatus)
+    ) {
+      return NextResponse.json(
+        { error: "Payment must be verified before the order can be processed for delivery." },
+        { status: 409 }
       );
     }
 
@@ -273,11 +315,16 @@ export async function PATCH(
               : item.product?.price ?? item.souvenir?.price ?? 0);
           const itemName =
             item.product?.name ?? item.gift?.name ?? item.souvenir?.name ?? "Item";
+          const catalogItem = item.product ?? item.gift ?? item.souvenir;
 
           return {
             name: `${itemName}${item.size ? ` (Size ${item.size})` : ""}`,
             quantity: item.quantity,
             price: unitPrice,
+            imageUrl: catalogItem
+              ? catalogItem.imageUrls[0] || catalogItem.imageUrl || undefined
+              : undefined,
+            categoryName: catalogItem?.category?.name || "Store item",
             ...(giftContents.length ? { giftContents } : {}),
           };
         });

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import ProductList from "@/components/product/ProductList";
+import ProductList from "@/components/catalog/ProductList";
 import Loader from "@/components/ui/Loader";
 import { ProductRecord } from "@/Data/products";
 import {

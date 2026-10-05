@@ -1,0 +1,45 @@
+"use client";
+
+import type { ProductRecord } from "@/Data/products";
+import ProductDetail from "../product/ProductDetail";
+import ProductSpecifications from "../shared/ProductSpecifications";
+
+function SouvenirDetails({ product }: { product: ProductRecord }) {
+  return (
+    <div className="space-y-4">
+      <section className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">
+          A keepsake to remember
+        </p>
+        <h2 className="mt-1 text-sm font-semibold text-gray-900">
+          Souvenir highlights
+        </h2>
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {product.highlights.map((highlight) => (
+            <li
+              key={highlight}
+              className="rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700"
+            >
+              {highlight}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <ProductSpecifications product={product} title="Souvenir details" />
+    </div>
+  );
+}
+
+export default function SouvenirDetail({
+  product,
+}: {
+  product: ProductRecord;
+}) {
+  return (
+    <ProductDetail
+      product={product}
+      itemType="souvenir"
+      detailsContent={<SouvenirDetails product={product} />}
+    />
+  );
+}

@@ -1,6 +1,6 @@
 import HeroSlider from "@/components/layout/HomeSlider";
 import CategoriesGrid from "@/components/layout/CategoriesGrid";
-import FlashSalesProducts from "@/components/product/FlashSalesProducts";
+import FlashSalesProducts from "@/components/catalog/FlashSalesProducts";
 import CategoryShowcase from "@/components/layout/CategoryShowcase";
 import FeaturedProducts from "@/components/layout/FeaturedProducts";
 import FeaturedGifts from "@/components/layout/FeaturedGifts";
