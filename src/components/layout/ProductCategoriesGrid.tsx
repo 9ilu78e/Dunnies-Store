@@ -7,7 +7,19 @@ import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 import { getCategories, type Category } from "@/lib/categoryClient";
 
-export default function ProductCategoriesGrid() {
+type ProductCategoriesGridProps = {
+  categoryNameFontSizePx?: number;
+  categoryNameColor?: string;
+  itemCountFontSizePx?: number;
+  itemCountColor?: string;
+};
+
+export default function ProductCategoriesGrid({
+  categoryNameFontSizePx = 12,
+  categoryNameColor = "#111827",
+  itemCountFontSizePx = 10,
+  itemCountColor = "#7c3aed",
+}: ProductCategoriesGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -137,11 +149,23 @@ export default function ProductCategoriesGrid() {
 
                       <div className="absolute bottom-1.5 left-1.5 right-1.5">
                         <div className="rounded-md bg-white/95 px-1.5 py-0.5 shadow-sm backdrop-blur-sm">
-                          <h3 className="truncate text-xs font-bold leading-5 text-gray-900 sm:text-sm">
+                          <h3
+                            className="break-words font-bold leading-tight"
+                            style={{
+                              fontSize: `${categoryNameFontSizePx}px`,
+                              color: categoryNameColor,
+                            }}
+                          >
                             {cat.name}
                           </h3>
                           <div className="flex items-center justify-between leading-4">
-                            <p className="text-xs font-medium text-violet-600">
+                            <p
+                              className="font-medium leading-tight"
+                              style={{
+                                fontSize: `${itemCountFontSizePx}px`,
+                                color: itemCountColor,
+                              }}
+                            >
                               {cat._count?.products || 0} items
                             </p>
                             <ArrowRight className="h-3 w-3 text-violet-600 transition-transform group-hover/card:translate-x-1" />
