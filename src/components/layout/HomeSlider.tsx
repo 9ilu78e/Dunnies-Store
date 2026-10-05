@@ -113,6 +113,16 @@ export default function HeroSlider() {
                 }}
               />
             )}
+            <div
+              className={`pointer-events-none absolute inset-0 ${
+                slide.contentPosition === "center"
+                  ? "bg-black/20"
+                  : slide.contentPosition === "right"
+                    ? "bg-linear-to-l from-black/45 via-black/15 to-transparent"
+                    : "bg-linear-to-r from-black/45 via-black/15 to-transparent"
+              }`}
+              aria-hidden="true"
+            />
 
             <div
               className={`absolute inset-0 z-10 flex items-center ${
