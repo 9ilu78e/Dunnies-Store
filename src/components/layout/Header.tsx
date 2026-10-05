@@ -517,11 +517,11 @@ export default function Header() {
  Cart Icon */}              <Link
                 href="/cart"
                 aria-label={`Cart${totalItems > 0 ? `, ${totalItems} items` : ""}`}
-                className="relative inline-flex items-center gap-1.5 rounded-xl px-2.5 py-2 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group"
+                className="relative inline-flex items-center gap-1 rounded-xl px-2.5 py-2 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group"
                 onClick={() => setIsUserDropdownOpen(false)}
               >
                 <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-purple-600 transition-all duration-200 group-hover:scale-110" />
-                <span className="text-[15px] font-semibold text-gray-700 group-hover:text-purple-600 ml-3">
+                <span className="text-[15px] font-semibold text-gray-700 group-hover:text-purple-600">
                   Cart
                 </span>
                 {totalItems > 0 && (

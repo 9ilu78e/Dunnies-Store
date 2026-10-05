@@ -209,7 +209,7 @@ export default function HeroSlider() {
                     {slide.ctaText && slide.ctaHref && (
                       <Link
                         href={slide.ctaHref}
-                        className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold shadow-lg transition hover:brightness-95 hover:shadow-xl sm:px-6 sm:py-3 sm:text-sm ${radiusClass(slide.cornerRadius)}`}
+                        className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold shadow-lg transition hover:brightness-95 hover:shadow-xl sm:px-6 sm:py-3 sm:text-sm"
                         style={{
                           backgroundColor: slide.primaryButtonBackgroundColor,
                           color: slide.primaryButtonTextColor,
@@ -222,7 +222,7 @@ export default function HeroSlider() {
                     {slide.secondaryCtaText && slide.secondaryCtaHref && (
                       <Link
                         href={slide.secondaryCtaHref}
-                        className={`inline-flex items-center border-2 px-4 py-2.5 text-xs font-semibold transition hover:brightness-95 sm:px-6 sm:py-3 sm:text-sm ${radiusClass(slide.cornerRadius)}`}
+                        className="inline-flex items-center rounded-full border-2 px-4 py-2.5 text-xs font-semibold transition hover:brightness-95 sm:px-6 sm:py-3 sm:text-sm"
                         style={{
                           backgroundColor: hexToRgba(
                             slide.secondaryButtonBackgroundColor,
