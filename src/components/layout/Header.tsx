@@ -521,7 +521,7 @@ export default function Header() {
                 onClick={() => setIsUserDropdownOpen(false)}
               >
                 <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-purple-600 transition-all duration-200 group-hover:scale-110" />
-                <span className="text-[15px] font-semibold text-gray-700 group-hover:text-purple-600 ml-3">
+                <span className="ml-0 text-[15px] font-semibold text-gray-700 group-hover:text-purple-600 lg:ml-3">
                   Cart
                 </span>
                 {totalItems > 0 && (

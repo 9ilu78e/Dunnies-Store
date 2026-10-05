@@ -24,6 +24,11 @@ import {
   X,
 } from "lucide-react";
 
+const USER_INTERFACE_CATEGORY_NAME_FONT_SIZE_PX = 15;
+const USER_INTERFACE_CATEGORY_NAME_COLOR = "#111827";
+const USER_INTERFACE_CATEGORY_COUNT_FONT_SIZE_PX = 12;
+const USER_INTERFACE_CATEGORY_COUNT_COLOR = "#7c3aed";
+
 type CurrentUser = {
   uid: string;
   email: string | null;
@@ -539,7 +544,12 @@ export default function UsersInterfacePage() {
           </div>
         </div>
 
-        <ProductCategoriesGrid />
+        <ProductCategoriesGrid
+          categoryNameFontSizePx={USER_INTERFACE_CATEGORY_NAME_FONT_SIZE_PX}
+          categoryNameColor={USER_INTERFACE_CATEGORY_NAME_COLOR}
+          itemCountFontSizePx={USER_INTERFACE_CATEGORY_COUNT_FONT_SIZE_PX}
+          itemCountColor={USER_INTERFACE_CATEGORY_COUNT_COLOR}
+        />
       </div>
     </section>
   );
