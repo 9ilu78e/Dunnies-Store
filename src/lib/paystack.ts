@@ -30,13 +30,21 @@ type PaystackEnvelope = {
   data?: PaystackTransaction;
 };
 
+export function isPaystackSecretKey(
+  secretKey: string | undefined
+): secretKey is string {
+  return Boolean(
+    secretKey?.startsWith("sk_test_") || secretKey?.startsWith("sk_live_")
+  );
+}
+
 export async function verifyPaystackTransaction(
   reference: string
 ): Promise<PaystackTransaction> {
   const secretKey = process.env.PAYSTACK_SECRET_KEY;
-  if (!secretKey?.startsWith("sk_test_")) {
+  if (!isPaystackSecretKey(secretKey)) {
     throw new Error(
-      "Paystack test payments need a secret key beginning with sk_test_ in PAYSTACK_SECRET_KEY."
+      "PAYSTACK_SECRET_KEY must be a Paystack test or live secret key beginning with sk_test_ or sk_live_."
     );
   }
 
@@ -59,7 +67,11 @@ export function isValidPaystackSignature(
   signature: string | null
 ) {
   const secretKey = process.env.PAYSTACK_SECRET_KEY;
-  if (!secretKey || !signature || !/^[\da-f]{128}$/i.test(signature)) {
+  if (
+    !isPaystackSecretKey(secretKey) ||
+    !signature ||
+    !/^[\da-f]{128}$/i.test(signature)
+  ) {
     return false;
   }
   const expected = createHmac("sha512", secretKey).update(rawBody).digest();

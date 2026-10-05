@@ -5,6 +5,7 @@ import { verifyUserAuth } from "@/lib/authMiddleware";
 import { canAccessOrder } from "@/lib/orderOwnership";
 import { decryptPaystackAuthorizationCode } from "@/lib/paystackAuthorization";
 import {
+  isPaystackSecretKey,
   settlePaystackPayment,
   verifyPaystackTransaction,
 } from "@/lib/paystack";
@@ -15,11 +16,11 @@ export async function POST(request: NextRequest) {
     if (!auth.isAuthenticated || !auth.user?.email) {
       return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
-    if (!process.env.PAYSTACK_SECRET_KEY?.startsWith("sk_test_")) {
+    if (!isPaystackSecretKey(process.env.PAYSTACK_SECRET_KEY)) {
       return NextResponse.json(
         {
           error:
-            "Paystack test payments need a secret key beginning with sk_test_ in PAYSTACK_SECRET_KEY.",
+            "Configure PAYSTACK_SECRET_KEY with a Paystack test or live secret key beginning with sk_test_ or sk_live_.",
         },
         { status: 503 }
       );
