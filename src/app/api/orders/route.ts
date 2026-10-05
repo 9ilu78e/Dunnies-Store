@@ -67,8 +67,8 @@ async function ensureOrderUser(authUser: {
   id: string;
 }) {
   const normalizedEmail = authUser.email.trim();
-  const existingUser = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
+  const existingUser = await prisma.user.findFirst({
+    where: { email: { equals: normalizedEmail, mode: "insensitive" } },
   });
 
   if (existingUser) {
@@ -502,7 +502,7 @@ export async function POST(request: NextRequest) {
       ) + knownDeliveryFee;
 
     const orderUser = await ensureOrderUser({
-      email: customerEmail,
+      email: auth.user.email,
       fullName: customerName,
       role: auth.user.role,
       id: auth.user.id,
@@ -635,8 +635,10 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const orderUser = await prisma.user.findUnique({
-        where: { email: auth.user.email },
+      const orderUser = await prisma.user.findFirst({
+        where: {
+          email: { equals: auth.user.email.trim(), mode: "insensitive" },
+        },
         select: { id: true },
       });
 

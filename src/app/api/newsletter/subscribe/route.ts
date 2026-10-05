@@ -2,19 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { DEFAULT_SITE_SETTINGS } from "@/lib/siteSettings";
+import { createNewsletterSubscriptionEmail } from "@/lib/emails/newsletterSubscriptionEmail";
 
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => {
-    const entities: Record<string, string> = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-    return entities[character];
-  });
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,7 +78,7 @@ export async function POST(request: NextRequest) {
       await sendEmail({
         to: email,
         subject: `You’re subscribed to ${storeName}`,
-        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937;line-height:1.6"><div style="padding:24px;background:#6d28d9;color:#fff;border-radius:14px 14px 0 0"><h1 style="margin:0;font-size:24px">Subscription confirmed</h1></div><div style="padding:24px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 14px 14px"><p>Hello ${escapeHtml(email)},</p><p>You’ve successfully subscribed to ${escapeHtml(storeName)} newsletters. We’ll send you store news, gift inspiration, and special offers.</p><p>You can unsubscribe at any time by contacting <a href="mailto:${escapeHtml(supportEmail)}" style="color:#6d28d9">${escapeHtml(supportEmail)}</a>.</p><p style="margin-top:24px">Thank you,<br><strong>${escapeHtml(storeName)} Team</strong></p></div></div>`,
+        html: createNewsletterSubscriptionEmail(email, storeName, supportEmail),
       });
     } catch (emailError) {
       confirmationEmailSent = false;

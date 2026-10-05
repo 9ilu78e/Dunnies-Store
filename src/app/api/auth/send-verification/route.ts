@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { BrevoEmailError, sendBrevoEmail } from "@/lib/brevoEmail";
+import { createLoginLinkEmail } from "@/lib/emails/loginEmail";
 
 // Generate verification token
 const generateVerificationToken = (): string => {
@@ -62,125 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Send email
     console.log("=== SENDING EMAIL ===");
-    const mailOptions = {
-      subject: "Your Dunnis Stores sign-in link",
-      text: `Use this link to sign in to Dunnis Stores:\n\n${verificationLink}\n\nThis link expires in 15 minutes. If you didn't request it, you can ignore this email.`,
-      html: `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Your Dunnis Stores sign-in link</title>
-        </head>
-        <body style="margin:0; padding:0; background-color:#f4f4f5; font-family: Arial, Helvetica, sans-serif;">
-          <!-- Preheader (hidden preview text) -->
-          <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:#f4f4f5;">
-            Tap the button to sign in to Dunnis Stores. This link expires in 15 minutes.
-          </div>
-
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5; padding:24px 12px;">
-            <tr>
-              <td align="center">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-
-                  <!-- Top promo bar -->
-                  <tr>
-                    <td align="center" style="background-color:#111827; color:#ffffff; font-size:12px; letter-spacing:1px; padding:10px 16px; text-transform:uppercase;">
-                      Fresh deals every day &nbsp;•&nbsp; Shop with confidence
-                    </td>
-                  </tr>
-
-                  <!-- Header / Logo -->
-                  <tr>
-                    <td align="center" style="padding:32px 24px 8px 24px;">
-                      <div style="font-size:28px; font-weight:800; letter-spacing:1px; color:#111827;">
-                        DUNNIS <span style="color:#8b5cf6;">STORES</span>
-                      </div>
-                    </td>
-                  </tr>
-
-                  <!-- Hero -->
-                  <tr>
-                    <td align="center" style="padding:16px 32px 0 32px;">
-                      <div style="width:64px; height:64px; line-height:64px; border-radius:50%; background-color:#f5f3ff; font-size:30px; margin:0 auto 16px auto;">
-                        🛍️
-                      </div>
-                      <h1 style="margin:0 0 12px 0; font-size:26px; line-height:1.3; color:#111827;">
-                        Welcome back! Let's get you signed in
-                      </h1>
-                      <p style="margin:0; font-size:15px; line-height:1.6; color:#4b5563;">
-                        Tap the button below to securely sign in to your Dunnis Stores account and continue shopping.
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- CTA Button -->
-                  <tr>
-                    <td align="center" style="padding:28px 32px 8px 32px;">
-                      <a href="${verificationLink}"
-                         style="display:inline-block; background-color:#8b5cf6; background-image:linear-gradient(90deg,#8b5cf6,#ec4899); color:#ffffff; text-decoration:none; font-size:16px; font-weight:bold; padding:16px 40px; border-radius:8px;">
-                        Sign in to Dunnis Stores
-                      </a>
-                    </td>
-                  </tr>
-
-                  <!-- Expiry notice -->
-                  <tr>
-                    <td align="center" style="padding:12px 32px 24px 32px;">
-                      <p style="margin:0; font-size:13px; color:#6b7280;">
-                        ⏱️ This link expires in <strong>15 minutes</strong>.
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- Divider -->
-                  <tr>
-                    <td style="padding:0 32px;">
-                      <hr style="border:none; border-top:1px solid #e5e7eb; margin:0;" />
-                    </td>
-                  </tr>
-
-                  <!-- Fallback link -->
-                  <tr>
-                    <td style="padding:16px 32px 8px 32px;">
-                      <p style="margin:0 0 6px 0; font-size:12px; color:#6b7280;">
-                        Button not working? Copy and paste this link into your browser:
-                      </p>
-                      <p style="margin:0; font-size:12px; word-break:break-all;">
-                        <a href="${verificationLink}" style="color:#8b5cf6; text-decoration:underline;">${verificationLink}</a>
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- Security note -->
-                  <tr>
-                    <td style="padding:16px 32px 32px 32px;">
-                      <p style="margin:0; font-size:12px; line-height:1.6; color:#9ca3af;">
-                        If you didn't request this email, you can safely ignore it. Someone may have entered your email address by mistake.
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td align="center" style="background-color:#111827; padding:24px 24px;">
-                      <p style="margin:0 0 6px 0; font-size:14px; font-weight:bold; color:#ffffff; letter-spacing:1px;">
-                        DUNNIS STORES
-                      </p>
-                      <p style="margin:0; font-size:12px; color:#9ca3af;">
-                        &copy; ${new Date().getFullYear()} Dunnis Stores. All rights reserved.
-                      </p>
-                    </td>
-                  </tr>
-
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      `,
-    };
+    const mailOptions = createLoginLinkEmail(verificationLink);
 
     console.log("Mail options prepared:");
     console.log("Subject: Your Dunnis Stores sign-in link");

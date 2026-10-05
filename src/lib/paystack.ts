@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
+import { createPaymentConfirmationEmail } from "@/lib/emails/paymentConfirmationEmail";
+import { encryptPaystackAuthorizationCode } from "@/lib/paystackAuthorization";
 
 type PaystackTransaction = {
   status: string;
@@ -9,6 +11,17 @@ type PaystackTransaction = {
   currency: string;
   id: number | string;
   gateway_response?: string;
+  authorization?: {
+    authorization_code?: string;
+    signature?: string;
+    reusable?: boolean;
+    brand?: string;
+    card_type?: string;
+    last4?: string;
+    exp_month?: string;
+    exp_year?: string;
+    bank?: string;
+  };
 };
 
 type PaystackEnvelope = {
@@ -21,7 +34,11 @@ export async function verifyPaystackTransaction(
   reference: string
 ): Promise<PaystackTransaction> {
   const secretKey = process.env.PAYSTACK_SECRET_KEY;
-  if (!secretKey) throw new Error("Paystack is not configured on the server.");
+  if (!secretKey?.startsWith("sk_test_")) {
+    throw new Error(
+      "Paystack test payments need a secret key beginning with sk_test_ in PAYSTACK_SECRET_KEY."
+    );
+  }
 
   const response = await fetch(
     `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
@@ -77,6 +94,12 @@ export async function settlePaystackPayment(
   }
 
   if (transaction.status !== "success") {
+    if (transaction.status === "pending" || transaction.status === "ongoing") {
+      return {
+        paymentStatus: "pending",
+        order: payment.order,
+      };
+    }
     const failedStatus =
       transaction.status === "abandoned" ? "cancelled" : "failed";
     if (payment.status !== "paid") {
@@ -117,20 +140,80 @@ export async function settlePaystackPayment(
       where: { id: payment.orderId },
       data: { paymentStatus: "paid" },
     });
+    const authorization = transaction.authorization;
+    if (
+      payment.savePaymentMethod &&
+      payment.order.userId &&
+      authorization?.reusable === true &&
+      authorization.authorization_code &&
+      authorization.signature &&
+      authorization.last4 &&
+      authorization.exp_month &&
+      authorization.exp_year
+    ) {
+      const existingMethod = await transactionDb.savedPaymentMethod.findUnique({
+        where: {
+          userId_signature: {
+            userId: payment.order.userId,
+            signature: authorization.signature,
+          },
+        },
+        select: { id: true },
+      });
+      const isFirstMethod =
+        !existingMethod &&
+        (await transactionDb.savedPaymentMethod.count({
+          where: { userId: payment.order.userId },
+        })) === 0;
+      await transactionDb.savedPaymentMethod.upsert({
+        where: {
+          userId_signature: {
+            userId: payment.order.userId,
+            signature: authorization.signature,
+          },
+        },
+        create: {
+          userId: payment.order.userId,
+          authorizationCodeEncrypted: encryptPaystackAuthorizationCode(
+            authorization.authorization_code
+          ),
+          signature: authorization.signature,
+          brand: authorization.brand || null,
+          cardType: authorization.card_type || null,
+          last4: authorization.last4,
+          expMonth: authorization.exp_month,
+          expYear: authorization.exp_year,
+          bank: authorization.bank || null,
+          isDefault: isFirstMethod,
+        },
+        update: {
+          authorizationCodeEncrypted: encryptPaystackAuthorizationCode(
+            authorization.authorization_code
+          ),
+          brand: authorization.brand || null,
+          cardType: authorization.card_type || null,
+          last4: authorization.last4,
+          expMonth: authorization.exp_month,
+          expYear: authorization.exp_year,
+          bank: authorization.bank || null,
+        },
+      });
+    }
     return true;
   });
 
   if (changed) {
     const safeOrderNumber = payment.order.orderNumber;
     try {
-      const escapeHtml = (value: string) =>
-        value.replace(/[&<>"']/g, (char) =>
-          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!
-        );
       await sendEmail({
         to: payment.order.customerEmail,
         subject: `Payment confirmed - Order #${safeOrderNumber}`,
-        html: `<p>Hello ${escapeHtml(payment.order.customerName)},</p><p>Your payment for order #${safeOrderNumber} has been verified successfully.</p><p>Amount paid: ₦${(payment.amountKobo / 100).toLocaleString()}<br>Payment status: Paid<br>Order status: ${escapeHtml(payment.order.status)}</p><p>Your order will now continue through the normal fulfilment process. Payment confirmation does not mean that the order has been delivered.</p>`,
+        html: createPaymentConfirmationEmail({
+          customerName: payment.order.customerName,
+          orderNumber: String(safeOrderNumber),
+          amount: payment.amountKobo / 100,
+          orderStatus: payment.order.status,
+        }),
       });
     } catch (error) {
       console.error("[PAYSTACK_PAYMENT_EMAIL]", error);

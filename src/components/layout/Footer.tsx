@@ -16,6 +16,8 @@ import {
 
 export default function Footer() {
   const { storeName, supportEmail, supportPhone, address } = useSiteSettings();
+  const whatsappNumber =
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || supportPhone;
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState("");
@@ -157,7 +159,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href={`https://wa.me/${supportPhone.replace(/\D/g, "")}`}
+                  href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"

@@ -18,12 +18,17 @@ export const uploadImage = async (file: File, folder = 'dunnies-store'): Promise
     const buffer = Buffer.from(arrayBuffer);
     const base64 = buffer.toString('base64');
     const dataURI = `data:${file.type};base64,${base64}`;
+    const isSvg = file.type === 'image/svg+xml';
 
     const result = await cloudinary.uploader.upload(dataURI, {
       folder,
-      resource_type: 'auto',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
-      transformation: [{ quality: 'auto:good', fetch_format: 'auto' }],
+      resource_type: isSvg ? 'image' : 'auto',
+      allowed_formats: isSvg
+        ? ['svg']
+        : ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
+      ...(!isSvg
+        ? { transformation: [{ quality: 'auto:good', fetch_format: 'auto' }] }
+        : {}),
     });
 
     return result.secure_url;
