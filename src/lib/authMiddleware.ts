@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 type AuthenticatedUser = {
   id: string;
+  source: "user" | "firebaseUser";
   email: string;
   fullName: string;
   role: string;
@@ -31,6 +32,7 @@ export async function verifyUserAuth(request: NextRequest) {
             isAuthenticated: true,
             user: {
               id: account.uid,
+              source: "firebaseUser",
               email: account.email,
               fullName: account.name,
               role: account.role,
@@ -57,6 +59,7 @@ export async function verifyUserAuth(request: NextRequest) {
                 isAuthenticated: true,
                 user: {
                   id: account.id,
+                  source: "user",
                   email: account.email,
                   fullName: account.fullName,
                   role: account.role,
@@ -89,6 +92,7 @@ export async function verifyUserAuth(request: NextRequest) {
           isAuthenticated: true,
           user: {
             id: account.uid,
+            source: "firebaseUser",
             email: account.email,
             fullName: account.name,
             role: account.role,

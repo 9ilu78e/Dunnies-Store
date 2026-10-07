@@ -110,22 +110,22 @@ export default function AddressesPage() {
   };
 
   return (
-    <section className="min-h-screen bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-8">
+    <section className="bg-gray-50 px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-5xl space-y-6 sm:space-y-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-purple-600">
               Delivery Details
             </p>
-            <h1 className="mt-1 text-4xl font-bold text-gray-900">Saved delivery details</h1>
-            <p className="mt-2 text-gray-600">
+            <h1 className="mt-1 text-2xl font-bold text-gray-900 sm:text-4xl">Saved delivery details</h1>
+            <p className="mt-2 text-sm text-gray-600 sm:text-base">
               Choose a saved delivery address at checkout, or enter a different one.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setForm({ ...EMPTY_FORM })}
-            className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-5 py-3 font-semibold text-white transition hover:bg-purple-700"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-purple-600 px-5 py-3 font-semibold text-white transition hover:bg-purple-700 sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             Add delivery details
@@ -139,7 +139,7 @@ export default function AddressesPage() {
         )}
 
         {form && (
-          <form onSubmit={saveAddress} className="grid gap-4 rounded-3xl border border-purple-100 bg-white p-6 shadow-sm md:grid-cols-2">
+          <form onSubmit={saveAddress} className="grid gap-3 rounded-2xl border border-purple-100 bg-white p-4 shadow-sm sm:gap-4 sm:rounded-3xl sm:p-6 md:grid-cols-2">
             <h2 className="text-xl font-bold text-gray-900 md:col-span-2">
               {form.id ? "Edit address" : "Add an address"}
             </h2>
@@ -179,7 +179,7 @@ export default function AddressesPage() {
               />
               Set as my default delivery address
             </label>
-            <div className="flex gap-3 md:col-span-2">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row md:col-span-2">
               <button
                 type="submit"
                 disabled={saving}
@@ -199,23 +199,23 @@ export default function AddressesPage() {
         )}
 
         {loading ? (
-          <p className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-600">
+          <p className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-gray-600 sm:rounded-3xl sm:p-10">
             Loading saved addresses...
           </p>
         ) : addresses.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-purple-200 bg-white p-10 text-center">
+          <div className="rounded-2xl border border-dashed border-purple-200 bg-white p-6 text-center sm:rounded-3xl sm:p-10">
             <MapPin className="mx-auto mb-3 h-10 w-10 text-purple-400" />
             <p className="font-semibold text-gray-900">No saved addresses yet</p>
             <p className="mt-1 text-sm text-gray-600">Add one to use it quickly at checkout.</p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
             {addresses.map((address) => {
               const Icon = /office|work/i.test(address.label) ? Building : Home;
               return (
                 <article
                   key={address.id}
-                  className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-lg"
+                  className="flex min-w-0 flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-lg sm:rounded-3xl sm:p-6"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">

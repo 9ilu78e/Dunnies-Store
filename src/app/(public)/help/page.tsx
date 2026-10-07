@@ -14,6 +14,7 @@ import {
   Gift,
   ArrowRight,
 } from "lucide-react";
+import { getWhatsAppContactLink } from "@/lib/whatsapp";
 
 const faqs = [
   {
@@ -59,12 +60,14 @@ const helpTopics = [
 export default function HelpCenterPage() {
   const [search, setSearch] = useState("");
   const { supportEmail, supportPhone } = useSiteSettings();
+  const whatsappNumber =
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || supportPhone;
   const contactOptions = [
     {
       title: "Live chat",
       description: "Available every day, 7am–11pm WAT.",
       icon: MessageCircle,
-      href: "/contact",
+      href: "/live-chat",
       cta: "Start chat",
     },
     {
@@ -80,6 +83,13 @@ export default function HelpCenterPage() {
       icon: Mail,
       href: `mailto:${supportEmail}`,
       cta: "Send email",
+    },
+    {
+      title: "WhatsApp support",
+      description: "Message our support team directly.",
+      icon: MessageCircle,
+      href: getWhatsAppContactLink(whatsappNumber),
+      cta: "Chat on WhatsApp",
     },
   ];
 
@@ -175,11 +185,23 @@ export default function HelpCenterPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {contactOptions.map((option) => (
             <Link
               key={option.title}
               href={option.href}
+              target={
+                option.title === "Live chat" ||
+                option.href.startsWith("https://")
+                  ? "_blank"
+                  : undefined
+              }
+              rel={
+                option.title === "Live chat" ||
+                option.href.startsWith("https://")
+                  ? "noopener noreferrer"
+                  : undefined
+              }
               className="rounded-3xl bg-white border border-gray-200 p-6 shadow-sm hover:shadow-lg transition flex flex-col"
             >
               <span className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 mb-4">

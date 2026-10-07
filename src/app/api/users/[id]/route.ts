@@ -52,8 +52,13 @@ export async function DELETE(
       );
     }
 
-    await prisma.user.delete({
-      where: { id },
+    await prisma.$transaction(async (transaction) => {
+      await transaction.liveChatConversation.deleteMany({
+        where: { userAccountId: id, userAccountSource: "user" },
+      });
+      await transaction.user.delete({
+        where: { id },
+      });
     });
 
     return NextResponse.json({ message: "User deleted successfully" });

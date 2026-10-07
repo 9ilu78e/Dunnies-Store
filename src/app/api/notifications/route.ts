@@ -125,6 +125,16 @@ export async function GET(request: NextRequest) {
         accountId: { in: accountIds },
       },
       orderBy: { createdAt: "desc" },
+      take: 250,
+      select: {
+        id: true,
+        title: true,
+        message: true,
+        link: true,
+        orderId: true,
+        createdAt: true,
+        isRead: true,
+      },
     });
     const notifications = combineDuplicateNotifications(
       matchingNotifications,

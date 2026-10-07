@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSiteSettings } from "./SiteSettingsProvider";
+import { getWhatsAppContactLink } from "@/lib/whatsapp";
 import {
   Facebook,
   Twitter,
@@ -151,7 +152,9 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/help"
+                  href="/live-chat"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"
                 >
                   Live Chat
@@ -159,7 +162,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`}
+                  href={getWhatsAppContactLink(whatsappNumber)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-violet-400 transition-colors hover:translate-x-1 inline-block"

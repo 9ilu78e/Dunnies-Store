@@ -148,6 +148,7 @@ export default function CheckoutPage() {
     step,
     inventoryError,
     submitting,
+    inventoryChecking,
     orderId,
     paymentStartupError,
     placed,
@@ -169,6 +170,7 @@ export default function CheckoutPage() {
     paymentMethods,
     canSubmit,
     submitLabel,
+    recheckInventory,
     usingSaved,
     missing,
   } = useCheckout();
@@ -643,6 +645,24 @@ export default function CheckoutPage() {
                     {deliveryFeePending ? "Pending" : formatPrice(deliveryFee)}
                   </strong>
                 </div>
+                {deliveryFeePending && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                    <p>
+                      Delivery fees are missing for one or more items. They must
+                      be available before you can place this order.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void recheckInventory()}
+                      disabled={inventoryChecking}
+                      className="mt-2 font-semibold text-amber-950 underline underline-offset-2 disabled:opacity-60"
+                    >
+                      {inventoryChecking
+                        ? "Rechecking fees..."
+                        : "Recheck delivery fees"}
+                    </button>
+                  </div>
+                )}
                 <div className="border-t-2 border-gray-100 pt-4 flex items-center justify-between gap-3 text-base sm:text-lg font-black">
                   <span>
                     Total

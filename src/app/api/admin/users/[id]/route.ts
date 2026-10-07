@@ -47,6 +47,12 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
         }
       }
 
+      await transaction.liveChatConversation.deleteMany({
+        where: {
+          userAccountId: id,
+          userAccountSource: accountSource,
+        },
+      });
       if (accountSource === "user") {
         await transaction.user.delete({ where: { id } });
       } else {

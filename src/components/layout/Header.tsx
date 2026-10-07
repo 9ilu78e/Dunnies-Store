@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -18,6 +25,7 @@ import {
   UserRound,
   Heart,
   ChevronDown,
+  ChevronRight,
   Gift,
   ShoppingCart,
   Package,
@@ -25,15 +33,23 @@ import {
   Home,
   Info,
   Phone,
+  Mail,
+  MessageCircle,
+  MessageSquareText,
+  Headset,
+  ClipboardList,
   Search,
   Bell,
   Globe,
   HelpCircle,
   Flame,
+  Tags,
+  BadgePercent,
   Sparkles,
   LogOut,
 } from "lucide-react";
 import { useWishlistContext } from "@/context/WishlistContext";
+import { getHelpLinks } from "@/lib/helpLinks";
 
 type CurrentUser = {
   uid: string;
@@ -47,6 +63,20 @@ type Category = {
   name: string;
 };
 
+type NavigationChild = {
+  label: string;
+  href: string;
+  external?: boolean;
+  icon?: ReactNode;
+};
+
+type NavigationItem = {
+  label: string;
+  href: string;
+  icon: ReactNode;
+  children?: NavigationChild[];
+};
+
 const USER_INTERFACE_PATH = "/users-interface";
 const ADMIN_DASHBOARD_PATH = "/dashboard";
 
@@ -57,6 +87,34 @@ const getProfileDestination = (user: CurrentUser | null) => {
   return USER_INTERFACE_PATH;
 };
 
+const getHelpOptionIcon = (label: string): ReactNode => {
+  const className = "h-4 w-4";
+  switch (label) {
+    case "All Help":
+      return <HelpCircle className={className} />;
+    case "Visit Shop":
+      return <Home className={className} />;
+    case "Live Chat":
+      return <Headset className={className} />;
+    case "WhatsApp":
+      return <MessageCircle className={className} />;
+    case "Email":
+      return <Mail className={className} />;
+    case "Call Support":
+      return <Phone className={className} />;
+    case "Contact Form":
+      return <MessageSquareText className={className} />;
+    case "FAQs":
+      return <Info className={className} />;
+    case "Track Order":
+      return <Package className={className} />;
+    case "My Orders":
+      return <ClipboardList className={className} />;
+    default:
+      return <HelpCircle className={className} />;
+  }
+};
+
 export default function Header() {
   const {
     storeName,
@@ -64,6 +122,8 @@ export default function Header() {
     headerLogo,
     headerTitleColor,
     headerSubtitleColor,
+    supportEmail,
+    supportPhone,
   } = useSiteSettings();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -78,6 +138,26 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const helpDropdownRef = useRef<HTMLDivElement>(null);
+  const [helpDropdownWidth, setHelpDropdownWidth] = useState(480);
+
+  const positionHelpDropdown = useCallback(() => {
+    const dropdownAnchor = helpDropdownRef.current;
+    if (!dropdownAnchor) return;
+
+    const anchor = dropdownAnchor.getBoundingClientRect();
+    const center = anchor.left + anchor.width / 2;
+    const availableHalfWidth = Math.max(
+      0,
+      Math.min(center - 8, window.innerWidth - center - 8)
+    );
+    setHelpDropdownWidth(Math.min(352, availableHalfWidth * 2));
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("resize", positionHelpDropdown);
+    return () => window.removeEventListener("resize", positionHelpDropdown);
+  }, [positionHelpDropdown]);
 
   const { totalItems } = useCart();
   const { items: wishlistItems } = useWishlistContext();
@@ -159,7 +239,7 @@ export default function Header() {
   }, [user]);
   const profileHref = getProfileDestination(user);
 
-  const navItems = useMemo(
+  const navItems = useMemo<NavigationItem[]>(
     () => [
       {
         label: "Home",
@@ -169,7 +249,29 @@ export default function Header() {
       {
         label: "Products",
         href: "/product",
-        icon: <Package className="w-4 h-4" />,
+        icon: null,
+        children: [
+          {
+            label: "All Products",
+            href: "/product",
+            icon: <Package className="h-4 w-4" />,
+          },
+          {
+            label: "Shop by Category",
+            href: "/categories",
+            icon: <Tags className="h-4 w-4" />,
+          },
+          {
+            label: "Best Sellers",
+            href: "/best-sellers",
+            icon: <Flame className="h-4 w-4" />,
+          },
+          {
+            label: "Flash Sales",
+            href: "/flash-sales",
+            icon: <BadgePercent className="h-4 w-4" />,
+          },
+        ],
       },
       {
         label: "Best Sellers",
@@ -180,28 +282,52 @@ export default function Header() {
         label: "Gifts",
         href: "/gift",
         icon: <Gift className="w-4 h-4" />,
-        children: giftCategories.map((cat) => ({
-          label: cat.name,
-          href: `/product?category=${cat.id}`,
-        })),
+        children: [
+          {
+            label: "All Gifts",
+            href: "/gift",
+            icon: <Gift className="h-4 w-4" />,
+          },
+          ...giftCategories.map((cat) => ({
+            label: cat.name,
+            href: `/product?category=${cat.id}`,
+            icon: <Gift className="h-4 w-4" />,
+          })),
+        ],
       },
       {
         label: "Souvenirs",
         href: "/souvenirs",
         icon: <Landmark className="w-4 h-4" />,
-        children: souvenirCategories.map((cat) => ({
-          label: cat.name,
-          href: `/product?category=${cat.id}`,
-        })),
+        children: [
+          {
+            label: "All Souvenirs",
+            href: "/souvenirs",
+            icon: <Landmark className="h-4 w-4" />,
+          },
+          ...souvenirCategories.map((cat) => ({
+            label: cat.name,
+            href: `/product?category=${cat.id}`,
+            icon: <Landmark className="h-4 w-4" />,
+          })),
+        ],
       },
       {
         label: "Categories",
         href: "/categories",
         icon: <Package className="w-4 h-4" />,
-        children: categories.map((cat) => ({
-          label: cat.name,
-          href: `/product?category=${cat.id}`,
-        })),
+        children: [
+          {
+            label: "All Categories",
+            href: "/categories",
+            icon: <Tags className="h-4 w-4" />,
+          },
+          ...categories.map((cat) => ({
+            label: cat.name,
+            href: `/product?category=${cat.id}`,
+            icon: <Package className="h-4 w-4" />,
+          })),
+        ],
       },
       {
         label: "About",
@@ -212,6 +338,15 @@ export default function Header() {
         label: "Help Center",
         href: "/help",
         icon: <HelpCircle className="w-4 h-4" />,
+        children: getHelpLinks({
+          supportEmail,
+          supportPhone,
+          whatsappNumber:
+            process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || supportPhone,
+        }).map((child) => ({
+          ...child,
+          icon: getHelpOptionIcon(child.label),
+        })),
       },
       {
         label: "Contact",
@@ -219,7 +354,7 @@ export default function Header() {
         icon: <Phone className="w-4 h-4" />,
       },
     ],
-    [categories, giftCategories, souvenirCategories]
+    [categories, giftCategories, souvenirCategories, supportEmail, supportPhone]
   );
 
   const toggleMobileMenu = () => {
@@ -392,19 +527,42 @@ export default function Header() {
 
                 {/* Enhanced Dropdown Menu */}
                 <div
-                  className={`absolute right-0 z-[90] mt-2 w-64 overflow-visible rounded-xl border border-gray-100 bg-white shadow-xl transition-all duration-300 ${
+                  className={`absolute right-0 z-[90] mt-2 w-72 overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-2xl shadow-violet-950/10 ring-1 ring-black/5 transition-all duration-200 ${
                     isUserDropdownOpen
                       ? "opacity-100 visible translate-y-0"
                       : "opacity-0 invisible -translate-y-2 pointer-events-none"
                   }`}
                 >
                   {/* Dropdown Content */}
-                  <div className="py-1.5">
+                  <div className="p-2">
                     {user ? (
                       <>
+                        <div className="mb-1.5 flex items-center gap-3 rounded-xl bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-3">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white bg-white shadow-sm">
+                            {user.photoURL ? (
+                              <UserAvatar
+                                src={user.photoURL}
+                                alt={user.displayName || user.email || "User"}
+                                width={40}
+                                height={40}
+                                className="object-cover"
+                              />
+                            ) : (
+                              <UserRound className="h-5 w-5 text-violet-600" />
+                            )}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-600">
+                              Signed in
+                            </p>
+                            <p className="truncate text-sm font-bold text-gray-900">
+                              {greetingName}
+                            </p>
+                          </div>
+                        </div>
                         <Link
                           href={profileHref}
-                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          className="flex items-center space-x-2.5 rounded-xl px-3 py-2.5 text-gray-700 transition-all group hover:bg-violet-50 hover:text-violet-700"
                           onClick={() => setIsUserDropdownOpen(false)}
                         >
                           <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
@@ -414,7 +572,7 @@ export default function Header() {
                         </Link>
                         <Link
                           href="/orders"
-                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          className="flex items-center space-x-2.5 rounded-xl px-3 py-2.5 text-gray-700 transition-all group hover:bg-violet-50 hover:text-violet-700"
                           onClick={() => setIsUserDropdownOpen(false)}
                         >
                           <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
@@ -424,7 +582,7 @@ export default function Header() {
                         </Link>
                         <Link
                           href="/notifications"
-                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          className="flex items-center space-x-2.5 rounded-xl px-3 py-2.5 text-gray-700 transition-all group hover:bg-violet-50 hover:text-violet-700"
                           onClick={() => setIsUserDropdownOpen(false)}
                         >
                           <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
@@ -442,7 +600,7 @@ export default function Header() {
                         </Link>
                         <Link
                           href="/wishlist"
-                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          className="flex items-center space-x-2.5 rounded-xl px-3 py-2.5 text-gray-700 transition-all group hover:bg-violet-50 hover:text-violet-700"
                           onClick={() => setIsUserDropdownOpen(false)}
                         >
                           <div className="w-7 h-7 rounded-lg bg-pink-100 flex items-center justify-center group-hover:bg-pink-200 transition-colors">
@@ -464,7 +622,7 @@ export default function Header() {
                             setIsUserDropdownOpen(false);
                             setShowLogoutModal(true);
                           }}
-                          className="w-full flex items-center space-x-2.5 px-3 py-2 text-red-600 hover:bg-red-50 transition-all group"
+                          className="w-full flex items-center space-x-2.5 rounded-xl px-3 py-2.5 text-red-600 transition-all group hover:bg-red-50"
                         >
                           <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-colors">
                             <LogOut className="w-3.5 h-3.5 text-red-600" />
@@ -474,7 +632,7 @@ export default function Header() {
                       </>
                     ) : (
                       <>
-                        <div className="flex justify-center px-4 py-2">
+                        <div className="flex justify-center px-2 py-2">
                           <button
                             type="button"
                             className="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-12 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
@@ -490,7 +648,7 @@ export default function Header() {
                         <hr className="my-1.5 border-gray-100" />
                         <Link
                           href="/orders"
-                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          className="flex items-center space-x-2.5 rounded-xl px-3 py-2.5 text-gray-700 transition-all group hover:bg-violet-50 hover:text-violet-700"
                           onClick={() => setIsUserDropdownOpen(false)}
                         >
                           <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
@@ -500,7 +658,7 @@ export default function Header() {
                         </Link>
                         <Link
                           href={profileHref}
-                          className="flex items-center space-x-2.5 px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all group"
+                          className="flex items-center space-x-2.5 rounded-xl px-3 py-2.5 text-gray-700 transition-all group hover:bg-violet-50 hover:text-violet-700"
                           onClick={() => setIsUserDropdownOpen(false)}
                         >
                           <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
@@ -547,27 +705,111 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex w-full items-center justify-center space-x-2 pb-3 border-t border-gray-100 pt-3">
+          <nav className="relative hidden w-full items-center justify-center space-x-2 border-t border-gray-100 pb-3 pt-3 lg:flex">
             {navItems.map((item, index) => (
-              <div key={`${item.label}-${index}`} className="relative group">
+              <div
+                key={`${item.label}-${index}`}
+                className="group relative"
+                ref={
+                  item.label === "Help Center" ? helpDropdownRef : undefined
+                }
+                onMouseEnter={
+                  item.label === "Help Center"
+                    ? positionHelpDropdown
+                    : undefined
+                }
+              >
                 {item.children ? (
                   <>
-                    <button className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 text-sm font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all duration-200">
+                    <button
+                      type="button"
+                      aria-haspopup="true"
+                      className="group flex items-center space-x-2 rounded-xl border border-transparent px-4 py-2.5 text-sm font-semibold text-gray-700 transition-all duration-200 hover:border-violet-100 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+                    >
                       {item.icon}
                       <span>{item.label}</span>
-                      <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
+                      <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180" />
                     </button>
-                    <div className="absolute left-0 mt-1.5 w-52 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-1.5 border border-gray-100 z-50">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.label}
-                          href={child.href || "#"}
-                          className="block px-3 py-2 text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 transition-all text-xs font-medium"
-                          onClick={() => setOpenDropdown(null)}
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
+                    <div
+                      style={
+                        item.label === "Help Center"
+                          ? {
+                              width: `${helpDropdownWidth}px`,
+                            }
+                          : undefined
+                      }
+                      className={`invisible absolute z-50 mt-0 max-w-[calc(100vw-1rem)] translate-y-1 rounded-2xl border border-violet-100 bg-white p-2 opacity-0 shadow-2xl shadow-violet-950/10 ring-1 ring-black/5 transition-all duration-200 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 ${
+                        item.label === "Help Center"
+                          ? "left-1/2 -translate-x-1/2"
+                          : "left-0 w-[min(calc(100vw-1rem),28rem)]"
+                      }`}
+                    >
+                      {item.label === "Help Center" && (
+                        <div className="mb-2 flex items-center gap-3 rounded-xl bg-gradient-to-r from-violet-50 to-fuchsia-50 p-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm">
+                            {item.icon}
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">
+                              How can we help?
+                            </p>
+                            <p className="mt-0.5 text-xs text-gray-500">
+                              Choose a support option.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {item.children.map((child) =>
+                        child.external ? (
+                          <a
+                            key={child.label}
+                            href={child.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-gray-700 transition-all hover:bg-violet-50 hover:text-violet-700"
+                          >
+                            {item.label === "Help Center" && child.icon && (
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                                {child.icon || item.icon}
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">{child.label}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-violet-600" />
+                          </a>
+                        ) : child.href.startsWith("mailto:") ||
+                          child.href.startsWith("tel:") ? (
+                          <a
+                            key={child.label}
+                            href={child.href}
+                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-gray-700 transition-all hover:bg-violet-50 hover:text-violet-700"
+                          >
+                            {item.label === "Help Center" && child.icon && (
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                                {child.icon || item.icon}
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">{child.label}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-violet-600" />
+                          </a>
+                        ) : (
+                          <Link
+                            key={child.label}
+                            href={child.href}
+                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-gray-700 transition-all hover:bg-violet-50 hover:text-violet-700"
+                            onClick={() => setOpenDropdown(null)}
+                          >
+                            {item.label === "Help Center" && child.icon && (
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                                {child.icon || item.icon}
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">{child.label}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-violet-600" />
+                          </Link>
+                        )
+                      )}
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -687,19 +929,23 @@ export default function Header() {
         </div>
 
         {/* Mobile Menu Items */}
-        <div className="space-y-1 px-3 py-1.5">
+        <div className="space-y-2 px-3 py-3">
           {navItems.map((item, index) => (
             <div key={`mobile-${item.label}-${index}`}>
               {item.children ? (
                 <>
                   <button
+                    type="button"
+                    aria-expanded={openDropdown === item.label}
                     onClick={() => handleDropdownToggle(item.label)}
-                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
                   >
                     <span className="flex items-center space-x-3">
-                      <span className="flex h-7 w-8 items-center justify-center text-purple-600">
-                        {item.icon}
-                      </span>
+                      {item.icon && (
+                        <span className="flex h-7 w-8 items-center justify-center text-purple-600">
+                          {item.icon}
+                        </span>
+                      )}
                       <span className="font-semibold text-gray-700">
                         {item.label}
                       </span>
@@ -712,32 +958,77 @@ export default function Header() {
                   </button>
                   <div
                     className={`overflow-hidden transition-all duration-300 ${
-                      openDropdown === item.label ? "max-h-96" : "max-h-0"
+                      openDropdown === item.label
+                        ? "max-h-[min(60vh,32rem)] overflow-y-auto"
+                        : "max-h-0"
                     }`}
                   >
-                    <div className="pl-10 space-y-0.5 py-1">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.label}
-                          href={child.href || "#"}
-                          className="block px-3 py-1.5 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
-                          onClick={closeMobileMenu}
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/70 to-fuchsia-50/60 p-2">
+                      {item.children.map((child) =>
+                        child.external ? (
+                          <a
+                            key={child.label}
+                            href={child.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-white bg-white/90 px-2.5 py-2 text-xs font-medium text-gray-700 shadow-sm transition hover:border-violet-200 hover:bg-white hover:text-violet-700 hover:shadow"
+                            onClick={closeMobileMenu}
+                          >
+                            {item.label === "Help Center" && child.icon && (
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                                {child.icon || item.icon}
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">{child.label}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-violet-600" />
+                          </a>
+                        ) : child.href.startsWith("mailto:") ||
+                          child.href.startsWith("tel:") ? (
+                          <a
+                            key={child.label}
+                            href={child.href}
+                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-white bg-white/90 px-2.5 py-2 text-xs font-medium text-gray-700 shadow-sm transition hover:border-violet-200 hover:bg-white hover:text-violet-700 hover:shadow"
+                            onClick={closeMobileMenu}
+                          >
+                            {item.label === "Help Center" && child.icon && (
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                                {child.icon || item.icon}
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">{child.label}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-violet-600" />
+                          </a>
+                        ) : (
+                          <Link
+                            key={child.label}
+                            href={child.href}
+                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-white bg-white/90 px-2.5 py-2 text-xs font-medium text-gray-700 shadow-sm transition hover:border-violet-200 hover:bg-white hover:text-violet-700 hover:shadow"
+                            onClick={closeMobileMenu}
+                          >
+                            {item.label === "Help Center" && child.icon && (
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                                {child.icon || item.icon}
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">{child.label}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-violet-600" />
+                          </Link>
+                        )
+                      )}
                     </div>
                   </div>
                 </>
               ) : (
                 <Link
                   href={item.href || "#"}
-                  className="flex items-center space-x-3 px-3 py-1.5 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
                   onClick={closeMobileMenu}
                 >
-                  <span className="flex h-7 w-8 items-center justify-center text-purple-600">
-                    {item.icon}
-                  </span>
+                  {item.icon && (
+                    <span className="flex h-7 w-8 items-center justify-center text-purple-600">
+                      {item.icon}
+                    </span>
+                  )}
                   <span className="font-semibold text-gray-700">
                     {item.label}
                   </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, Search, User } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import AdminLogoutModal from "@/components/layout/AdminLogoutModal";
@@ -30,6 +30,9 @@ export default function AdminLayout({
   const [searchError, setSearchError] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const isLiveChatPage = pathname.startsWith("/admin/live-chat");
+  const isSettingsPage = pathname === "/admin-settings";
   const [user, setUser] = useState<{ 
   fullName?: string; 
   email?: string; 
@@ -148,86 +151,88 @@ export default function AdminLayout({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className="relative flex-1 min-w-0">
-              <div className="flex min-w-0 items-center rounded-full border-2 border-gray-200 bg-white px-2 py-1.5 shadow-sm transition-all hover:shadow-md sm:px-4 sm:py-2">
-                <Search className="h-4 w-4 shrink-0 text-gray-500 sm:h-5 sm:w-5" />
-                <input
-                  type="search"
-                  placeholder="Search products, orders, users..."
-                  value={searchQuery}
-                  onFocus={() => setShowSearchResults(true)}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setShowSearchResults(true);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") setShowSearchResults(false);
-                    if (event.key === "Enter" && searchResults[0]) {
-                      openSearchResult(searchResults[0]);
-                    }
-                  }}
-                  aria-label="Search admin records"
-                  aria-expanded={showSearchResults}
-                  aria-controls="admin-search-results"
-                  className="w-full bg-transparent px-2 py-0.5 text-xs text-gray-700 placeholder:text-gray-500 focus:outline-none sm:px-3 sm:py-1 sm:text-base"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    aria-label="Clear admin search"
-                    className="shrink-0 text-gray-400 transition hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-              {showSearchResults && searchQuery.trim().length >= 2 && (
-                <div
-                  id="admin-search-results"
-                  className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-xl border border-purple-100 bg-white p-2 shadow-xl"
-                >
-                  {searchLoading ? (
-                    <p className="px-3 py-2 text-sm text-gray-500">
-                      Searching...
-                    </p>
-                  ) : searchError ? (
-                    <p className="px-3 py-2 text-sm text-red-600">
-                      {searchError}
-                    </p>
-                  ) : searchResults.length ? (
-                    searchResults.map((result) => (
-                      <button
-                        key={`${result.type}-${result.id}`}
-                        type="button"
-                        onClick={() => openSearchResult(result)}
-                        className="flex w-full items-start justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-purple-50"
-                      >
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-medium text-gray-800">
-                            {result.title}
-                          </span>
-                          {result.detail && (
-                            <span className="block truncate text-xs text-gray-500">
-                              {result.detail}
-                            </span>
-                          )}
-                        </span>
-                        <span className="shrink-0 text-xs text-purple-600">
-                          {result.type}
-                        </span>
-                      </button>
-                    ))
-                  ) : (
-                    <p className="px-3 py-2 text-sm text-gray-500">
-                      No matching admin records
-                    </p>
+          {!isLiveChatPage && (
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+              <div className="relative min-w-0 flex-1">
+                <div className="flex min-w-0 items-center rounded-full border-2 border-gray-200 bg-white px-2 py-1.5 shadow-sm transition-all hover:shadow-md sm:px-4 sm:py-2">
+                  <Search className="h-4 w-4 shrink-0 text-gray-500 sm:h-5 sm:w-5" />
+                  <input
+                    type="search"
+                    placeholder="Search products, orders, users..."
+                    value={searchQuery}
+                    onFocus={() => setShowSearchResults(true)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowSearchResults(true);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") setShowSearchResults(false);
+                      if (event.key === "Enter" && searchResults[0]) {
+                        openSearchResult(searchResults[0]);
+                      }
+                    }}
+                    aria-label="Search admin records"
+                    aria-expanded={showSearchResults}
+                    aria-controls="admin-search-results"
+                    className="w-full bg-transparent px-2 py-0.5 text-xs text-gray-700 placeholder:text-gray-500 focus:outline-none sm:px-3 sm:py-1 sm:text-base"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      aria-label="Clear admin search"
+                      className="shrink-0 text-gray-400 transition hover:text-gray-600"
+                    >
+                      ✕
+                    </button>
                   )}
                 </div>
-              )}
+                {showSearchResults && searchQuery.trim().length >= 2 && (
+                  <div
+                    id="admin-search-results"
+                    className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-xl border border-purple-100 bg-white p-2 shadow-xl"
+                  >
+                    {searchLoading ? (
+                      <p className="px-3 py-2 text-sm text-gray-500">
+                        Searching...
+                      </p>
+                    ) : searchError ? (
+                      <p className="px-3 py-2 text-sm text-red-600">
+                        {searchError}
+                      </p>
+                    ) : searchResults.length ? (
+                      searchResults.map((result) => (
+                        <button
+                          key={`${result.type}-${result.id}`}
+                          type="button"
+                          onClick={() => openSearchResult(result)}
+                          className="flex w-full items-start justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-purple-50"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-medium text-gray-800">
+                              {result.title}
+                            </span>
+                            {result.detail && (
+                              <span className="block truncate text-xs text-gray-500">
+                                {result.detail}
+                              </span>
+                            )}
+                          </span>
+                          <span className="shrink-0 text-xs text-purple-600">
+                            {result.type}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-3 py-2 text-sm text-gray-500">
+                        No matching admin records
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
             <NotificationBell role="admin" />
@@ -258,7 +263,15 @@ export default function AdminLayout({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-6 lg:p-8">
+        <main
+          className={`min-h-0 min-w-0 flex-1 ${
+            isLiveChatPage
+              ? "overflow-hidden p-0"
+              : isSettingsPage
+              ? "flex flex-col overflow-hidden p-3 sm:p-6 lg:p-8"
+              : "overflow-x-hidden overflow-y-auto p-3 sm:p-6 lg:p-8"
+          }`}
+        >
           {children}
         </main>
       </div>
