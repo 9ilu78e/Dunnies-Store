@@ -115,23 +115,23 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="flex h-screen bg-linear-to-br from-purple-50 via-white to-purple-100">
+    <div className="flex h-screen w-full min-w-0 overflow-hidden bg-linear-to-br from-purple-50 via-white to-purple-100">
       <div
-        className={`fixed inset-0 z-30 bg-black/40 lg:hidden transition-opacity ${
+        className={`fixed inset-0 z-40 bg-black/40 lg:hidden transition-opacity ${
           isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => setIsSidebarOpen(false)}
       />
       <div
-        className={`fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <Sidebar user={user} onNavClick={() => setIsSidebarOpen(false)} />
       </div>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex items-center justify-between border-b border-gray-200 bg-white/90 px-2 sm:px-4 lg:px-6 h-14 sm:h-16 gap-2 text-gray-700 backdrop-blur">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="relative z-30 flex items-center justify-between border-b border-gray-200 bg-white/90 px-2 sm:px-4 lg:px-6 h-14 sm:h-16 gap-2 text-gray-700 backdrop-blur">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0">
             <button
               className="lg:hidden p-1.5 sm:p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 shrink-0"
@@ -258,7 +258,7 @@ export default function AdminLayout({
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

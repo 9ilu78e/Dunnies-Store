@@ -214,7 +214,21 @@ export async function DELETE(request: NextRequest) {
     const body = (await request.json()) as {
       id?: unknown;
       notificationId?: unknown;
+      deleteAll?: unknown;
     };
+
+    if (body.deleteAll === true) {
+      const recipientRole =
+        auth.user.role.toLowerCase() === "admin" ? "admin" : "user";
+      await prisma.notification.deleteMany({
+        where: {
+          recipientRole,
+          accountId: { in: accountIds },
+        },
+      });
+      return NextResponse.json({ message: "All notifications deleted." });
+    }
+
     const notificationId = body.id ?? body.notificationId;
     if (typeof notificationId !== "string" || !notificationId.trim()) {
       return NextResponse.json(

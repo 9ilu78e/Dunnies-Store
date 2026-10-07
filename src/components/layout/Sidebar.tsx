@@ -13,6 +13,7 @@ import {
   User,
   BarChart3,
   BadgePercent,
+  Flame,
   Mail,
   MessageSquareText,
 } from "lucide-react";
@@ -27,6 +28,11 @@ const navItems = [
     label: "Products",
     href: "/manage-products",
     icon: Package,
+  },
+  {
+    label: "Best Sellers",
+    href: "/best-sellers",
+    icon: Flame,
   },
   {
     label: "Flash Sales",

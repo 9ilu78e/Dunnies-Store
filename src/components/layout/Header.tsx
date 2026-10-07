@@ -174,6 +174,7 @@ export default function Header() {
       {
         label: "Best Sellers",
         href: "/best-sellers",
+        icon: <Flame className="w-4 h-4" />,
       },
       {
         label: "Gifts",
@@ -262,13 +263,13 @@ export default function Header() {
       {/* Backdrop for dropdown */}
       {isUserDropdownOpen && (
         <div
-          className="hidden lg:block fixed inset-0 z-40 bg-black/20"
+          className="hidden lg:block fixed inset-0 z-30 bg-black/20"
           onClick={() => setIsUserDropdownOpen(false)}
         />
       )}
 
       {/* Main Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-sm">
+      <header className="sticky top-0 z-40 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Enhanced Logo */}
@@ -391,7 +392,7 @@ export default function Header() {
 
                 {/* Enhanced Dropdown Menu */}
                 <div
-                  className={`absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 transition-all duration-300 z-50 overflow-hidden ${
+                  className={`absolute right-0 z-[90] mt-2 w-64 overflow-visible rounded-xl border border-gray-100 bg-white shadow-xl transition-all duration-300 ${
                     isUserDropdownOpen
                       ? "opacity-100 visible translate-y-0"
                       : "opacity-0 invisible -translate-y-2 pointer-events-none"
@@ -602,7 +603,7 @@ export default function Header() {
 
       {/* Mobile Menu Overlay */}
       <div
-        className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${
           isMobileMenuOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -614,7 +615,7 @@ export default function Header() {
 
       {/* Mobile Menu */}
       <nav
-        className={`fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] z-50 lg:hidden bg-white shadow-2xl transform transition-transform duration-300 overflow-y-auto ${
+        className={`fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] z-[60] lg:hidden bg-white shadow-2xl transform transition-transform duration-300 overflow-y-auto ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

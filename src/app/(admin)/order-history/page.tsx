@@ -21,6 +21,8 @@ export default function OrderHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteAllBusy, setDeleteAllBusy] = useState(false);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -74,6 +76,28 @@ export default function OrderHistoryPage() {
     }
   };
 
+  const deleteOrderFromHistory = (orderId: string) => {
+    if (!window.confirm("Remove this order from history? The original order record will remain intact.")) {
+      return;
+    }
+
+    setDeletingId(orderId);
+    setOrders((current) => current.filter((order) => order.id !== orderId));
+    setDeletingId(null);
+    setError(null);
+  };
+
+  const deleteAllHistory = () => {
+    if (!window.confirm("Delete all orders from history? This removes them from the history list only and does not delete the underlying orders.")) {
+      return;
+    }
+
+    setDeleteAllBusy(true);
+    setOrders([]);
+    setDeleteAllBusy(false);
+    setError(null);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -86,12 +110,24 @@ export default function OrderHistoryPage() {
         <p className="mt-2 text-lg text-gray-600">
           Deleted orders are kept here and can be restored to active orders.
         </p>
-        <Link
-          href="/manage-orders"
-          className="mt-3 inline-flex text-sm font-semibold text-purple-700 hover:text-purple-900"
-        >
-          Back to active orders
-        </Link>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Link
+            href="/manage-orders"
+            className="inline-flex text-sm font-semibold text-purple-700 hover:text-purple-900"
+          >
+            Back to active orders
+          </Link>
+          {orders.length > 0 && (
+            <button
+              type="button"
+              onClick={deleteAllHistory}
+              disabled={deleteAllBusy}
+              className="inline-flex items-center justify-center rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+            >
+              {deleteAllBusy ? "Deleting..." : "Delete all"}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -136,15 +172,25 @@ export default function OrderHistoryPage() {
                   ₦{order.total.toLocaleString()}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => void restoreOrder(order.id)}
-                disabled={restoringId === order.id}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <ArchiveRestore className="h-4 w-4" />
-                Restore order
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void restoreOrder(order.id)}
+                  disabled={restoringId === order.id}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ArchiveRestore className="h-4 w-4" />
+                  Restore order
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteOrderFromHistory(order.id)}
+                  disabled={deletingId === order.id}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deletingId === order.id ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </article>
           ))}
         </div>

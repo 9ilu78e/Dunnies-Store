@@ -1,8 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import Image from "next/image";
 import { Minus, Plus, Search } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
 import type { ProductRecord } from "@/Data/products";
 import type { GiftContentSelection } from "@/lib/giftContents";
 import {
@@ -74,6 +74,23 @@ export default function GiftDetailsPanel({
   selectedVariant,
   setAvailableStock,
 }: GiftDetailsPanelProps) {
+  const [openVariantIndex, setOpenVariantIndex] = useState<number | null>(null);
+  const variantDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (
+        event.target instanceof Node &&
+        !variantDropdownRef.current?.contains(event.target)
+      ) {
+        setOpenVariantIndex(null);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, []);
+
   return (
     <>
           {isCustomizableGift && (
@@ -213,48 +230,82 @@ export default function GiftDetailsPanel({
                           ×
                         </button>
                         {content.productSizes.length > 0 && (
-                          <select
-                            value={content.size ?? ""}
-                            onChange={(event) => {
-                              setSelectedGiftContents((current) =>
-                                current.map((item, itemIndex) =>
-                                  itemIndex === index
-                                    ? {
-                                        ...item,
-                                        size: event.target.value || undefined,
-                                      }
-                                    : item
-                                )
-                              );
-                              setAvailableStock(
-                                selectedVariant?.stockQuantity ??
-                                  product.stockQuantity
-                              );
-                            }}
-                            aria-label={`Gift item ${
-                              index + 1
-                            } ${getVariantKind(content.productSizes)}`}
-                            className="max-w-28 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs focus:border-purple-500 focus:outline-none"
+                          <div
+                            className="relative"
+                            ref={
+                              openVariantIndex === index
+                                ? variantDropdownRef
+                                : undefined
+                            }
                           >
-                            <option value="">
-                              Choose{" "}
-                              {getVariantKindLabel(
-                                getVariantKind(content.productSizes)
-                              ).toLowerCase()}
-                            </option>
-                            {content.productSizes.map((variant) => (
-                              <option
-                                key={variant.size}
-                                value={variant.size}
-                                disabled={variant.stockQuantity === 0}
+                            <button
+                              type="button"
+                              aria-label={`Gift item ${
+                                index + 1
+                              } ${getVariantKind(content.productSizes)}`}
+                              aria-haspopup="listbox"
+                              aria-expanded={openVariantIndex === index}
+                              onClick={() =>
+                                setOpenVariantIndex((current) =>
+                                  current === index ? null : index
+                                )
+                              }
+                              className="max-w-40 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-left text-xs text-gray-700 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                            >
+                              {content.size
+                                ? formatVariantChoice(content.size)
+                                : `Choose ${getVariantKindLabel(
+                                    getVariantKind(content.productSizes)
+                                  ).toLowerCase()}`}
+                            </button>
+                            {openVariantIndex === index && (
+                              <div
+                                role="listbox"
+                                aria-label={`Choose ${getVariantKindLabel(
+                                  getVariantKind(content.productSizes)
+                                ).toLowerCase()}`}
+                                className="absolute left-0 top-full z-10 mt-1 max-h-48 min-w-40 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
                               >
-                                {formatVariantChoice(variant.size)}
-                                {variant.stockQuantity === 0
-                                  ? " (sold out)"
-                                  : ""}
-                              </option>
-                            ))}
-                          </select>
+                                {content.productSizes.map((variant) => {
+                                  const isUnavailable =
+                                    variant.stockQuantity === 0;
+                                  return (
+                                    <button
+                                      key={variant.size}
+                                      type="button"
+                                      role="option"
+                                      aria-selected={
+                                        content.size === variant.size
+                                      }
+                                      aria-disabled={isUnavailable}
+                                      disabled={isUnavailable}
+                                      onClick={() => {
+                                        setSelectedGiftContents((current) =>
+                                          current.map((item, itemIndex) =>
+                                            itemIndex === index
+                                              ? {
+                                                  ...item,
+                                                  size: variant.size,
+                                                }
+                                              : item
+                                          )
+                                        );
+                                        setAvailableStock(
+                                          selectedVariant?.stockQuantity ??
+                                            product.stockQuantity
+                                        );
+                                        setOpenVariantIndex(null);
+                                      }}
+                                      className="block w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-purple-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                                    >
+                                      {formatVariantChoice(variant.size)}
+                                      {isUnavailable ? " (sold out)" : ""}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     ))}

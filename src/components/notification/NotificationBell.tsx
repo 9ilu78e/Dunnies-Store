@@ -113,7 +113,7 @@ export default function NotificationBell({
           {badge}
         </button>
         {isOpen && (
-          <div className="absolute right-0 z-[60] mt-2 w-80 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl">
+          <div className="absolute right-0 z-[100] mt-2 w-80 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
               <div>
                 <p className="font-semibold text-gray-900">Notifications</p>
