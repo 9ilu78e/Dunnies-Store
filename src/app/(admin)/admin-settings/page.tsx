@@ -228,8 +228,8 @@ export default function AdminSettingsPage() {
   ] as const;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+    <div className="mx-auto flex h-full min-h-0 max-w-5xl flex-col gap-2.5">
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-2">
         <div>
           <h1 className="bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent">
             Website settings
@@ -250,17 +250,17 @@ export default function AdminSettingsPage() {
       </div>
 
       {error && (
-        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-sm text-red-700">
+        <p role="alert" className="shrink-0 rounded-lg border border-red-200 bg-red-50 p-2.5 text-sm text-red-700">
           {error}
         </p>
       )}
       {message && (
-        <p role="status" className="rounded-lg border border-green-200 bg-green-50 p-2.5 text-sm text-green-700">
+        <p role="status" className="shrink-0 rounded-lg border border-green-200 bg-green-50 p-2.5 text-sm text-green-700">
           {message}
         </p>
       )}
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Website settings sections">
+      <div className="flex shrink-0 gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Website settings sections">
         {sections.map((section) => (
           <button
             key={section.id}
@@ -279,9 +279,9 @@ export default function AdminSettingsPage() {
         ))}
       </div>
 
-      <form id="website-settings-form" onSubmit={saveSettings} className="space-y-3">
+      <form id="website-settings-form" onSubmit={saveSettings} className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {activeSection === "branding" && (
-        <section role="tabpanel" className="space-y-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+        <section role="tabpanel" className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <div>
             <h2 className="text-base font-bold text-gray-900">Storefront header branding</h2>
             <p className="text-xs text-gray-500">
@@ -373,7 +373,7 @@ export default function AdminSettingsPage() {
         )}
 
         {activeSection === "store" && (
-        <section role="tabpanel" className="space-y-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+        <section role="tabpanel" className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <div>
             <h2 className="text-base font-bold text-gray-900">Store details</h2>
             <p className="text-xs text-gray-500">These appear in the storefront footer and contact/support pages.</p>
@@ -415,7 +415,7 @@ export default function AdminSettingsPage() {
         )}
 
         {activeSection === "hero" && (
-        <section role="tabpanel" className="space-y-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+        <section role="tabpanel" className="flex min-h-0 flex-1 flex-col space-y-3 overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-gray-900">Homepage hero slides</h2>
@@ -435,7 +435,7 @@ export default function AdminSettingsPage() {
             </label>
           </div>
           {settings.heroSlides.length ? (
-            <div className="max-h-[min(60vh,36rem)] space-y-3 overflow-y-auto pr-1">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
               {settings.heroSlides.map((slide, index) => (
                 <article
                   key={`${slide.image}-${index}`}

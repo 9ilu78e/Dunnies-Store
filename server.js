@@ -51,7 +51,7 @@ function hasAdminJoinedConversation(conversationId) {
   for (const client of clients.values()) {
     if (
       client.role === "admin" &&
-      client.conversations.has(conversationId)
+      (client.watchingInbox || client.conversations.has(conversationId))
     ) {
       return true;
     }
