@@ -62,7 +62,8 @@ export const uploadImage = async (file: File, folder = 'dunnies-store'): Promise
 
 export const uploadChatAudio = async (file: File): Promise<string> => {
   const buffer = Buffer.from(await file.arrayBuffer());
-  const dataURI = `data:${file.type};base64,${buffer.toString('base64')}`;
+  const mimeType = file.type.split(';')[0].trim().toLowerCase();
+  const dataURI = `data:${mimeType};base64,${buffer.toString('base64')}`;
   const result = await cloudinary.uploader.upload(dataURI, {
     folder: 'dunnies-store/live-chat',
     resource_type: 'video',

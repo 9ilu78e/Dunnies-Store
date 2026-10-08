@@ -3,7 +3,6 @@ const next = require("next");
 const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 const { WebSocket, WebSocketServer } = require("ws");
-const { getLiveChatReply } = require("./src/lib/liveChatAutoResponses.js");
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOST || "0.0.0.0";
@@ -335,31 +334,6 @@ async function handleClientMessage(socket, client, raw) {
     ]);
     broadcastToConversation(conversationId, { type: "message", message });
     await notifyChatParticipants(conversation, client, body);
-    if (client.role === "user") {
-      const existingAdminReply = await prisma.liveChatMessage.findFirst({
-        where: { conversationId, senderRole: "admin" },
-        select: { id: true },
-      });
-      if (!existingAdminReply && !hasAdminJoinedConversation(conversationId)) {
-        const assistantMessage = await prisma.liveChatMessage.create({
-          data: {
-            conversationId,
-            senderAccountId: "assistant",
-            senderRole: "assistant",
-            senderName: "Dunnis Assistant",
-            body: isVoiceNote
-              ? "Thanks for the voice note. Our support team will listen and reply here soon."
-              : isImageMessage
-              ? "Thanks for sharing the image. Our support team will review it and reply here soon."
-              : getLiveChatReply(body),
-          },
-        });
-        broadcastToConversation(conversationId, {
-          type: "message",
-          message: assistantMessage,
-        });
-      }
-    }
     broadcastToAdmins({
       type: "conversation_updated",
       conversationId,

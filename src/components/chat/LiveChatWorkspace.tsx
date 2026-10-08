@@ -17,29 +17,23 @@ import {
   ImagePlus,
   LoaderCircle,
   MessageCircle,
-  LifeBuoy,
   Mic,
   RotateCw,
-  Search,
   Send,
   Square,
   Trash2,
   UserRound,
   X,
 } from "lucide-react";
-import {
-  humanHandoffMessage,
-  humanHandoffReply,
-  quickReplies,
-} from "@/components/chat/quickReplies";
 
 type ChatRole = "user" | "admin";
+type MessageRole = ChatRole | "assistant";
 
 type ChatMessage = {
   id: string;
   conversationId: string;
   senderAccountId: string;
-  senderRole: ChatRole;
+  senderRole: MessageRole;
   senderName: string;
   body: string;
   createdAt: string;
@@ -72,23 +66,6 @@ type ImageMessageDraft = {
   file: File;
   previewUrl: string;
   uploadedUrl?: string;
-};
-
-type OrderLookupResult = {
-  orderCode: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  status: string;
-  paymentStatus: string;
-  total: number;
-  createdAt: string;
-  orderItems: {
-    quantity: number;
-    product: { name: string } | null;
-    gift: { name: string } | null;
-    souvenir: { name: string } | null;
-  }[];
 };
 
 type Props = {
@@ -184,11 +161,6 @@ export default function LiveChatWorkspace({ role }: Props) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [selectedQuickReply, setSelectedQuickReply] = useState<string | null>(
-    null
-  );
-  const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const [handoffRequested, setHandoffRequested] = useState(false);
   const [typingName, setTypingName] = useState<string | null>(null);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [isRequestingMicrophone, setIsRequestingMicrophone] = useState(false);
@@ -199,11 +171,6 @@ export default function LiveChatWorkspace({ role }: Props) {
     useState<ImageMessageDraft | null>(null);
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [orderLookupQuery, setOrderLookupQuery] = useState("");
-  const [orderLookupResult, setOrderLookupResult] =
-    useState<OrderLookupResult | null>(null);
-  const [orderLookupError, setOrderLookupError] = useState("");
-  const [isSearchingOrders, setIsSearchingOrders] = useState(false);
   const [connectionState, setConnectionState] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
@@ -415,6 +382,11 @@ export default function LiveChatWorkspace({ role }: Props) {
                       : "Unable to refresh conversations."
                   );
                 });
+                if (role === "admin") {
+                  window.dispatchEvent(
+                    new Event("dunnis:notifications-changed")
+                  );
+                }
               } else if (
                 packet.type === "conversation_status" &&
                 packet.conversationId &&
@@ -512,9 +484,6 @@ export default function LiveChatWorkspace({ role }: Props) {
       clearTimeout(remoteTypingTimeoutRef.current);
       remoteTypingTimeoutRef.current = null;
     }
-    setSelectedQuickReply(null);
-    setShowQuickReplies(false);
-    setHandoffRequested(false);
     const loadMessages = async () => {
       try {
         const response = await fetch(
@@ -562,12 +531,9 @@ export default function LiveChatWorkspace({ role }: Props) {
   const selectedConversation =
     conversations.find((conversation) => conversation.id === selectedId) ||
     null;
-  const selectedReplyText = quickReplies.find(
-    (reply) => reply.label === selectedQuickReply
-  )?.reply;
-  const openCount = conversations.filter(
-    (item) => item.status === "open"
-  ).length;
+  const visibleMessages = messages.filter(
+    (message) => message.senderRole !== "assistant"
+  );
   const composerDisabled =
     !selectedConversation || selectedConversation.status !== "open";
 
@@ -856,7 +822,6 @@ export default function LiveChatWorkspace({ role }: Props) {
         })
       );
       setVoiceNoteDraft(null);
-      setShowQuickReplies(false);
     } catch (uploadError) {
       setError(
         uploadError instanceof Error
@@ -972,7 +937,6 @@ export default function LiveChatWorkspace({ role }: Props) {
         })
       );
       setImageMessageDraft(null);
-      setShowQuickReplies(false);
     } catch (uploadError) {
       setError(
         uploadError instanceof Error
@@ -981,37 +945,6 @@ export default function LiveChatWorkspace({ role }: Props) {
       );
     } finally {
       setIsUploadingImage(false);
-    }
-  };
-
-  const searchOrder = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const query = orderLookupQuery.trim();
-    if (!query) {
-      setOrderLookupError("Enter an order ID to search.");
-      setOrderLookupResult(null);
-      return;
-    }
-
-    try {
-      setIsSearchingOrders(true);
-      setOrderLookupError("");
-      setOrderLookupResult(null);
-      const response = await fetch(
-        `/api/admin/live-chat/order-search?query=${encodeURIComponent(query)}`,
-        { credentials: "same-origin", cache: "no-store" }
-      );
-      const data = await readJson(response);
-      setOrderLookupResult(data.order as OrderLookupResult | null);
-      if (!data.order) setOrderLookupError("No matching order was found.");
-    } catch (searchError) {
-      setOrderLookupError(
-        searchError instanceof Error
-          ? searchError.message
-          : "Unable to search orders."
-      );
-    } finally {
-      setIsSearchingOrders(false);
     }
   };
 
@@ -1038,25 +971,6 @@ export default function LiveChatWorkspace({ role }: Props) {
     );
     setDraft("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-    if (role === "user") {
-      setShowQuickReplies(true);
-      setSelectedQuickReply(null);
-    }
-  };
-
-  const requestTeamMember = () => {
-    const socket = socketRef.current;
-    if (!selectedId || !socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(
-      JSON.stringify({
-        type: "message",
-        conversationId: selectedId,
-        body: humanHandoffMessage,
-      })
-    );
-    setHandoffRequested(true);
-    setShowQuickReplies(false);
-    setSelectedQuickReply(null);
   };
 
   const startNewConversation = async () => {
@@ -1185,188 +1099,61 @@ export default function LiveChatWorkspace({ role }: Props) {
       <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden bg-white">
         {/* Admin header */}
         {role === "admin" && (
-          <header className="shrink-0 border-b border-gray-100 px-3 py-2.5 sm:px-5 sm:py-3">
-            <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between md:gap-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-700 sm:h-10 sm:w-10">
-                  <UserRound className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-sm font-semibold text-gray-900">
-                    {selectedConversation ? "Live chat" : "Select a conversation"}
-                  </h2>
-                  <p
-                    role="status"
-                    className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500"
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                        connectionState === "connected"
-                          ? "bg-emerald-500"
-                          : connectionState === "connecting"
-                          ? "bg-amber-400"
-                          : "bg-red-500"
-                      }`}
-                    />
-                    <span className="truncate">
-                      {connectionState === "connected"
-                        ? selectedConversation?.status === "closed"
-                          ? "Conversation closed"
-                          : "Live chat"
-                        : connectionState === "connecting"
-                        ? "Connecting..."
-                        : "Disconnected"}
-                    </span>
-                    {selectedConversation && (
-                      <span
-                        className="max-w-28 truncate text-[10px] text-gray-400 sm:max-w-40"
-                        title={selectedConversation.userName}
-                      >
-                        · {selectedConversation.userName}
-                      </span>
-                    )}
-                    {connectionState === "disconnected" && (
-                      <button
-                        type="button"
-                        onClick={() => void reconnectRef.current?.()}
-                        className={`ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold text-red-700 hover:bg-red-50 ${focusRing}`}
-                      >
-                        <RotateCw className="h-3 w-3" />
-                        Reconnect
-                      </button>
-                    )}
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-medium text-purple-700 md:hidden">
-                  {openCount} open
-                </span>
-              </div>
-
-              <div className="flex w-full min-w-0 items-center gap-2 md:w-auto md:justify-end">
-                <label
-                  htmlFor="admin-chat-customer"
-                  className="sr-only shrink-0 text-xs font-medium text-gray-500 min-[420px]:not-sr-only"
-                >
-                  Customer
-                </label>
-                <div className="relative min-w-0 flex-1 md:w-64 md:flex-none lg:w-72">
-                  <select
-                    id="admin-chat-customer"
-                    value={selectedId || ""}
-                    onChange={(event) =>
-                      setSelectedId(event.target.value || null)
-                    }
-                    disabled={
-                      conversations.length === 0 ||
-                      isRecordingVoice ||
-                      isRequestingMicrophone ||
-                      Boolean(voiceNoteDraft) ||
-                      isUploadingVoice ||
-                      Boolean(imageMessageDraft) ||
-                      isUploadingImage
-                    }
-                    className="min-h-10 w-full appearance-none truncate rounded-xl border border-gray-200 bg-white py-2 pl-3 pr-9 text-sm font-medium text-gray-700 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 disabled:bg-gray-50 sm:text-xs"
-                  >
-                    <option value="" disabled>
-                      {conversations.length
-                        ? "Select a customer"
-                        : "No chats yet"}
-                    </option>
-                    {conversations.map((conversation) => (
-                      <option key={conversation.id} value={conversation.id}>
-                        {conversation.userName} ({conversation.userEmail}) ·{" "}
-                        {conversation.status}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                </div>
-                <span className="hidden shrink-0 text-[11px] text-gray-500 md:inline">
-                  {openCount} open
-                </span>
-                {selectedConversation?.status === "open" && (
-                  <button
-                    type="button"
-                    onClick={closeConversation}
-                    aria-label="Close chat"
-                    className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 lg:h-auto lg:w-auto lg:gap-1.5 lg:px-3 lg:py-2 lg:text-xs lg:font-semibold ${focusRing}`}
-                  >
-                    <X className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
-                    <span className="hidden lg:inline">Close chat</span>
-                  </button>
-                )}
-              </div>
-            </div>
-            <form
-              onSubmit={searchOrder}
-              className="mt-3 flex w-full min-w-0 flex-wrap items-center gap-2 border-t border-gray-100 pt-3"
-            >
-              <label htmlFor="admin-chat-order-search" className="sr-only">
-                Search order by ID
-              </label>
-              <div className="relative min-w-0 flex-1 sm:max-w-sm">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  id="admin-chat-order-search"
-                  value={orderLookupQuery}
-                  onChange={(event) => setOrderLookupQuery(event.target.value)}
-                  placeholder="Search order ID or code"
-                  maxLength={32}
-                  className="min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isSearchingOrders}
-                className={`inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-purple-600 px-3 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-60 ${focusRing}`}
+          <header className="flex shrink-0 items-center gap-2 border-b border-gray-100 px-3 py-2 sm:px-4">
+            <label htmlFor="admin-chat-customer" className="sr-only">
+              Choose a conversation
+            </label>
+            <div className="relative min-w-0 flex-1 sm:max-w-xs">
+              <select
+                id="admin-chat-customer"
+                value={selectedId || ""}
+                onChange={(event) => setSelectedId(event.target.value || null)}
+                disabled={
+                  conversations.length === 0 ||
+                  isRecordingVoice ||
+                  isRequestingMicrophone ||
+                  Boolean(voiceNoteDraft) ||
+                  isUploadingVoice ||
+                  Boolean(imageMessageDraft) ||
+                  isUploadingImage
+                }
+                className="min-h-9 w-full appearance-none truncate rounded-lg border border-gray-200 bg-white py-1.5 pl-3 pr-9 text-sm text-gray-700 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 disabled:bg-gray-50"
               >
-                {isSearchingOrders ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                Search order
+                <option value="" disabled>
+                  {conversations.length
+                    ? "Select a conversation"
+                    : "No chats yet"}
+                </option>
+                {conversations.map((conversation) => (
+                  <option key={conversation.id} value={conversation.id}>
+                    {conversation.userName || conversation.userEmail || "Customer"} ·{" "}
+                    {conversation.status}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </div>
+            {connectionState === "disconnected" && (
+              <button
+                type="button"
+                onClick={() => void reconnectRef.current?.()}
+                aria-label="Reconnect to live chat"
+                className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 text-red-700 hover:bg-red-50 ${focusRing}`}
+              >
+                <RotateCw className="h-4 w-4" />
               </button>
-              {orderLookupError && (
-                <p role="status" className="w-full text-xs text-red-600">
-                  {orderLookupError}
-                </p>
-              )}
-              {orderLookupResult && (
-                <div className="w-full rounded-xl border border-purple-100 bg-purple-50/70 p-3 text-xs text-gray-700 sm:text-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold text-gray-900">
-                      Order #{orderLookupResult.orderCode} ·{" "}
-                      {orderLookupResult.customerName}
-                    </p>
-                    <p>
-                      {orderLookupResult.status} ·{" "}
-                      {orderLookupResult.paymentStatus} ·{" "}
-                      {new Intl.NumberFormat(undefined, {
-                        style: "currency",
-                        currency: "NGN",
-                      }).format(orderLookupResult.total)}
-                    </p>
-                  </div>
-                  <p className="mt-1 break-words text-gray-600">
-                    {orderLookupResult.customerEmail} ·{" "}
-                    {orderLookupResult.customerPhone}
-                  </p>
-                  <p className="mt-1 break-words text-gray-600">
-                    {orderLookupResult.orderItems
-                      .map((item) => {
-                        const name =
-                          item.product?.name ??
-                          item.gift?.name ??
-                          item.souvenir?.name ??
-                          "Item";
-                        return `${name} × ${item.quantity}`;
-                      })
-                      .join(", ")}
-                  </p>
-                </div>
-              )}
-            </form>
+            )}
+            {selectedConversation?.status === "open" && (
+              <button
+                type="button"
+                onClick={closeConversation}
+                aria-label="Close chat"
+                title="Close chat"
+                className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 ${focusRing}`}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </header>
         )}
 
@@ -1388,7 +1175,7 @@ export default function LiveChatWorkspace({ role }: Props) {
                 New customer chats will appear in your inbox here.
               </p>
             </div>
-          ) : messages.length === 0 ? (
+          ) : visibleMessages.length === 0 ? (
             <div className="m-auto w-full max-w-md text-center">
               {role === "admin" ? (
                 <div className="px-2">
@@ -1402,79 +1189,15 @@ export default function LiveChatWorkspace({ role }: Props) {
                   </p>
                 </div>
               ) : (
-                <div className="w-full min-w-0 rounded-2xl border border-purple-100 bg-white p-3.5 text-left shadow-sm sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-50 text-purple-600">
-                      <LifeBuoy className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-gray-900">
-                        Welcome to Dunnis support
-                      </p>
-                      <p className="mt-1 text-sm leading-5 text-gray-600">
-                        Choose a topic below and I’ll point you in the right
-                        direction.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 grid min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-[repeat(2,minmax(0,1fr))]">
-                    {quickReplies.map((reply) => (
-                      <button
-                        key={reply.label}
-                        type="button"
-                        onClick={() => setSelectedQuickReply(reply.label)}
-                        className={`min-h-11 min-w-0 break-words rounded-xl border px-3 py-2.5 text-left text-xs font-medium transition ${focusRing} ${
-                          selectedQuickReply === reply.label
-                            ? "border-purple-400 bg-purple-50 text-purple-800"
-                            : "border-purple-100 text-gray-700 hover:border-purple-300 hover:bg-purple-50"
-                        }`}
-                      >
-                        {reply.label}
-                      </button>
-                    ))}
-                  </div>
-                  {selectedReplyText && (
-                    <div className="mt-3 rounded-xl bg-purple-50 p-3">
-                      <p className="text-sm leading-5 text-gray-700">
-                        {selectedReplyText}
-                      </p>
-                      <div className="mt-3 flex flex-col gap-2 min-[420px]:flex-row">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedQuickReply(null)}
-                          className={`min-h-10 rounded-lg border border-purple-200 bg-white px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-100 ${focusRing}`}
-                        >
-                          Choose another topic
-                        </button>
-                        <button
-                          type="button"
-                          onClick={requestTeamMember}
-                          disabled={connectionState !== "connected"}
-                          className={`min-h-10 rounded-lg bg-purple-600 px-3 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50 ${focusRing}`}
-                        >
-                          Chat with our team
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {!selectedQuickReply && (
-                    <button
-                      type="button"
-                      onClick={requestTeamMember}
-                      disabled={connectionState !== "connected"}
-                      className={`mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-purple-200 px-4 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-50 disabled:opacity-50 ${focusRing}`}
-                    >
-                      <Headphones className="h-4 w-4" />
-                      Chat with our team
-                    </button>
-                  )}
+                <div className="px-3 text-sm text-gray-500">
+                  Send a message to start chatting with our team.
                 </div>
               )}
             </div>
           ) : (
-            messages.map((message, index) => {
-              const previous = messages[index - 1];
-              const next = messages[index + 1];
+            visibleMessages.map((message, index) => {
+              const previous = visibleMessages[index - 1];
+              const next = visibleMessages[index + 1];
               const ownMessage = message.senderRole === role;
               const voiceNote = parseVoiceNote(message.body);
               const imageUrl = parseImageMessage(message.body);
@@ -1533,32 +1256,32 @@ export default function LiveChatWorkspace({ role }: Props) {
                               className="h-9 w-[min(16rem,65vw)] max-w-full"
                               src={voiceNote.url}
                             />
-                          ) : imageUrl !== undefined ? (
-                            imageUrl ? (
-                              <a
-                                href={imageUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                aria-label="Open shared image"
-                              >
-                                <img
-                                  src={imageUrl}
-                                  alt="Image shared in chat"
-                                  loading="lazy"
-                                  className="max-h-72 max-w-full rounded-xl object-contain"
-                                />
-                              </a>
-                            ) : (
-                              <p className="text-xs opacity-80">
-                                This image is unavailable.
-                              </p>
-                            )
                           ) : (
                             <p className="text-xs opacity-80">
                               This voice note is unavailable.
                             </p>
                           )}
                         </div>
+                      ) : imageUrl !== undefined ? (
+                        imageUrl ? (
+                          <a
+                            href={imageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="Open shared image"
+                          >
+                            <img
+                              src={imageUrl}
+                              alt="Image shared in chat"
+                              loading="lazy"
+                              className="max-h-72 max-w-full rounded-xl object-contain"
+                            />
+                          </a>
+                        ) : (
+                          <p className="text-xs opacity-80">
+                            This image is unavailable.
+                          </p>
+                        )
                       ) : (
                         <p className="whitespace-pre-wrap text-sm leading-5 [overflow-wrap:anywhere]">
                           {message.body}
@@ -1586,70 +1309,6 @@ export default function LiveChatWorkspace({ role }: Props) {
             })
           )}
 
-          {role === "user" &&
-            showQuickReplies &&
-            selectedConversation?.status === "open" && (
-              <div className="mt-3 w-full min-w-0 max-w-xl self-start rounded-2xl border border-purple-100 bg-white p-3 shadow-sm sm:ml-2 sm:w-auto sm:p-4">
-                {selectedQuickReply ? (
-                  <>
-                    <p className="text-sm leading-5 text-gray-700">
-                      {selectedReplyText}
-                    </p>
-                    <div className="mt-3 flex flex-col gap-2 min-[420px]:flex-row">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedQuickReply(null)}
-                        className={`min-h-10 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 ${focusRing}`}
-                      >
-                        See other topics
-                      </button>
-                      <button
-                        type="button"
-                        onClick={requestTeamMember}
-                        disabled={connectionState !== "connected"}
-                        className={`min-h-10 rounded-lg bg-purple-600 px-3 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50 ${focusRing}`}
-                      >
-                        Chat with our team
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-gray-700">
-                      Thanks for your message. Would you like help with one of
-                      these?
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {quickReplies.map((reply) => (
-                        <button
-                          key={reply.label}
-                          type="button"
-                          onClick={() => setSelectedQuickReply(reply.label)}
-                          className={`min-h-9 max-w-full break-words rounded-full border border-purple-100 px-3 py-1.5 text-left text-xs font-medium text-purple-700 hover:bg-purple-50 ${focusRing}`}
-                        >
-                          {reply.label}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={requestTeamMember}
-                      disabled={connectionState !== "connected"}
-                      className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50 min-[420px]:w-auto ${focusRing}`}
-                    >
-                      <Headphones className="h-4 w-4" />
-                      Chat with our team
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
-          {role === "user" && handoffRequested && (
-            <div className="mt-3 max-w-full self-start rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800 sm:max-w-md">
-              {humanHandoffReply}
-            </div>
-          )}
         </div>
 
         {typingName && selectedConversation?.status === "open" && (

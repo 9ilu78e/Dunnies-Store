@@ -16,6 +16,7 @@ import {
   Flame,
   Mail,
   MessageSquareText,
+  Headset,
 } from "lucide-react";
 
 const navItems = [
@@ -85,6 +86,11 @@ const navItems = [
     icon: MessageSquareText,
   },
   {
+    label: "Live Chat",
+    href: "/admin/live-chat",
+    icon: Headset,
+  },
+  {
     label: "Settings",
     href: "/admin-settings",
     icon: Settings,
@@ -138,7 +144,7 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
+      <nav className="flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -148,7 +154,7 @@ export default function Sidebar({ user, onNavClick }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onNavClick}
-              className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition ${
+              className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition ${
                 isActive
                   ? "bg-purple-50 font-semibold text-purple-700"
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
