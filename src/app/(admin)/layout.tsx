@@ -32,6 +32,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const isLiveChatPage = pathname.startsWith("/admin/live-chat");
+  const isSettingsPage = pathname === "/admin-settings";
   const [user, setUser] = useState<{ 
   fullName?: string; 
   email?: string; 
@@ -266,6 +267,8 @@ export default function AdminLayout({
           className={`min-h-0 min-w-0 flex-1 ${
             isLiveChatPage
               ? "overflow-hidden p-0"
+              : isSettingsPage
+              ? "flex flex-col overflow-hidden p-3 sm:p-6 lg:p-8"
               : "overflow-x-hidden overflow-y-auto p-3 sm:p-6 lg:p-8"
           }`}
         >

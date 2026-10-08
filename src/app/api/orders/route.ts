@@ -494,6 +494,15 @@ export async function POST(request: NextRequest) {
     const deliveryFeePending = itemsWithDetails.some(
       (item) => item.deliveryFee <= 0
     );
+    if (source === "site" && deliveryFeePending) {
+      return NextResponse.json(
+        {
+          error:
+            "Delivery fees are not configured for every item. Please contact support before placing this order.",
+        },
+        { status: 409 }
+      );
+    }
     const deliveryFee = deliveryFeePending ? null : knownDeliveryFee;
     const verifiedTotal =
       itemsWithDetails.reduce(

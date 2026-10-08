@@ -228,7 +228,7 @@ export default function AdminSettingsPage() {
   ] as const;
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-5rem)] min-h-0 max-w-5xl flex-col gap-2.5 sm:h-[calc(100dvh-7rem)] lg:h-[calc(100dvh-8rem)]">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-2.5">
       <div className="flex shrink-0 flex-wrap items-end justify-between gap-2">
         <div>
           <h1 className="bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent">
@@ -415,7 +415,7 @@ export default function AdminSettingsPage() {
         )}
 
         {activeSection === "hero" && (
-        <section role="tabpanel" className="flex min-h-0 flex-1 flex-col space-y-3 overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+        <section role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-gray-900">Homepage hero slides</h2>
@@ -435,11 +435,11 @@ export default function AdminSettingsPage() {
             </label>
           </div>
           {settings.heroSlides.length ? (
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
               {settings.heroSlides.map((slide, index) => (
                 <article
                   key={`${slide.image}-${index}`}
-                  className="grid gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 lg:grid-cols-[11rem_minmax(0,1fr)]"
+                  className="grid gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 lg:grid-cols-[12rem_minmax(0,1fr)]"
                 >
                   <div>
                     <div className="relative aspect-[3/2] overflow-hidden rounded-lg border border-gray-200 bg-white">

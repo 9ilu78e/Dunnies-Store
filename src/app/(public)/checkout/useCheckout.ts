@@ -197,6 +197,12 @@ export function useCheckout() {
 
   const placeOrder = async () => {
     setInventoryError("");
+    if (deliveryFeePending) {
+      setInventoryError(
+        "We could not calculate delivery for every item. Recheck the fees or contact support before placing your order."
+      );
+      return;
+    }
     if (
       !deliveryDetails.customerName.trim() ||
       !deliveryDetails.customerPhone.trim() ||
@@ -318,6 +324,25 @@ export function useCheckout() {
     }
   };
 
+  const recheckInventory = async () => {
+    setInventoryError("");
+    try {
+      const unavailable = await refreshInventory();
+      if (unavailable.length > 0) {
+        setInventoryError(
+          "Unavailable items were removed from your cart. Please review your order."
+        );
+      }
+    } catch (error) {
+      console.error("Unable to recheck checkout delivery fees:", error);
+      setInventoryError(
+        error instanceof Error
+          ? error.message
+          : "We could not recalculate delivery fees. Please try again."
+      );
+    }
+  };
+
   const paymentMethods = [
     {
       value: "paystack",
@@ -342,6 +367,7 @@ export function useCheckout() {
   const canSubmit =
     Boolean(paymentMethod) &&
     items.length > 0 &&
+    !deliveryFeePending &&
     !submitting &&
     !inventoryChecking;
 
@@ -375,6 +401,7 @@ export function useCheckout() {
     step,
     inventoryError,
     submitting,
+    inventoryChecking,
     orderId,
     paymentStartupError,
     placed,
@@ -393,6 +420,7 @@ export function useCheckout() {
     total,
     formatPrice,
     placeOrder,
+    recheckInventory,
     paymentMethods,
     canSubmit,
     submitLabel,
