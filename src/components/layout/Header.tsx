@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Gift,
   ShoppingCart,
+  ShoppingBag,
   Package,
   Landmark,
   Home,
@@ -249,7 +250,7 @@ export default function Header() {
       {
         label: "Products",
         href: "/product",
-        icon: null,
+        icon: <ShoppingBag className="w-4 h-4" />,
         children: [
           {
             label: "All Products",
@@ -738,7 +739,7 @@ export default function Header() {
                             }
                           : undefined
                       }
-                      className={`invisible absolute z-50 mt-0 max-w-[calc(100vw-1rem)] translate-y-1 rounded-2xl border border-violet-100 bg-white p-2 opacity-0 shadow-2xl shadow-violet-950/10 ring-1 ring-black/5 transition-all duration-200 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 ${
+                      className={`invisible absolute z-50 mt-0 max-w-[calc(100vw-1rem)] translate-y-1 rounded-[10px] border border-violet-100 bg-white p-2 opacity-0 shadow-2xl shadow-violet-950/10 ring-1 ring-black/5 transition-all duration-200 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 ${
                         item.label === "Help Center"
                           ? "left-1/2 -translate-x-1/2"
                           : "left-0 w-[min(calc(100vw-1rem),28rem)]"
@@ -770,7 +771,7 @@ export default function Header() {
                             className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-gray-700 transition-all hover:bg-violet-50 hover:text-violet-700"
                           >
                             {item.label === "Help Center" && child.icon && (
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center text-violet-600">
                                 {child.icon || item.icon}
                               </span>
                             )}
@@ -785,7 +786,7 @@ export default function Header() {
                             className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-gray-700 transition-all hover:bg-violet-50 hover:text-violet-700"
                           >
                             {item.label === "Help Center" && child.icon && (
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center text-violet-600">
                                 {child.icon || item.icon}
                               </span>
                             )}
@@ -800,7 +801,7 @@ export default function Header() {
                             onClick={() => setOpenDropdown(null)}
                           >
                             {item.label === "Help Center" && child.icon && (
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center text-violet-600">
                                 {child.icon || item.icon}
                               </span>
                             )}
@@ -938,7 +939,7 @@ export default function Header() {
                     type="button"
                     aria-expanded={openDropdown === item.label}
                     onClick={() => handleDropdownToggle(item.label)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200"
+                    className="flex w-full items-center justify-between px-3 py-2 text-left transition-colors hover:bg-gray-100"
                   >
                     <span className="flex items-center space-x-3">
                       {item.icon && (
@@ -963,7 +964,7 @@ export default function Header() {
                         : "max-h-0"
                     }`}
                   >
-                    <div className="grid grid-cols-2 gap-2 rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/70 to-fuchsia-50/60 p-2">
+                    <div className="flex flex-col overflow-hidden rounded-[10px] border border-gray-100 bg-white">
                       {item.children.map((child) =>
                         child.external ? (
                           <a
@@ -971,7 +972,7 @@ export default function Header() {
                             href={child.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-white bg-white/90 px-2.5 py-2 text-xs font-medium text-gray-700 shadow-sm transition hover:border-violet-200 hover:bg-white hover:text-violet-700 hover:shadow"
+                            className="group flex min-h-11 min-w-0 items-center gap-2 border-b border-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-violet-700"
                             onClick={closeMobileMenu}
                           >
                             {item.label === "Help Center" && child.icon && (
@@ -987,7 +988,7 @@ export default function Header() {
                           <a
                             key={child.label}
                             href={child.href}
-                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-white bg-white/90 px-2.5 py-2 text-xs font-medium text-gray-700 shadow-sm transition hover:border-violet-200 hover:bg-white hover:text-violet-700 hover:shadow"
+                            className="group flex min-h-11 min-w-0 items-center gap-2 border-b border-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-violet-700"
                             onClick={closeMobileMenu}
                           >
                             {item.label === "Help Center" && child.icon && (
@@ -1002,7 +1003,7 @@ export default function Header() {
                           <Link
                             key={child.label}
                             href={child.href}
-                            className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-white bg-white/90 px-2.5 py-2 text-xs font-medium text-gray-700 shadow-sm transition hover:border-violet-200 hover:bg-white hover:text-violet-700 hover:shadow"
+                            className="group flex min-h-11 min-w-0 items-center gap-2 border-b border-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-violet-700"
                             onClick={closeMobileMenu}
                           >
                             {item.label === "Help Center" && child.icon && (

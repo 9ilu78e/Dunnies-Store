@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Email login is not configured. Set BREVO_API_KEY and SENDER_EMAIL in your Render service environment, then redeploy.",
+            "Email sign-in is temporarily unavailable. Please use Google sign-in or try again later.",
         },
         { status: 503 }
       );
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "The email provider could not send the sign-in link. Check BREVO_API_KEY and confirm SENDER_EMAIL is verified in Brevo.",
+            "We couldn't send a sign-in link to that email address. Check the address and try again, or use Google sign-in.",
         },
         { status: 503 }
       );
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "The sign-in database is missing required tables. Apply the latest database migrations, then try again.",
+            "Email sign-in is temporarily unavailable. Please use Google sign-in or try again later.",
         },
         { status: 503 }
       );
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Unable to create the sign-in link because the database is unavailable. Please try again shortly.",
+          "We couldn't start email sign-in right now. Please try again shortly or use Google sign-in.",
       },
       { status: 503 }
     );

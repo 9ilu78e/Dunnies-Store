@@ -7,6 +7,7 @@ import {
 } from "@/lib/email";
 import { generateOrderDeliveryEmail } from "@/lib/emails/orderDeliveryEmail";
 import { formatOrderNumber } from "@/lib/orderNumber";
+import { canAccessOrder } from "@/lib/orderOwnership";
 
 const VALID_ORDER_STATUSES = [
   "pending",
@@ -387,18 +388,21 @@ export async function DELETE(
       return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
 
-    if (auth.user.role.toLowerCase() !== "admin") {
-      return NextResponse.json({ error: "Only admins can delete orders." }, { status: 403 });
-    }
-
     const { id } = await params;
     const order = await prisma.order.findUnique({
       where: { id },
-      select: { id: true, archivedAt: true },
+      select: { id: true, userId: true, archivedAt: true },
     });
 
     if (!order) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    }
+
+    if (!(await canAccessOrder(auth.user, order))) {
+      return NextResponse.json(
+        { error: "You do not have permission to delete this order." },
+        { status: 403 }
+      );
     }
 
     if (order.archivedAt) {
