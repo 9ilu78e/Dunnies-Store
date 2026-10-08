@@ -15,6 +15,8 @@ services:
         sync: false
       - key: PAYSTACK_SECRET_KEY
         sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
       - key: NEXT_PUBLIC_APP_URL
         value: https://dunnies-store.onrender.com
     disk:

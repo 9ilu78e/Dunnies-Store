@@ -33,9 +33,13 @@ export function getWhatsAppLink(
   order: WhatsAppOrderMessage
 ): string {
   const message = generateWhatsAppOrderMessage(order);
+  return `${getWhatsAppContactLink(whatsappNumber)}?text=${message}`;
+}
+
+export function getWhatsAppContactLink(whatsappNumber: string): string {
   const digits = whatsappNumber.replace(/\D/g, "");
   const cleanNumber = digits.startsWith("0") ? `234${digits.slice(1)}` : digits;
-  return `https://wa.me/${cleanNumber}?text=${message}`;
+  return `https://wa.me/${cleanNumber}`;
 }
 
 export function generateWhatsAppAPIMessage(

@@ -60,6 +60,17 @@ export const uploadImage = async (file: File, folder = 'dunnies-store'): Promise
   }
 };
 
+export const uploadChatAudio = async (file: File): Promise<string> => {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const dataURI = `data:${file.type};base64,${buffer.toString('base64')}`;
+  const result = await cloudinary.uploader.upload(dataURI, {
+    folder: 'dunnies-store/live-chat',
+    resource_type: 'video',
+    allowed_formats: ['webm', 'ogg', 'mp3', 'wav', 'm4a', 'mp4', 'aac'],
+  });
+  return result.secure_url;
+};
+
 // Delete image from Cloudinary
 export const deleteImage = async (publicId: string): Promise<void> => {
   try {
