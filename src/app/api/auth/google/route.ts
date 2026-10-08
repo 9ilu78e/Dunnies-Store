@@ -82,8 +82,14 @@ export async function POST(request: NextRequest) {
     console.error("Firebase auth error:", error);
 
     if (error instanceof FirebaseAdminConfigurationError) {
+      console.error(
+        "Google sign-in is unavailable because Firebase Admin is not configured."
+      );
       return NextResponse.json(
-        { error: error.message },
+        {
+          error:
+            "Google sign-in is temporarily unavailable. Please use email sign-in or try again later.",
+        },
         { status: 503 }
       );
     }
@@ -92,7 +98,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Google sign-in server credentials were rejected. Check that the Firebase service account belongs to the configured Firebase project.",
+            "Google sign-in is temporarily unavailable. Please use email sign-in or try again later.",
         },
         { status: 503 }
       );
@@ -102,7 +108,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Google sign-in could not save your account. Check the production database connection and migrations.",
+            "We couldn't finish setting up your account right now. Please try again shortly or use email sign-in.",
         },
         { status: 503 }
       );
@@ -110,27 +116,39 @@ export async function POST(request: NextRequest) {
 
     if (error.code === "auth/argument-error") {
       return NextResponse.json(
-        { error: "Invalid ID token format" },
-        { status: 400 }
+        {
+          error:
+            "Google sign-in couldn't be completed. Please try again or use email sign-in.",
+        },
+        { status: 401 }
       );
     }
 
     if (error.code === "auth/id-token-expired") {
       return NextResponse.json(
-        { error: "ID token has expired" },
+        {
+          error:
+            "Your Google sign-in session expired. Please try signing in again.",
+        },
         { status: 401 }
       );
     }
 
     if (error.code === "auth/id-token-revoked") {
       return NextResponse.json(
-        { error: "ID token has been revoked" },
+        {
+          error:
+            "Your Google sign-in session is no longer valid. Please try signing in again.",
+        },
         { status: 401 }
       );
     }
 
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error:
+          "Google sign-in couldn't be completed. Please try again or use email sign-in.",
+      },
       { status: 500 }
     );
   }

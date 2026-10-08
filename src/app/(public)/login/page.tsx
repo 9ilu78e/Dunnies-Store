@@ -70,17 +70,26 @@ export default function LoginPage() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
+      const data: { error?: string } = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send verification email");
+        throw new Error(
+          data.error ||
+            "We couldn't send your sign-in link. Please try again or continue with Google."
+        );
       }
 
       showToast("Verification link sent! Check your email.", "success");
     } catch (error: any) {
       console.error("Login Error:", error);
-      setError(error.message || "Failed to send verification email");
-      showToast(error.message || "Failed to send verification email", "error");
+      const message =
+        error instanceof TypeError
+          ? "We couldn't reach the sign-in service. Check your internet connection and try again."
+          : error instanceof Error
+            ? error.message
+            : "We couldn't send your sign-in link. Please try again or continue with Google.";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setIsEmailLoading(false);
     }
@@ -145,17 +154,21 @@ export default function LoginPage() {
           ? error.code
           : "";
       const message =
-        code === "auth/unauthorized-domain"
-          ? `This website is not authorized for Google sign-in. Add ${window.location.hostname} in Firebase Console under Authentication > Settings > Authorized domains.`
-          : code === "auth/operation-not-allowed"
-          ? "Google sign-in is disabled for this Firebase project. Enable the Google provider in Firebase Console under Authentication > Sign-in method."
+        code === "auth/unauthorized-domain" ||
+        code === "auth/operation-not-allowed" ||
+        code === "auth/invalid-api-key"
+          ? "Google sign-in is temporarily unavailable for this website. Please use email sign-in or try again later."
           : code === "auth/popup-blocked"
-          ? "Your browser blocked the Google sign-in popup. Allow popups for this website and try again."
-          : code === "auth/network-request-failed"
-          ? "Firebase could not be reached. In Firebase Console, add this site's domain under Authentication > Settings > Authorized domains. In Google Cloud Console, allow this domain in the Firebase API key's HTTP referrers and allow the Identity Toolkit API. Also check that your network or browser extensions are not blocking Firebase."
-          : error instanceof Error
-          ? error.message
-          : "Google Sign-In failed";
+            ? "Your browser blocked the Google sign-in window. Allow popups for this website, then try again."
+            : code === "auth/popup-closed-by-user" ||
+                code === "auth/cancelled-popup-request"
+              ? "Google sign-in was cancelled. Try again when you're ready."
+              : code === "auth/network-request-failed" ||
+                  error instanceof TypeError
+                ? "We couldn't connect to Google sign-in. Check your internet connection and try again, or use email sign-in."
+                : code === "auth/too-many-requests"
+                  ? "There have been too many sign-in attempts. Please wait a few minutes and try again."
+                  : "Google sign-in couldn't be completed. Please try again or use email sign-in.";
       setError(message);
       showToast(message, "error");
     } finally {
