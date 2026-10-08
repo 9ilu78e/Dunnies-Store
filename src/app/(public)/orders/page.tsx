@@ -9,6 +9,7 @@ import {
   Clock3,
   LoaderCircle,
   LogIn,
+  Trash2,
 } from "lucide-react";
 import { formatOrderNumber } from "@/lib/orderNumber";
 
@@ -57,6 +58,7 @@ export default function OrdersPage() {
   const [authRequired, setAuthRequired] = useState(false);
   const [requestedOrderNumber, setRequestedOrderNumber] = useState("");
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState("");
 
   const retryPayment = async (orderId: string) => {
@@ -82,6 +84,42 @@ export default function OrdersPage() {
           : "Unable to start payment."
       );
       setPayingOrderId(null);
+    }
+  };
+
+  const deleteOrder = async (order: OrderRecord) => {
+    const orderNumber = formatOrderNumber(order.orderNumber);
+    if (
+      !window.confirm(
+        `Remove order #${orderNumber} from your active orders? The store will retain it in order history.`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingOrderId(order.id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/orders/${order.id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to delete this order.");
+      }
+
+      setOrders((currentOrders) =>
+        currentOrders.filter((currentOrder) => currentOrder.id !== order.id)
+      );
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Unable to delete this order."
+      );
+    } finally {
+      setDeletingOrderId(null);
     }
   };
 
@@ -325,6 +363,22 @@ export default function OrdersPage() {
                       <span className="font-semibold text-gray-700">Notes:</span> {order.notes}
                     </div>
                   )}
+
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => void deleteOrder(order)}
+                      disabled={deletingOrderId !== null || payingOrderId === order.id}
+                      className="inline-flex items-center gap-2 px-2 py-1 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {deletingOrderId === order.id ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      {deletingOrderId === order.id ? "Deleting..." : "Delete order"}
+                    </button>
+                  </div>
                 </div>
               );
             })}
