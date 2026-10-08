@@ -674,9 +674,15 @@ export async function GET(request: NextRequest) {
       include: {
         orderItems: {
           include: {
-            product: { select: { id: true, name: true } },
-            gift: { select: { id: true, name: true } },
-            souvenir: { select: { id: true, name: true } },
+            product: {
+              select: { id: true, name: true, imageUrl: true, imageUrls: true },
+            },
+            gift: {
+              select: { id: true, name: true, imageUrl: true, imageUrls: true },
+            },
+            souvenir: {
+              select: { id: true, name: true, imageUrl: true, imageUrls: true },
+            },
           },
         },
       },

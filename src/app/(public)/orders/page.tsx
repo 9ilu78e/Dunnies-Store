@@ -10,23 +10,28 @@ import {
   LoaderCircle,
   LogIn,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 import { formatOrderNumber } from "@/lib/orderNumber";
 
 interface OrderItemData {
   id: string;
   quantity: number;
+  unitPrice?: number | null;
   size?: string | null;
-  product?: { name: string } | null;
-  gift?: { name: string } | null;
-  souvenir?: { name: string } | null;
+  product?: { name: string; imageUrl?: string | null; imageUrls?: string[] } | null;
+  gift?: { name: string; imageUrl?: string | null; imageUrls?: string[] } | null;
+  souvenir?: { name: string; imageUrl?: string | null; imageUrls?: string[] } | null;
 }
 
 interface OrderRecord {
   id: string;
   orderNumber: number;
+  customerName?: string;
+  customerPhone?: string;
   status: string;
   total: number;
+  deliveryFee?: number | null;
   createdAt: string;
   notes?: string | null;
   deliveryAddress?: string | null;
@@ -57,6 +62,7 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
   const [requestedOrderNumber, setRequestedOrderNumber] = useState("");
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState("");
@@ -142,10 +148,17 @@ export default function OrdersPage() {
         }
 
         const data = await response.json();
-        setOrders(data.orders || []);
-        setRequestedOrderNumber(
-          new URLSearchParams(window.location.search).get("orderNumber") || ""
-        );
+        const loadedOrders: OrderRecord[] = data.orders || [];
+        const orderNumber =
+          new URLSearchParams(window.location.search).get("orderNumber") || "";
+        setOrders(loadedOrders);
+        setRequestedOrderNumber(orderNumber);
+        if (orderNumber) {
+          const requestedOrder = loadedOrders.find(
+            (order) => formatOrderNumber(order.orderNumber) === orderNumber
+          );
+          setExpandedOrderId(requestedOrder?.id ?? null);
+        }
         setError(null);
       } catch (err) {
         setAuthRequired(false);
@@ -231,13 +244,13 @@ export default function OrdersPage() {
         ) : (
           <>
             <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                className={`w-full whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition sm:w-auto sm:px-4 sm:text-sm ${
                   activeTab === tab.id
                     ? "bg-purple-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -277,86 +290,127 @@ export default function OrdersPage() {
                   : Clock3;
 
               return (
-                <div id={`order-${formatOrderNumber(order.orderNumber)}`} key={order.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Order #{formatOrderNumber(order.orderNumber)}</p>
-                      <p className="mt-1 text-lg font-bold text-gray-900">₦{(order.total || 0).toLocaleString()}</p>
-                    </div>
+                <div id={`order-${formatOrderNumber(order.orderNumber)}`} key={order.id} className="overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm">
+                  <button
+                    type="button"
+                    aria-expanded={expandedOrderId === order.id}
+                    aria-controls={`order-details-${order.id}`}
+                    onClick={() =>
+                      setExpandedOrderId((currentId) =>
+                        currentId === order.id ? null : order.id
+                      )
+                    }
+                    className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-gray-50 sm:px-5"
+                  >
+                    <span className="text-base font-bold text-gray-900 sm:text-lg">
+                      Order #{formatOrderNumber(order.orderNumber)}
+                    </span>
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`h-5 w-5 shrink-0 text-gray-500 transition-transform ${
+                        expandedOrderId === order.id ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
 
-                    <div className="flex items-center gap-2">
-                      <StatusIcon className={`h-5 w-5 ${statusClasses.includes("text-") ? statusClasses.split("text-")[1]?.split(" ")[0] : "text-gray-700"}`} />
-                      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses}`}>
-                        {statusLabel}
-                      </span>
-                    </div>
-                  </div>
+                  {expandedOrderId === order.id && (
+                    <div id={`order-details-${order.id}`} className="border-t border-gray-200 p-4 sm:p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-lg font-bold text-gray-900">₦{(order.total || 0).toLocaleString()}</p>
+                        <div className="flex items-center gap-2">
+                          <StatusIcon className={`h-5 w-5 ${statusClasses.includes("text-") ? statusClasses.split("text-")[1]?.split(" ")[0] : "text-gray-700"}`} />
+                          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses}`}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                      </div>
 
-                  <div className="mt-4 grid gap-4 md:grid-cols-3">
-                    <div className="rounded-xl bg-gray-50 p-3">
-                      <p className="text-xs uppercase tracking-wide text-gray-500">Date</p>
-                      <p className="mt-1 text-sm font-semibold text-gray-800">{new Date(order.createdAt).toLocaleDateString()}</p>
-                    </div>
-                    <div className="rounded-xl bg-gray-50 p-3">
-                      <p className="text-xs uppercase tracking-wide text-gray-500">Payment</p>
-                      <p className="mt-1 text-sm font-semibold text-gray-800">{order.paymentMethod || "Pay on delivery"}</p>
-                    </div>
-                    <div className="rounded-xl bg-gray-50 p-3">
-                      <p className="text-xs uppercase tracking-wide text-gray-500">Delivery</p>
-                      <p className="mt-1 text-sm font-semibold text-gray-800">{order.deliveryAddress || "Not provided"}</p>
-                    </div>
-                  </div>
-                  {order.paymentMethod === "paystack" && (
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-purple-100 bg-purple-50/60 p-3">
-                      <p className="text-sm text-gray-700">
-                        Payment:{" "}
-                        <span
-                          className={`font-semibold ${
-                            order.paymentStatus === "paid"
-                              ? "text-emerald-700"
-                              : "text-amber-700"
-                          }`}
-                        >
-                          {order.paymentStatus === "paid"
-                            ? "Paid"
-                            : "Payment required before delivery"}
-                        </span>
-                      </p>
-                      {order.paymentStatus !== "paid" && (
-                        <button
-                          type="button"
-                          onClick={() => void retryPayment(order.id)}
-                          disabled={payingOrderId !== null}
-                          className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-60"
-                        >
-                          {payingOrderId === order.id && (
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="bg-gray-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-gray-500">Date</p>
+                          <p className="mt-1 text-sm font-semibold text-gray-800">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="bg-gray-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-gray-500">Payment</p>
+                          <p className="mt-1 text-sm font-semibold capitalize text-gray-800">{(order.paymentMethod || "Pay on delivery").replaceAll("-", " ")}</p>
+                          <p className="mt-1 text-xs capitalize text-gray-500">Status: {order.paymentStatus || "pending"}</p>
+                        </div>
+                        <div className="bg-gray-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-gray-500">Delivery details</p>
+                          <p className="mt-1 text-sm font-semibold text-gray-800">{order.customerName || "Customer"}{order.customerPhone ? ` · ${order.customerPhone}` : ""}</p>
+                          <p className="mt-1 text-sm font-semibold text-gray-800">{order.deliveryAddress || "Not provided"}</p>
+                          {typeof order.deliveryFee === "number" && (
+                            <p className="mt-1 text-xs text-gray-500">Delivery fee: ₦{order.deliveryFee.toLocaleString()}</p>
                           )}
-                          {payingOrderId === order.id
-                            ? "Starting payment..."
-                            : "Pay now"}
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="mt-4">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Items</p>
-                    <div className="space-y-2">
-                      {(order.orderItems || []).map((item) => {
-                        const itemName = item.product?.name || item.gift?.name || item.souvenir?.name || "Store item";
-                        return (
-                          <div key={item.id} className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                            <span>
-                              {itemName}
-                              {item.size ? ` · ${item.size}` : ""}
+                        </div>
+                      </div>
+                      {order.paymentMethod === "paystack" && (
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-purple-100 bg-purple-50/60 p-3">
+                          <p className="text-sm text-gray-700">
+                            Payment:{" "}
+                            <span
+                              className={`font-semibold ${
+                                order.paymentStatus === "paid"
+                                  ? "text-emerald-700"
+                                  : "text-amber-700"
+                              }`}
+                            >
+                              {order.paymentStatus === "paid"
+                                ? "Paid"
+                                : "Payment required before delivery"}
                             </span>
-                            <span className="font-medium">Qty {item.quantity}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                          </p>
+                          {order.paymentStatus !== "paid" && (
+                            <button
+                              type="button"
+                              onClick={() => void retryPayment(order.id)}
+                              disabled={payingOrderId !== null}
+                              className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-60"
+                            >
+                              {payingOrderId === order.id && (
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              )}
+                              {payingOrderId === order.id
+                                ? "Starting payment..."
+                                : "Pay now"}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="mt-4">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Items</p>
+                        <div className="space-y-3">
+                          {(order.orderItems || []).map((item) => {
+                            const catalogItem = item.product || item.gift || item.souvenir;
+                            const itemName = catalogItem?.name || "Store item";
+                            const imageUrl =
+                              catalogItem?.imageUrls?.[0] || catalogItem?.imageUrl;
+                            return (
+                              <div key={item.id} className="flex items-center gap-3 border border-gray-100 bg-white p-3 text-sm text-gray-700">
+                                {imageUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={imageUrl} alt="" className="h-16 w-16 shrink-0 object-cover" />
+                                ) : (
+                                  <div className="flex h-16 w-16 shrink-0 items-center justify-center bg-gray-100">
+                                    <Package className="h-7 w-7 text-gray-400" />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold text-gray-900">{itemName}</p>
+                                  {item.size && <p className="mt-1 text-xs text-gray-500">Size: {item.size}</p>}
+                                  <p className="mt-1 text-xs text-gray-500">Qty {item.quantity}</p>
+                                </div>
+                                {typeof item.unitPrice === "number" && (
+                                  <p className="shrink-0 font-semibold text-gray-900">
+                                    ₦{(item.unitPrice * item.quantity).toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
 
                   {order.notes && (
                     <div className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
@@ -379,6 +433,8 @@ export default function OrdersPage() {
                       {deletingOrderId === order.id ? "Deleting..." : "Delete order"}
                     </button>
                   </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

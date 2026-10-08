@@ -739,7 +739,7 @@ export default function Header() {
                             }
                           : undefined
                       }
-                      className={`invisible absolute z-50 mt-0 max-w-[calc(100vw-1rem)] translate-y-1 rounded-[2px] border border-violet-100 bg-white p-2 opacity-0 shadow-2xl shadow-violet-950/10 ring-1 ring-black/5 transition-all duration-200 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 ${
+                      className={`invisible absolute z-50 mt-0 max-w-[calc(100vw-1rem)] translate-y-1 rounded-[10px] border border-violet-100 bg-white p-2 opacity-0 shadow-2xl shadow-violet-950/10 ring-1 ring-black/5 transition-all duration-200 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 ${
                         item.label === "Help Center"
                           ? "left-1/2 -translate-x-1/2"
                           : "left-0 w-[min(calc(100vw-1rem),28rem)]"
@@ -964,7 +964,7 @@ export default function Header() {
                         : "max-h-0"
                     }`}
                   >
-                    <div className="flex flex-col overflow-hidden rounded-[2px]">
+                    <div className="flex flex-col overflow-hidden rounded-[10px] border border-gray-100 bg-white">
                       {item.children.map((child) =>
                         child.external ? (
                           <a
