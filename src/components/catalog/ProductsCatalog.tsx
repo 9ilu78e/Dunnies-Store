@@ -170,10 +170,14 @@ export default function ProductsCatalog({
 
       {}
       {categories.length > 0 && (
-        <div className="mb-6 relative inline-block w-full sm:w-64">
+        <div
+          className={`relative z-10 mb-6 inline-block w-full overflow-visible sm:w-64 ${
+            dropdownOpen ? "isolate" : ""
+          }`}
+        >
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-full px-4 py-3 rounded-full font-medium transition bg-white border-2 border-purple-200 text-gray-700 hover:bg-purple-50 flex items-center justify-between"
+            className="relative z-10 flex w-full items-center justify-between rounded-full border-2 border-purple-200 bg-white px-4 py-3 font-medium text-gray-700 transition hover:bg-purple-50"
           >
             <span>
               {selectedCategory ? `${selectedCategory}` : "All Products"}
@@ -186,7 +190,7 @@ export default function ProductsCatalog({
           </button>
 
           {dropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-purple-200 rounded-2xl shadow-lg z-10">
+            <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-visible rounded-2xl border-2 border-purple-200 bg-white shadow-lg">
               <button
                 onClick={() => {
                   setSelectedCategory(null);

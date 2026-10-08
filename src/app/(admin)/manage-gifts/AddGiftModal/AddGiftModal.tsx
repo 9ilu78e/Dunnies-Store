@@ -354,9 +354,9 @@ export default function AddGiftModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm sm:p-4">
+      <div className="w-[min(100%,42rem)] max-h-[92vh] overflow-x-hidden overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between sm:px-6">
           <h2 className="text-xl font-bold text-gray-900">
             {giftId ? "Edit Gift" : "Add Gift"}
           </h2>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { formatSavedAddress, useCheckout } from "./useCheckout";
 import {
@@ -172,7 +173,13 @@ export default function CheckoutPage() {
     missing,
   } = useCheckout();
 
-  /* ---------------------------------------------------------------- */
+  useEffect(() => {
+    if (step !== "success") return;
+    const successElement = document.getElementById("checkout-success");
+    if (successElement) {
+      successElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [step]);
 
   if (authLoading || !isAuthenticated) {
     return (
@@ -187,7 +194,7 @@ export default function CheckoutPage() {
 
   if (step === "success") {
     return (
-      <div className="min-h-screen overflow-x-hidden bg-linear-to-br from-violet-50 to-fuchsia-50 flex flex-col items-center justify-center px-3 py-6 sm:p-4 gap-5 sm:gap-6">
+      <div id="checkout-success" className="min-h-screen overflow-x-hidden bg-linear-to-br from-violet-50 to-fuchsia-50 flex flex-col items-center justify-center px-3 py-6 sm:p-4 gap-5 sm:gap-6">
         <div className="w-full max-w-md flex justify-center">
           <Stepper current={3} />
         </div>

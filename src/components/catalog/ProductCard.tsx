@@ -180,7 +180,7 @@ export default function ProductCard({
 
   return (
     <div
-      className={`group relative flex h-full min-w-0 w-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white ${className}`}
+      className={`group relative z-0 flex h-full min-w-0 w-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white ${className}`}
     >
       <Link
         href={computedHref === "#" ? "#" : computedHref}

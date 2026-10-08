@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Package, CheckCircle, XCircle, Clock3, LoaderCircle } from "lucide-react";
+import {
+  Package,
+  CheckCircle,
+  XCircle,
+  Clock3,
+  LoaderCircle,
+  LogIn,
+} from "lucide-react";
 import { formatOrderNumber } from "@/lib/orderNumber";
 
 interface OrderItemData {
@@ -47,6 +54,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
   const [requestedOrderNumber, setRequestedOrderNumber] = useState("");
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState("");
@@ -81,7 +89,16 @@ export default function OrdersPage() {
     const fetchOrders = async () => {
       try {
         setLoading(true);
+        setAuthRequired(false);
         const response = await fetch("/api/orders", { credentials: "same-origin" });
+
+        if (response.status === 401) {
+          setAuthRequired(true);
+          setOrders([]);
+          setError(null);
+          return;
+        }
+
         if (!response.ok) {
           throw new Error("Unable to load your orders.");
         }
@@ -93,6 +110,7 @@ export default function OrdersPage() {
         );
         setError(null);
       } catch (err) {
+        setAuthRequired(false);
         setError(err instanceof Error ? err.message : "Unable to load your orders.");
         setOrders([]);
       } finally {
@@ -137,9 +155,9 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Orders</h1>
+          <h1 className="mb-2 text-3xl font-bold text-gray-900 sm:text-4xl">My Orders</h1>
           <p className="text-gray-600">Track and manage all your orders</p>
         </div>
 
@@ -154,7 +172,27 @@ export default function OrdersPage() {
           </p>
         )}
 
-        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        {authRequired ? (
+          <div className="rounded-3xl border border-purple-100 bg-white p-6 text-center shadow-sm sm:p-10">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100">
+              <LogIn className="h-8 w-8 text-purple-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+              Log in to view your orders
+            </h2>
+            <p className="mt-3 text-sm text-gray-600 sm:text-base">
+              You need an active account to view your order history and tracking details.
+            </p>
+            <Link
+              href="/login"
+              className="mt-6 inline-flex items-center justify-center rounded-full bg-purple-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-purple-700"
+            >
+              Login
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap gap-2">
             {tabs.map((tab) => (
               <button
@@ -291,6 +329,8 @@ export default function OrdersPage() {
               );
             })}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

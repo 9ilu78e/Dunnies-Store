@@ -144,6 +144,9 @@ const giftIdeas = [
   },
 ];
 
+const getDeliveryPromptKey = (uid: string) =>
+  `dunnis:delivery-details-prompt:${uid}`;
+
 export default function UsersInterfacePage() {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -154,6 +157,16 @@ export default function UsersInterfacePage() {
   const [showDeliveryPrompt, setShowDeliveryPrompt] = useState(false);
   const [savingDeliveryDetails, setSavingDeliveryDetails] = useState(false);
   const [deliveryDetailsError, setDeliveryDetailsError] = useState("");
+
+  const dismissDeliveryPrompt = (mode: "later" | "never") => {
+    setShowDeliveryPrompt(false);
+    if (user?.uid) {
+      sessionStorage.setItem(
+        getDeliveryPromptKey(user.uid),
+        mode === "never" ? "never" : "later"
+      );
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -208,9 +221,9 @@ export default function UsersInterfacePage() {
                 profile?.fullName || currentUser.displayName || current.recipient,
               phone: profile?.phone || current.phone,
             }));
-            const promptKey = `dunnis:delivery-details-prompt:${currentUser.uid}`;
-            if (sessionStorage.getItem(promptKey) !== "shown") {
-              sessionStorage.setItem(promptKey, "shown");
+            const promptKey = getDeliveryPromptKey(currentUser.uid);
+            const promptPreference = sessionStorage.getItem(promptKey);
+            if (promptPreference !== "later" && promptPreference !== "never") {
               setShowDeliveryPrompt(true);
             }
           }
@@ -292,105 +305,121 @@ export default function UsersInterfacePage() {
       <div className="max-w-6xl mx-auto space-y-10">
         {showDeliveryPrompt && (
           <div
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-3 sm:p-4"
             role="presentation"
           >
             <section
               aria-labelledby="delivery-details-title"
               aria-modal="true"
-              className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8"
+              className="relative max-h-[88vh] w-[min(100%,30rem)] overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-5"
               role="dialog"
             >
               <button
                 type="button"
                 aria-label="Close delivery details prompt"
-                onClick={() => setShowDeliveryPrompt(false)}
-                className="absolute right-5 top-5 rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                onClick={() => dismissDeliveryPrompt("later")}
+                className="absolute right-3 top-3 rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
-              <p className="text-sm font-semibold uppercase tracking-widest text-purple-600">
-                Set up your profile
-              </p>
-              <h2
-                id="delivery-details-title"
-                className="mt-2 text-2xl font-bold text-gray-900"
-              >
-                Add your delivery details
-              </h2>
-              <p className="mt-2 pr-8 text-sm text-gray-600">
-                Save your delivery information to your profile so it is ready
-                automatically next time you check out.
-              </p>
-              <form
-                onSubmit={saveDeliveryDetails}
-                className="mt-6 grid gap-3 sm:grid-cols-2"
-              >
-                {(
-                  [
-                    ["label", "Label (Home, Office)", true],
-                    ["recipient", "Recipient name", true],
-                    ["phone", "Phone number", true],
-                    ["line1", "Street address", true],
-                    ["line2", "Apartment, suite, landmark (optional)", false],
-                    ["city", "City", true],
-                    ["region", "State / region (optional)", false],
-                    ["postalCode", "Postal code (optional)", false],
-                    ["country", "Country", true],
-                  ] as const
-                ).map(([key, placeholder, required]) => (
-                  <input
-                    key={key}
-                    aria-label={placeholder}
-                    autoComplete={
-                      key === "line1"
-                        ? "street-address"
-                        : key === "recipient"
-                        ? "name"
-                        : key === "phone"
-                        ? "tel"
-                        : key === "city"
-                        ? "address-level2"
-                        : key === "region"
-                        ? "address-level1"
-                        : key === "postalCode"
-                        ? "postal-code"
-                        : "off"
-                    }
-                    required={required}
-                    value={deliveryDetails[key]}
-                    onChange={(event) =>
-                      setDeliveryDetails((current) => ({
-                        ...current,
-                        [key]: event.target.value,
-                      }))
-                    }
-                    placeholder={placeholder}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-purple-500 sm:first-of-type:col-span-2"
-                  />
-                ))}
+
+              <div className="space-y-3 pr-8">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-purple-600">
+                  Set up your profile
+                </p>
+                <h2
+                  id="delivery-details-title"
+                  className="text-xl font-bold text-gray-900 sm:text-2xl"
+                >
+                  Add your delivery details
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Save your delivery information so checkout is quicker and easier
+                  next time.
+                </p>
+              </div>
+
+              <form onSubmit={saveDeliveryDetails} className="mt-5 space-y-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {(
+                    [
+                      ["label", "Label (Home, Office)", true],
+                      ["recipient", "Recipient name", true],
+                      ["phone", "Phone number", true],
+                      ["line1", "Street address", true],
+                      ["line2", "Apartment, suite, landmark (optional)", false],
+                      ["city", "City", true],
+                      ["region", "State / region (optional)", false],
+                      ["postalCode", "Postal code (optional)", false],
+                      ["country", "Country", true],
+                    ] as const
+                  ).map(([key, placeholder, required]) => (
+                    <input
+                      key={key}
+                      aria-label={placeholder}
+                      autoComplete={
+                        key === "line1"
+                          ? "street-address"
+                          : key === "recipient"
+                          ? "name"
+                          : key === "phone"
+                          ? "tel"
+                          : key === "city"
+                          ? "address-level2"
+                          : key === "region"
+                          ? "address-level1"
+                          : key === "postalCode"
+                          ? "postal-code"
+                          : "off"
+                      }
+                      required={required}
+                      value={deliveryDetails[key]}
+                      onChange={(event) =>
+                        setDeliveryDetails((current) => ({
+                          ...current,
+                          [key]: event.target.value,
+                        }))
+                      }
+                      placeholder={placeholder}
+                      className={`w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100 ${
+                        key === "label" || key === "recipient" || key === "phone" || key === "line1" || key === "city" || key === "country"
+                          ? "sm:col-span-1"
+                          : "sm:col-span-2"
+                      }`}
+                    />
+                  ))}
+                </div>
+
                 {deliveryDetailsError && (
                   <p
                     role="alert"
-                    className="rounded-xl bg-red-50 p-3 text-sm text-red-700 sm:col-span-2"
+                    className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
                   >
                     {deliveryDetailsError}
                   </p>
                 )}
-                <div className="flex flex-col-reverse gap-3 pt-2 sm:col-span-2 sm:flex-row sm:justify-end">
+
+                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
                   <button
                     type="button"
-                    onClick={() => setShowDeliveryPrompt(false)}
-                    className="rounded-full border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+                    onClick={() => dismissDeliveryPrompt("later")}
+                    className="rounded-full border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                   >
                     Add later
                   </button>
                   <button
+                    type="button"
+                    onClick={() => dismissDeliveryPrompt("never")}
+                    className="rounded-full border border-purple-200 bg-purple-50 px-4 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-100"
+                  >
+                    Never ask again
+                  </button>
+                  <button
                     type="submit"
                     disabled={savingDeliveryDetails}
-                    className="rounded-full bg-purple-600 px-5 py-3 font-semibold text-white transition hover:bg-purple-700 disabled:opacity-60"
+                    className="rounded-full bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:opacity-60"
                   >
-                    {savingDeliveryDetails ? "Saving..." : "Save delivery details"}
+                    {savingDeliveryDetails ? "Saving..." : "Save details"}
                   </button>
                 </div>
               </form>

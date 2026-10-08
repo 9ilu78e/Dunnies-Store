@@ -16,9 +16,6 @@ export default function ProductSpecifications({
       </h2>
       {(product.longDescription || product.description) && (
         <div className="rounded-xl bg-gray-50 p-4 sm:p-5">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Description
-          </h3>
           <p className="whitespace-pre-line break-words text-sm leading-7 text-gray-700">
             {product.longDescription || product.description}
           </p>
