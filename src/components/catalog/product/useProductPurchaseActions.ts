@@ -16,6 +16,7 @@ import {
   type SizeVariant,
 } from "@/lib/sizeVariants";
 import { getWhatsAppLink } from "@/lib/whatsapp";
+import { useSiteSettings } from "@/components/layout/SiteSettingsProvider";
 import type { GiftProductDetail } from "../gift/GiftDetailsPanel";
 
 type ProductPurchaseActionsProps = {
@@ -52,6 +53,7 @@ export function useProductPurchaseActions({
   setAvailableStock,
 }: ProductPurchaseActionsProps) {
   const { addToCart } = useCart();
+  const { supportPhone } = useSiteSettings();
 
   const fetchCurrentAvailability = async (
     size = selectedSize,
@@ -190,7 +192,8 @@ export function useProductPurchaseActions({
         return;
       }
       setAvailableStock(current.stockQuantity);
-      const whatsappNumber = "09056453575";
+      const whatsappNumber =
+        process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || supportPhone;
       const productLink =
         typeof window !== "undefined"
           ? `${window.location.origin}${product.href}`

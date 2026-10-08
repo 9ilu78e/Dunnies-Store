@@ -305,13 +305,13 @@ export default function UsersInterfacePage() {
       <div className="max-w-6xl mx-auto space-y-10">
         {showDeliveryPrompt && (
           <div
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-3 sm:p-4"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-2 sm:p-4"
             role="presentation"
           >
             <section
               aria-labelledby="delivery-details-title"
               aria-modal="true"
-              className="relative max-h-[88vh] w-[min(100%,30rem)] overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-5"
+              className="relative h-fit max-h-[calc(100dvh-1rem)] w-full max-w-[30rem] overflow-y-auto overscroll-contain rounded-2xl bg-white p-4 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:p-5"
               role="dialog"
             >
               <button
@@ -339,7 +339,7 @@ export default function UsersInterfacePage() {
                 </p>
               </div>
 
-              <form onSubmit={saveDeliveryDetails} className="mt-5 space-y-3">
+              <form onSubmit={saveDeliveryDetails} className="mt-4 space-y-3 sm:mt-5">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {(
                     [
@@ -403,21 +403,21 @@ export default function UsersInterfacePage() {
                   <button
                     type="button"
                     onClick={() => dismissDeliveryPrompt("later")}
-                    className="rounded-full border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                    className="w-full rounded-full border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:w-auto"
                   >
                     Add later
                   </button>
                   <button
                     type="button"
                     onClick={() => dismissDeliveryPrompt("never")}
-                    className="rounded-full border border-purple-200 bg-purple-50 px-4 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-100"
+                    className="w-full rounded-full border border-purple-200 bg-purple-50 px-4 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-100 sm:w-auto"
                   >
                     Never ask again
                   </button>
                   <button
                     type="submit"
                     disabled={savingDeliveryDetails}
-                    className="rounded-full bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:opacity-60"
+                    className="w-full rounded-full bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:opacity-60 sm:w-auto"
                   >
                     {savingDeliveryDetails ? "Saving..." : "Save details"}
                   </button>

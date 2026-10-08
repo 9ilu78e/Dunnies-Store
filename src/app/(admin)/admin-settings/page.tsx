@@ -228,7 +228,7 @@ export default function AdminSettingsPage() {
   ] as const;
 
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-5xl flex-col gap-2.5">
+    <div className="mx-auto flex h-[calc(100dvh-5rem)] min-h-0 max-w-5xl flex-col gap-2.5 sm:h-[calc(100dvh-7rem)] lg:h-[calc(100dvh-8rem)]">
       <div className="flex shrink-0 flex-wrap items-end justify-between gap-2">
         <div>
           <h1 className="bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent">

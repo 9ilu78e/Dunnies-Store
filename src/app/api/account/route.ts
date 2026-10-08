@@ -293,6 +293,19 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.$transaction(async (transaction) => {
+      const chatOwnerFilters = [
+        ...(account
+          ? [{ userAccountId: account.id, userAccountSource: "user" }]
+          : []),
+        ...(firebaseAccount
+          ? [
+              {
+                userAccountId: firebaseAccount.uid,
+                userAccountSource: "firebaseUser",
+              },
+            ]
+          : []),
+      ];
       const accountIds = [
         ...(account ? [account.id] : []),
         ...(firebaseAccount ? [firebaseAccount.uid] : []),
@@ -316,6 +329,11 @@ export async function DELETE(request: NextRequest) {
       await transaction.notification.deleteMany({
         where: { accountId: { in: accountIds } },
       });
+      if (chatOwnerFilters.length > 0) {
+        await transaction.liveChatConversation.deleteMany({
+          where: { OR: chatOwnerFilters },
+        });
+      }
       await transaction.emailLog.deleteMany({
         where: { to: { equals: auth.user.email, mode: "insensitive" } },
       });

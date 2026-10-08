@@ -16,6 +16,7 @@ import { useCart, type CatalogItemType } from "@/context/CartContext";
 import { showToast } from "@/components/ui/Toast";
 import { useWishlist } from "@/hooks/useWishlist";
 import { getWhatsAppLink } from "@/lib/whatsapp";
+import { useSiteSettings } from "@/components/layout/SiteSettingsProvider";
 
 interface ProductProps {
   id: number | string;
@@ -52,6 +53,7 @@ export default function ProductCard({
   const router = useRouter();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { supportPhone } = useSiteSettings();
   const [imageFailed, setImageFailed] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const isUnavailablePlaceholder = image?.includes("via.placeholder.com");
@@ -82,8 +84,10 @@ export default function ProductCard({
     ? "souvenir"
     : "product";
   const isWishlisted = isInWishlist(id);
-  const whatsappHref = getWhatsAppLink("09056453575", {
-    whatsappNumber: "09056453575",
+  const whatsappNumber =
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || supportPhone;
+  const whatsappHref = getWhatsAppLink(whatsappNumber, {
+    whatsappNumber,
     productName: name,
     productPrice: price,
     productQuantity: 1,
